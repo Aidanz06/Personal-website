@@ -1,0 +1,136 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   Tailwind v4 has no tailwind.config.js — the theme IS this block. Every
+   variable declared here becomes both a real CSS custom property and a
+   utility class, so `--color-ground` gives you `bg-ground` / `text-ground`,
+   and `--container-column` gives you `max-w-column`.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* Palette. --muted-mix and --rule-mix are the two dials: everything
+     downstream is derived from ink + ground, so the palette stays coherent
+     if the ground ever shifts. */
+  --color-ground: #fafaf8;
+  --color-ink: #1a1a1a;
+
+  /* Muted text = 55% of ink over the ground. NOTE: this measures 3.84:1,
+     which is below the 4.5:1 WCAG AA floor the PRD sets for normal text.
+     60% is the first value that passes (4.54:1). Left at the specified 55%
+     pending Aidan's call — change this one number to fix it everywhere. */
+  --muted-mix: 55%;
+  --color-muted: color-mix(in srgb, var(--color-ink) var(--muted-mix), var(--color-ground));
+
+  /* Hairline rules only. No boxes, no cards. */
+  --rule-mix: 14%;
+  --color-rule: color-mix(in srgb, var(--color-ink) var(--rule-mix), var(--color-ground));
+
+  /* PLACEHOLDER ACCENT — [accent color — aidan to decide].
+     Used for links and nothing else. This desaturated slate is a stand-in
+     chosen only because it is neutral and measures 7.89:1 on the ground.
+     Swap this single line when the real accent is picked; verify the
+     replacement clears 4.5:1 against #FAFAF8 first. */
+  --color-accent: #4a4f57;
+
+  /* Typefaces. The --ff-* variables are injected by next/font (see fonts.ts);
+     the fallbacks matter because they render during the swap. */
+  --font-display: var(--ff-display), Georgia, 'Times New Roman', serif;
+  --font-body: var(--ff-body), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--ff-mono), ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* 8px base unit. Overriding --spacing rebases Tailwind's entire numeric
+     scale, so `gap-1` is one unit (8px), `gap-2` is two (16px), and the
+     half-steps still work: `px-2.5` is exactly the 20px mobile gutter. */
+  --spacing: 8px;
+
+  /* Content column. */
+  --container-column: 640px;
+
+  /* Type scale. The paired --text-*--line-height keys are a v4 feature:
+     `text-body` sets size and leading together. */
+  --text-body: 1.0625rem; /* 17px */
+  --text-body--line-height: 1.6;
+
+  --text-small: 0.875rem; /* 14px */
+  --text-small--line-height: 1.5;
+
+  --text-heading: 1.375rem; /* 22px */
+  --text-heading--line-height: 1.35;
+
+  /* The name on the homepage. Fluid so it never forces a horizontal
+     scroll at 375px and never looks timid on a wide screen. */
+  --text-name: clamp(2.5rem, 9vw, 3.5rem); /* 40px -> 56px */
+  --text-name--line-height: 1.05;
+}
+
+/* ---------------------------------------------------------------------------
+   Base styles.
+--------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    /* Belt and braces against the 375px no-horizontal-scroll requirement. */
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: 1.6;
+    /* The design is text-only, so it is worth paying for good text rendering. */
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Lowercase is an authoring convention, NOT a text-transform. A transform
+     would mangle proper nouns (Northeastern, Grailed) and screen readers
+     announce transformed text inconsistently. Nothing here lowercases. */
+
+  a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    /* Hairline underline that thickens on hover — the whole link treatment.
+       The scramble-decode interaction is deliberately not in v0.5. */
+    transition: text-decoration-thickness 120ms ease;
+  }
+
+  a:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  /* Visible focus on every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 1px;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--color-rule);
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-accent) 18%, var(--color-ground));
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Utilities.
+--------------------------------------------------------------------------- */
+
+/* The one layout primitive: 640px column, centered, with a 20px floor on the
+   side gutter. Defined once here so no page has to remember the numbers. */
+@utility column {
+  width: 100%;
+  max-width: var(--container-column);
+  margin-inline: auto;
+  padding-inline: --spacing(2.5); /* 20px */
+}
