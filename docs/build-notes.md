@@ -943,3 +943,98 @@ angular velocity after the error closes, the turn ceiling must hold under a
 target whipping side to side, and a new fish must start with no spin.
 
 156 tests.
+
+---
+
+## milestone 6 — the pond becomes the homepage
+
+### what got built
+
+The homepage is now a pond you descend. The canvas is fixed to the viewport
+and reads the scroll position itself; the stones are stepping stones down
+through the water, and each one is a real link.
+
+The copy is down to three lines, as intended:
+
+```
+aidan zheng
+business analytics @ northeastern · boston
+spring 2027 co-op · [target roles — aidan to add]
+```
+
+The interests paragraph moved off the homepage, the link list became stones,
+and the contact links sit at the bottom of the pond — so reaching the bottom
+is how you find them.
+
+### scroll is depth, and it is free
+
+The water is a pure function of position and time, so descending is literally
+adding the scroll offset to `y` before sampling. No extra state, no second
+code path, nothing to keep in sync. That was the payoff from building the
+water as a function back in milestone 5 rather than as a simulation.
+
+Stones live in document coordinates and slide past as you scroll. **The koi
+does not.** A world-anchored fish would be left behind the moment you
+scrolled, leaving three screens of empty water — with one fish it should stay
+with the reader the whole way down.
+
+### the stones are real links
+
+This is the part that matters, and it is worth being precise about why.
+
+The stones are `<a>` elements layered over the canvas, not canvas hit-testing.
+Everything follows from that: they work with a keyboard, they work with a
+screen reader, they work with JavaScript off, and the browser gives them
+focus rings, middle-click, and open-in-new-tab for free. The canvas stays
+`aria-hidden`. **The pond is decoration layered behind functioning HTML,
+never the other way round.**
+
+Hovering or focusing a stone does two things: the stone brightens, and the
+koi swims toward it. Focus counts, not just hover — so tabbing through the
+links lights the pond up exactly the way a pointer does, which makes the
+keyboard path feel like the intended one rather than a fallback.
+
+### two bugs caught before committing
+
+**The navigation disappeared without JavaScript.** The first version measured
+the viewport in an effect and rendered the stone links from the result, which
+meant the server sent zero links and a visitor with JS off had no way to
+reach any other page. The PRD requires the site to work without JavaScript,
+so this was a real failure, not a nicety.
+
+Fixed by positioning the links in pure CSS — `top: 175vh`, `left: 66%`, and
+a `clamp(92px, min(100vw,100vh) * 0.18, 240px)` hit area. CSS can express all
+of that without measuring anything, so the links are plain server-rendered
+HTML. The canvas computes its own pixel positions from the same specs. One
+source of truth, two independent routes to it, and neither depends on the
+other having run.
+
+Verified against the served HTML: all three links, the name, the availability
+line, the contact placeholders and the stone labels are all present with no
+JavaScript executed.
+
+**The labels were unreadable.** Centred on their stones, the text landed on
+the brightest part of the drawing in almost the same pale colour. Two fixes:
+the label moved below the stone, and stones are now drawn in the muted tone
+rather than full ink. A stone is a marker; the label is the thing that has to
+be read.
+
+### verified
+
+| check | result |
+|---|---|
+| no horizontal scroll at 375px | pass, zero overflowing elements |
+| availability line above the fold | pass, 241px of headroom |
+| tab order through the stones | tailor studio → about → resume |
+| links present with JS disabled | all three, in the served HTML |
+| reduced motion | static, and redraws at the new depth after a scroll |
+| `/lab` and `/lab/pond` in production | both 404 |
+
+167 tests.
+
+### not built yet
+
+The fish carrying photographs — a koi that resolves into an ASCII photo as
+you approach it, then into the real photograph under the cursor. That is the
+last piece of the original idea and it needs real photographs to be worth
+building. Stone hover previews of their destination are also still open.

@@ -2,17 +2,17 @@
 
 import { useState } from 'react'
 import { Pond, DEFAULT_POND_SETTINGS, type PondSettings } from '@/components/Pond'
-import type { Stone } from '@/lib/pond/field'
+import type { PondStone } from '@/components/Pond'
 
 /**
  * Candidate stone layout. In the real homepage these become the routes, each
  * with a real <a> layered over it — here they exist to judge whether a stone
  * reads as a stone at all.
  */
-const STONES: Stone[] = [
-  { x: 180, y: 150, radius: 46, href: '/tailor-studio', label: 'tailor studio' },
-  { x: 520, y: 300, radius: 40, href: '/about', label: 'about' },
-  { x: 260, y: 450, radius: 38, href: '/resume', label: 'resume' },
+const STONES: PondStone[] = [
+  { x: 180, worldY: 150, radius: 52 },
+  { x: 520, worldY: 300, radius: 46 },
+  { x: 260, worldY: 450, radius: 44 },
 ]
 
 export function PondBench() {

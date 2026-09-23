@@ -28,6 +28,7 @@ import {
   stepKoi,
   type Koi,
 } from '@/lib/pond/koi'
+import { placeStones, type StoneSpec } from '@/lib/pond/stones'
 import {
   MATERIAL,
   clearField,
@@ -35,7 +36,6 @@ import {
   stampKoi,
   stampStone,
   type Field,
-  type Stone,
 } from '@/lib/pond/field'
 
 export type PondSettings = {
@@ -103,15 +103,45 @@ const KOI_SHADES = 6
  */
 const POND_RAMP = ` ${DEFAULT_RAMP}`
 
+/** A stone as the pond needs it: document coordinates, not viewport ones. */
+export type PondStone = {
+  x: number
+  /** Pixels from the top of the DOCUMENT. */
+  worldY: number
+  radius: number
+}
+
 export type PondProps = {
   className?: string
   settings?: Partial<PondSettings>
-  stones?: readonly Stone[]
+  stones?: readonly PondStone[]
+  /**
+   * Stone specs the pond places itself from its own size. Preferred over
+   * `stones`: it means the page does not have to measure anything, so the
+   * links it renders can be plain server-side HTML.
+   */
+  stoneSpecs?: readonly StoneSpec[]
+  /**
+   * Follow the page scroll, so the water and the stones slide past as the
+   * reader descends. The koi is deliberately NOT world-anchored — see the
+   * note in the frame loop.
+   */
+  scrollDriven?: boolean
+  /** Index of the stone currently hovered or focused, if any. */
+  highlight?: number | null
   /** Reports the measured frame rate, for the lab readout. */
   onStats?: (stats: { fps: number; cellsDrawn: number; cells: number }) => void
 }
 
-export function Pond({ className, settings, stones = [], onStats }: PondProps) {
+export function Pond({
+  className,
+  settings,
+  stones = [],
+  stoneSpecs,
+  scrollDriven = false,
+  highlight = null,
+  onStats,
+}: PondProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const refreshRef = useRef<(() => void) | null>(null)
@@ -121,6 +151,15 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
 
   const stonesRef = useRef(stones)
   stonesRef.current = stones
+
+  const stoneSpecsRef = useRef(stoneSpecs)
+  stoneSpecsRef.current = stoneSpecs
+
+  const highlightRef = useRef(highlight)
+  highlightRef.current = highlight
+
+  const scrollDrivenRef = useRef(scrollDriven)
+  scrollDrivenRef.current = scrollDriven
 
   const onStatsRef = useRef(onStats)
   onStatsRef.current = onStats
@@ -176,6 +215,11 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
       const groundRead = read('--color-ground', '#0b100f')
       const inkRead = read('--color-ink', '#ece7dd')
       const waterRead = read('--color-water', '#243230')
+      // Stones are drawn in the muted tone, not full ink. They sit directly
+      // behind their own labels, and at full strength they compete with the
+      // text for the same pale colour — which makes the navigation, the one
+      // thing on this page that has to be readable, hard to read.
+      const stoneRead = read('--color-muted', '#7f7f7e')
       const koi1 = read('--color-koi-1', '#d2451e')
       const koi2 = read('--color-koi-2', '#f0813a')
       const koi3 = read('--color-koi-3', '#f7efe2')
@@ -204,7 +248,7 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
         gradient.push(`rgb(${mixChannel(0)},${mixChannel(1)},${mixChannel(2)})`)
       }
 
-      colors = [waterRead.css, inkRead.css, ...gradient]
+      colors = [waterRead.css, stoneRead.css, ...gradient]
     }
 
     function colorIndexFor(material: number, tint: number): number {
@@ -275,6 +319,11 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
       const dt = Math.min(0.05, (now - lastTime) / 1000)
       lastTime = now
 
+      // How far down the pond we are. The water is a pure function of
+      // position, so sampling it at an offset costs nothing — descending is
+      // literally just adding a number to y.
+      const worldY = scrollDrivenRef.current ? window.scrollY : 0
+
       // Pointer in local coordinates.
       const rect = container!.getBoundingClientRect()
       const localX = pointerState.x - rect.left
@@ -312,7 +361,7 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
         const y = (row + 0.5) * ch
         for (let col = 0; col < grid.cols; col++) {
           const x = (col + 0.5) * cw
-          const h = waveHeight(x, y, seconds, DEFAULT_WAVES)
+          const h = waveHeight(x, y + worldY, seconds, DEFAULT_WAVES)
           const r = ripplesAt(ripples, x, y, seconds, DEFAULT_RIPPLE_SETTINGS)
           let value = s.waterBase + h * s.waterAmplitude + r * 0.35
           if (value < 0) value = 0
@@ -322,12 +371,55 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
       }
 
       // --- stones, then koi on top ---
-      for (const stone of stonesRef.current) {
-        stampStone(field, stone, s.stoneBrightness, cw, ch)
+      // Stones live in document coordinates and scroll past; the koi does
+      // not. A world-anchored fish would be left behind the moment you
+      // scrolled, leaving empty water for most of the descent — with one
+      // fish it should stay with the reader the whole way down.
+      // Specs win when given: the pond sizes them from its own box, so the
+      // page never has to measure the viewport to render its links.
+      const placed: readonly PondStone[] = stoneSpecsRef.current
+        ? placeStones(stoneSpecsRef.current, width, height).map((p) => ({
+            x: p.x,
+            worldY: p.worldY,
+            radius: p.radius,
+          }))
+        : stonesRef.current
+
+      const visibleStones: { x: number; y: number; radius: number }[] = []
+      for (const stone of placed) {
+        const screenY = stone.worldY - worldY
+        // Skip anything well off-screen rather than stamping into nothing.
+        if (screenY < -stone.radius * 2 || screenY > height + stone.radius * 2) continue
+        visibleStones.push({ x: stone.x, y: screenY, radius: stone.radius })
+      }
+
+      const highlighted = highlightRef.current
+      const target = field
+      placed.forEach((stone, index) => {
+        const screenY = stone.worldY - worldY
+        if (screenY < -stone.radius * 2 || screenY > height + stone.radius * 2) return
+        const lit = index === highlighted
+        stampStone(
+          target,
+          { x: stone.x, y: screenY, radius: stone.radius, href: '', label: '' },
+          // A hovered or focused stone brightens. Focus counts, so tabbing
+          // through the links lights the pond up the same way hovering does.
+          lit ? Math.min(1, s.stoneBrightness * 1.9) : s.stoneBrightness,
+          cw,
+          ch,
+        )
+      })
+
+      // A focused stone pulls the fish, so keyboard users get the same
+      // response to their attention that a pointer gets.
+      let interest = pointer
+      if (highlighted !== null && visibleStones[highlighted]) {
+        const stone = visibleStones[highlighted]!
+        interest = { x: stone.x, y: stone.y }
       }
 
       koi = koi.map((fish) =>
-        stepKoi(fish, koi, pointer, { width, height }, dt, {
+        stepKoi(fish, koi, interest, { width, height }, dt, {
           ...DEFAULT_KOI_SETTINGS,
           attractRadius: s.attractRadius,
           attractStrength: s.attractStrength,
@@ -436,6 +528,13 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
     const resizeObserver = new ResizeObserver(() => refresh())
     resizeObserver.observe(container)
 
+    // Under reduced motion nothing repaints on its own, so a scroll would
+    // leave a frozen frame from the wrong depth.
+    const handleScroll = () => {
+      if (reducedMotionQuery.matches) drawStill()
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
     const themeObserver = new MutationObserver(() => refresh())
     themeObserver.observe(document.documentElement, {
       attributes: true,
@@ -458,6 +557,7 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
       intersectionObserver.disconnect()
       resizeObserver.disconnect()
       themeObserver.disconnect()
+      window.removeEventListener('scroll', handleScroll)
       reducedMotionQuery.removeEventListener('change', handleReducedMotion)
     }
   }, [])
