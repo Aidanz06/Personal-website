@@ -10,9 +10,12 @@
 import { deflateSync } from 'node:zlib'
 import { writeFileSync, mkdirSync } from 'node:fs'
 
-const WIDTH = 1200
-const HEIGHT = 900
-const OUT = 'public/lab/00-test-pattern.png'
+// Dimensions and destination can be overridden, so the same generator can
+// produce a portrait stand-in — sizing bugs that only bite tall photographs
+// are invisible against a landscape test pattern.
+const WIDTH = Number(process.argv[2] ?? 1200)
+const HEIGHT = Number(process.argv[3] ?? 900)
+const OUT = process.argv[4] ?? 'public/lab/00-test-pattern.png'
 
 // --- PNG encoding ----------------------------------------------------------
 
@@ -132,6 +135,6 @@ for (let py = 0; py < HEIGHT; py++) {
   }
 }
 
-mkdirSync('public/lab', { recursive: true })
+mkdirSync(OUT.slice(0, OUT.lastIndexOf('/')), { recursive: true })
 writeFileSync(OUT, encodePng(WIDTH, HEIGHT, pixels))
 console.log(`wrote ${OUT} (${WIDTH}x${HEIGHT})`)

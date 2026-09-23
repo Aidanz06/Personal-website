@@ -29,7 +29,13 @@ import {
   type Koi,
 } from '@/lib/pond/koi'
 import { placeStones, type StoneSpec } from '@/lib/pond/stones'
-import { photoOpacity, revealRect, type PhotoGrid, type Rect } from '@/lib/pond/photo'
+import {
+  fitWithin,
+  photoOpacity,
+  revealRect,
+  type PhotoGrid,
+  type Rect,
+} from '@/lib/pond/photo'
 import type { PhotoStoneSpec } from '@/lib/pond/photoStones'
 import {
   MATERIAL,
@@ -218,7 +224,14 @@ export function Pond({
       grid: PhotoGrid
       aspect: number
     }
-    let loadedPhotos: LoadedPhoto[] = []
+    /**
+     * Sparse, indexed alongside the photo rocks. A photograph is only decoded
+     * when its rock is within reach — twenty full-size camera files decoded
+     * and filtered at mount would stall the page for seconds, and the pond is
+     * the first thing anyone sees.
+     */
+    let loadedPhotos: (LoadedPhoto | null)[] = []
+    let photoLoadState: ('idle' | 'loading' | 'done' | 'failed')[] = []
     /** Smoothed reveal per rock, so opening and closing are eased. */
     let photoReveal = 0
     let revealingIndex: number | null = null
@@ -303,50 +316,54 @@ export function Pond({
      * coordinates, so the region can open to any size without re-sampling the
      * source every frame.
      */
-    async function loadPhotos(): Promise<void> {
-      const sources = (photoStonesRef.current ?? []).map((stone) => stone.src)
-      const loaded: LoadedPhoto[] = []
+    async function loadPhoto(index: number): Promise<void> {
+      const stones = photoStonesRef.current ?? []
+      const spec = stones[index]
+      if (!spec) return
+      if (photoLoadState[index] && photoLoadState[index] !== 'idle') return
+      photoLoadState[index] = 'loading'
 
-      for (const src of sources) {
-        const image = new Image()
-        image.src = src
-        try {
-          await image.decode()
-        } catch {
-          // A missing or broken file should cost one photograph, not the pond.
-          continue
-        }
-        if (image.naturalWidth === 0) continue
-
-        const cols = 150
-        const rows = Math.max(
-          1,
-          Math.round(cols * (image.naturalHeight / image.naturalWidth)),
-        )
-        const sampler = document.createElement('canvas')
-        sampler.width = cols
-        sampler.height = rows
-        const samplerContext = sampler.getContext('2d', { willReadFrequently: true })
-        if (!samplerContext) continue
-        samplerContext.imageSmoothingEnabled = true
-        samplerContext.imageSmoothingQuality = 'high'
-        samplerContext.drawImage(image, 0, 0, cols, rows)
-
-        try {
-          const pixels = samplerContext.getImageData(0, 0, cols, rows).data
-          loaded.push({
-            image,
-            styled: stylise(image),
-            grid: { cols, rows, luminance: luminanceGrid(pixels, cols, rows) },
-            aspect: image.naturalWidth / image.naturalHeight,
-          })
-        } catch {
-          // A cross-origin image taints the canvas; skip it.
-          continue
-        }
+      const image = new Image()
+      image.src = spec.src
+      try {
+        await image.decode()
+      } catch {
+        // A missing or broken file costs one photograph, not the pond.
+        photoLoadState[index] = 'failed'
+        return
+      }
+      if (image.naturalWidth === 0) {
+        photoLoadState[index] = 'failed'
+        return
       }
 
-      loadedPhotos = loaded
+      const cols = 150
+      const rows = Math.max(1, Math.round(cols * (image.naturalHeight / image.naturalWidth)))
+      const sampler = document.createElement('canvas')
+      sampler.width = cols
+      sampler.height = rows
+      const samplerContext = sampler.getContext('2d', { willReadFrequently: true })
+      if (!samplerContext) {
+        photoLoadState[index] = 'failed'
+        return
+      }
+      samplerContext.imageSmoothingEnabled = true
+      samplerContext.imageSmoothingQuality = 'high'
+      samplerContext.drawImage(image, 0, 0, cols, rows)
+
+      try {
+        const pixels = samplerContext.getImageData(0, 0, cols, rows).data
+        loadedPhotos[index] = {
+          image,
+          styled: stylise(image),
+          grid: { cols, rows, luminance: luminanceGrid(pixels, cols, rows) },
+          aspect: image.naturalWidth / image.naturalHeight,
+        }
+        photoLoadState[index] = 'done'
+      } catch {
+        // A cross-origin image taints the canvas.
+        photoLoadState[index] = 'failed'
+      }
     }
 
     /**
@@ -446,7 +463,9 @@ export function Pond({
 
       // The filter's tints come from the theme, so a theme change invalidates
       // every stylised photograph.
-      for (const photo of loadedPhotos) photo.styled = stylise(photo.image)
+      for (const photo of loadedPhotos) {
+        if (photo) photo.styled = stylise(photo.image)
+      }
 
       // Repaint everything on the next frame.
       context!.setTransform(1, 0, 0, 1, 0, 0)
@@ -625,6 +644,16 @@ export function Pond({
 
       const active = activePhotoRef.current
 
+      // Decode what is within reach, and always whatever is open.
+      const preloadMargin = height * 1.5
+      placedRocks.forEach((rock, index) => {
+        const screenY = rock.worldY - worldY
+        if (screenY > -preloadMargin && screenY < height + preloadMargin) {
+          void loadPhoto(index)
+        }
+      })
+      if (active !== null) void loadPhoto(active)
+
       // Which rock is opening, and how far. The reveal is deliberately slow:
       // a picture surfacing out of the water, not a hover state.
       if (active !== null && active !== revealingIndex && photoReveal < 0.02) {
@@ -655,15 +684,20 @@ export function Pond({
         const photo = loadedPhotos[revealingIndex]
         const rock = placedRocks[revealingIndex]
         if (photo && rock) {
-          const targetWidth = Math.min(width * 0.6, 600)
-          const targetHeight = targetWidth / (photo.aspect || 1.5)
+          // Fits both dimensions: a portrait photograph sized on width alone
+          // runs off the top and bottom of the screen.
+          const target = fitWithin(
+            photo.aspect,
+            Math.min(width * 0.6, 600),
+            height * 0.7,
+          )
           const rect = revealRect(
             rock.x,
             rock.worldY - worldY,
             photoReveal,
             rock.radius * 2,
-            targetWidth,
-            targetHeight,
+            target.width,
+            target.height,
             { width, height },
           )
           stampPhoto(field, photo.grid, rect, photoReveal, cw, ch)
@@ -780,7 +814,8 @@ export function Pond({
       if (reducedMotionQuery.matches) drawStill()
     }
 
-    void loadPhotos()
+    photoLoadState = (photoStonesRef.current ?? []).map(() => 'idle')
+    loadedPhotos = (photoStonesRef.current ?? []).map(() => null)
 
     refreshRef.current = refresh
     refresh()

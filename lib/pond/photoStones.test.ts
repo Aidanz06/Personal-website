@@ -7,13 +7,16 @@ import {
 } from './photoStones'
 import { HOME_STONES, POND_DEPTH_VH } from './stones'
 
-const photos = Array.from({ length: 8 }, (_, i) => `/photos/p${i}.jpg`)
+const photos = Array.from({ length: 8 }, (_, i) => ({
+  src: `/_next/image?url=%2Fphotos%2Fp${i}.jpg&w=1200&q=75`,
+  original: `/photos/p${i}.jpg`,
+}))
 
 describe('placePhotoStones', () => {
   it('makes one rock per photograph, in order', () => {
     const placed = placePhotoStones(photos)
     expect(placed).toHaveLength(8)
-    expect(placed.map((p) => p.src)).toEqual(photos)
+    expect(placed.map((p) => p.src)).toEqual(photos.map((p) => p.src))
   })
 
   it('puts every photo rock below every navigation stone', () => {
@@ -60,6 +63,13 @@ describe('placePhotoStones', () => {
       expect(rock.alt).toContain('[')
       expect(rock.alt).toContain('aidan to describe')
     }
+  })
+
+  it('names the original file in the alt text, not the optimiser url', () => {
+    // "/_next/image?url=..." tells nobody which photograph needs describing.
+    const [first] = placePhotoStones(photos)
+    expect(first!.alt).toContain('p0.jpg')
+    expect(first!.alt).not.toContain('_next')
   })
 
   it('handles no photographs at all', () => {

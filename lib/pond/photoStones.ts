@@ -31,8 +31,10 @@ export const PHOTOS_TAIL_VH = 0.9
  * of rocks reads as a list, which is exactly the gallery page this was meant
  * to replace.
  */
-export function placePhotoStones(sources: readonly string[]): PhotoStoneSpec[] {
-  return sources.map((src, index) => {
+export function placePhotoStones(
+  sources: readonly { src: string; original: string }[],
+): PhotoStoneSpec[] {
+  return sources.map((photo, index) => {
     // Alternating sides, nudged by index so it never looks like a zigzag
     // stencil either.
     const left = index % 2 === 0
@@ -40,8 +42,8 @@ export function placePhotoStones(sources: readonly string[]): PhotoStoneSpec[] {
     const xFraction = left ? 0.24 + drift * 0.12 : 0.64 + drift * 0.12
 
     return {
-      src,
-      alt: `[photograph — aidan to describe: ${src.split('/').pop()}]`,
+      src: photo.src,
+      alt: `[photograph — aidan to describe: ${photo.original.split('/').pop()}]`,
       xFraction,
       depthVh: PHOTOS_START_VH + index * PHOTO_STEP_VH,
       radiusFraction: 0.05,

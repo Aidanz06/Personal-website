@@ -1243,3 +1243,59 @@ and regenerated when the theme changes because the tints come from the theme.
 | `/lab`, `/lab/pond` in production | both 404 |
 
 218 tests.
+
+### milestone 6d — real photographs
+
+Thirteen real photographs arrived, and two things broke that a synthetic
+landscape test pattern could never have revealed.
+
+**Six of the thirteen are portrait.** The reveal sized itself on width alone,
+so a tall photograph computed a height larger than the screen and ran off the
+top and bottom. `fitWithin` now constrains both dimensions.
+
+This is worth recording as a general point: the test pattern was landscape,
+so for two milestones the portrait case simply did not exist. A synthetic
+fixture only tests the cases you thought of when you drew it.
+
+**They are 1–3.3MB each, 25MB in total.** The PRD budget is 250KB per image,
+and the pond is the first thing anyone sees. Two fixes:
+
+*Routed through Next's image optimiser.* The canvas loads photographs by URL,
+so pointing at `/_next/image?url=…&w=1200&q=75` costs nothing and returns a
+resized WebP. A photograph never opens wider than 600 CSS pixels, so 1200
+covers a 2× display exactly:
+
+| file | original | optimised | |
+|---|---|---|---|
+| website-05 | 3,415 KB | **320 KB** | 10.6× |
+| website-02 | 2,476 KB | **256 KB** | 9.6× |
+| website-06 | 992 KB | **22 KB** | 45× |
+
+One gotcha: **Next 16 only accepts qualities from an allowlist**, which
+defaults to `[75]`. `q=72` is not "slightly different compression", it is a
+400 from the optimiser — and since the first measurement compared a 3.4MB
+file against a zero-byte error page, it briefly reported the optimiser as
+79,479× more efficient. A number too good to be true generally is.
+
+*Lazy decoding.* Photographs are now decoded and filtered only when their
+rock comes within a screen and a half. Decoding thirteen 2048px files and
+running each through the duotone at mount would stall the page for seconds,
+which is the worst possible moment.
+
+### the filter, confirmed
+
+The reading was right: the filter exists so the photograph does **not** look
+out of place. Against real images the duotone does what the test pattern only
+suggested — greens and greys remap into the pond's water tones, the
+highlights warm toward the koi, and the vignette dissolves the border. It
+reads as something that surfaced out of the water rather than a window opened
+on top of it.
+
+### one thing to look at
+
+Thirteen photographs make the pond **11.5 screens deep**. That is under a
+screen per photograph and the descent is the point, but it is a long page.
+`PHOTO_STEP_VH` in `lib/pond/photoStones.ts` is the single number that
+controls it — 0.62 today, and 0.45 would bring it to about nine screens.
+
+225 tests.

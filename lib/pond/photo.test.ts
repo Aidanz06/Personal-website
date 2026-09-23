@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  fitWithin,
   photoDepthFactor,
   photoOpacity,
   revealRect,
@@ -168,5 +169,51 @@ describe('photoDepthFactor', () => {
       expect(Number.isFinite(f)).toBe(true)
       expect(f).toBe(0)
     }
+  })
+})
+
+describe('fitWithin', () => {
+  it('fills the width when the photograph is wide', () => {
+    const { width, height } = fitWithin(1.5, 600, 500)
+    expect(width).toBeCloseTo(600, 6)
+    expect(height).toBeCloseTo(400, 6)
+  })
+
+  it('is limited by height when the photograph is tall', () => {
+    // The case a landscape test pattern never exercises: sizing on width
+    // alone runs a portrait photograph off the top and bottom of the screen.
+    const { width, height } = fitWithin(0.67, 600, 500)
+    expect(height).toBeLessThanOrEqual(500 + 1e-6)
+    expect(width).toBeLessThan(600)
+  })
+
+  it('never exceeds either bound, for any aspect ratio', () => {
+    for (const aspect of [0.4, 0.67, 1, 1.33, 1.78, 3.2]) {
+      const { width, height } = fitWithin(aspect, 600, 500)
+      expect(width).toBeLessThanOrEqual(600 + 1e-6)
+      expect(height).toBeLessThanOrEqual(500 + 1e-6)
+    }
+  })
+
+  it('preserves the aspect ratio exactly', () => {
+    for (const aspect of [0.5, 1, 1.78]) {
+      const { width, height } = fitWithin(aspect, 600, 500)
+      expect(width / height).toBeCloseTo(aspect, 6)
+    }
+  })
+
+  it('falls back to a sane shape for a nonsense aspect', () => {
+    for (const bad of [0, -2, NaN, Infinity]) {
+      const { width, height } = fitWithin(bad, 600, 500)
+      expect(Number.isFinite(width)).toBe(true)
+      expect(Number.isFinite(height)).toBe(true)
+      expect(width).toBeGreaterThan(0)
+    }
+  })
+
+  it('handles zero bounds without dividing by zero', () => {
+    const { width, height } = fitWithin(1.5, 0, 0)
+    expect(width).toBe(0)
+    expect(height).toBe(0)
   })
 })

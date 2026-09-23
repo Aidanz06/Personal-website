@@ -25,7 +25,11 @@ import { contacts, site } from '@/lib/site'
  * it work with a keyboard, with a screen reader, and with JS off — the pond
  * is decoration layered behind functioning HTML, never the other way round.
  */
-export function PondHome({ photos }: { photos: readonly string[] }) {
+export function PondHome({
+  photos,
+}: {
+  photos: readonly { src: string; original: string }[]
+}) {
   const [highlight, setHighlight] = useState<number | null>(null)
   // Hover and focus open a photo rock; a tap pins it, which is the whole
   // touch story since there is no hover on a phone.

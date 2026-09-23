@@ -121,3 +121,27 @@ export function photoDepthFactor(scrollY: number, viewportHeight: number): numbe
   const end = viewportHeight * 1.05
   return clamp01((scrollY - start) / (end - start))
 }
+
+/**
+ * The largest size a photograph may open to, respecting its aspect ratio.
+ *
+ * Constrains BOTH dimensions. Sizing on width alone is fine until the first
+ * portrait photograph arrives, at which point it computes a height taller
+ * than the screen and the picture runs off the top and bottom — and a
+ * synthetic landscape test pattern never reveals that.
+ */
+export function fitWithin(
+  aspect: number,
+  maxWidth: number,
+  maxHeight: number,
+): { width: number; height: number } {
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1.5
+  const w = Math.max(0, maxWidth)
+  const h = Math.max(0, maxHeight)
+
+  // Widest it can be before it gets too tall.
+  const widthLimitedByHeight = h * safeAspect
+  const width = Math.min(w, widthLimitedByHeight)
+
+  return { width, height: width / safeAspect }
+}
