@@ -297,6 +297,71 @@ describe('stepKoi — burst and glide', () => {
   })
 })
 
+describe('stepKoi — fluidity', () => {
+  it('drives speed from the tail stroke, not from a shove', () => {
+    // Speed should surge and ease with the sweep, twice per beat. An instant
+    // impulse plus a waving tail are two unrelated animations, and the eye
+    // reads the tail as decoration; tying them together is what makes the
+    // fish look like it is pushing itself along.
+    const koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)
+    let current = { ...koi, tailEnergy: 1, dartCooldown: 99 }
+    const speeds: number[] = []
+    for (let i = 0; i < 240; i++) {
+      current = stepKoi(current, [], null, BOUNDS, 1 / 60, DEFAULT_KOI_SETTINGS, () => 0.5)
+      speeds.push(current.speed)
+    }
+    // Count direction changes: a stroke-driven speed oscillates, a decaying
+    // impulse only ever falls.
+    let reversals = 0
+    for (let i = 2; i < speeds.length; i++) {
+      const before = speeds[i - 1]! - speeds[i - 2]!
+      const after = speeds[i]! - speeds[i - 1]!
+      if (Math.sign(before) !== Math.sign(after)) reversals++
+    }
+    expect(reversals).toBeGreaterThan(3)
+  })
+
+  it('keeps swimming gently without ever darting', () => {
+    // Idle tail beating alone must be enough to move it, or the fish stalls
+    // between bursts and looks like it is being dragged.
+    const koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)
+    let current = { ...koi, tailEnergy: 0, dartCooldown: 1e9, speed: 0 }
+    for (let i = 0; i < 300; i++) {
+      current = stepKoi(current, [], null, BOUNDS, 1 / 60, DEFAULT_KOI_SETTINGS, () => 0.5)
+    }
+    expect(current.speed).toBeGreaterThan(5)
+    expect(current.speed).toBeLessThan(45)
+  })
+
+  it('carries momentum through a turn instead of stopping dead', () => {
+    // A fixed turn-rate clamp turns at exactly one speed and halts the
+    // instant it arrives, which is the most mechanical thing a creature can
+    // do. A damped spring keeps rotating briefly after the error closes.
+    const koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)
+    let current = { ...koi, tailEnergy: 1, dartCooldown: 99 }
+    // Ask for a hard turn, then let it settle.
+    for (let i = 0; i < 30; i++) {
+      current = stepKoi(current, [], { x: 500, y: 40 }, BOUNDS, 1 / 60, DEFAULT_KOI_SETTINGS, () => 0.5)
+    }
+    expect(Math.abs(current.angularVelocity)).toBeGreaterThan(0.05)
+  })
+
+  it('never spins faster than its turn ceiling', () => {
+    let koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const rng = seeded(31)
+    for (let i = 0; i < 600; i++) {
+      // Whip the target from side to side to provoke the worst case.
+      const target = i % 20 < 10 ? { x: 60, y: 60 } : { x: 940, y: 540 }
+      koi = stepKoi(koi, [], target, BOUNDS, 1 / 60, DEFAULT_KOI_SETTINGS, rng)
+      expect(Math.abs(koi.angularVelocity)).toBeLessThanOrEqual(DEFAULT_KOI_SETTINGS.turnRate + 1e-6)
+    }
+  })
+
+  it('has no angular velocity at rest', () => {
+    expect(createKoi({ x: 0, y: 0 }, 0, 10, 0).angularVelocity).toBe(0)
+  })
+})
+
 describe('stepKoi — constraints', () => {
   it('stays inside the pond', () => {
     let koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)

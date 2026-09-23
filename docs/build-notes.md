@@ -900,3 +900,46 @@ the surface spans only two ramp characters. That is why it reads as an even
 screen of dots rather than as waves. Raising `waterAmplitude` to around 0.15
 drops the troughs below the blank threshold while lifting the crests, giving
 four levels and actual wave structure. Left at 0.09 pending a look.
+
+### milestone 5c — making the swimming fluid
+
+Tuning: water amplitude stays at 0.09, beat rate 1.3×. The remaining note was
+that the fish should move more naturally.
+
+The cause was structural rather than a value that needed nudging: **the tail
+and the movement were two unrelated animations.** A dart applied an instant
+speed impulse to the body, and separately the tail waved on its own clock.
+Nothing connected them, so the tail read as decoration attached to something
+being dragged along.
+
+Two changes fixed it.
+
+**The tail now does the swimming.** There is no impulse any more. Thrust is
+proportional to how fast the tail is sweeping — `|cos(tailPhase)|` — so it
+peaks at mid-stroke and falls to nothing at each turnaround, twice per beat,
+because a fish pushes on both halves of the sweep. A "dart" is no longer a
+shove; it is a decision to beat harder, and the speed follows from that.
+
+The result is a surge-and-ease in speed that the body's own visible motion
+explains. Measured by tracking the fish across the canvas: displacement
+between samples ranged from 2.5px to 22.1px, an **8.8× surge ratio**. A
+constant-velocity fish would be flat.
+
+It also means the fish never fully stops. Idle tail beating alone settles it
+at around 20px/s, so it drifts between bursts rather than stalling — there is
+a test for that, because a fish that coasts to a halt looks broken.
+
+**Turns carry momentum.** Heading was a fixed turn rate clamped per frame,
+which rotates at exactly one speed and stops dead the instant it arrives —
+the most mechanical thing a creature can do. It is now a damped spring:
+angular velocity accelerates toward the heading error and is damped, so the
+fish leans into a turn, drifts a fraction past, and settles. Still ceilinged,
+and it is still far more agile mid-burst than while gliding, because a fish
+steers with its tail.
+
+Five regression tests cover the new behaviour: speed must oscillate rather
+than only decay, idle beating alone must keep it moving, a turn must retain
+angular velocity after the error closes, the turn ceiling must hold under a
+target whipping side to side, and a new fish must start with no spin.
+
+156 tests.

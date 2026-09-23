@@ -19,6 +19,8 @@ export type Koi = {
   head: Vec
   /** Radians. The fish always faces where it is going. */
   heading: number
+  /** Radians/second. Turns carry momentum instead of stopping dead. */
+  angularVelocity: number
   /** Scalar px/second. Decays constantly and is topped up by darts. */
   speed: number
   /** Spine points from head to tail base, before the tail beat is applied. */
@@ -37,8 +39,14 @@ export type Koi = {
 
 export type KoiSettings = {
   maxSpeed: number
-  /** Radians/second the fish can turn while beating hard. */
+  /** Ceiling on angular velocity, radians/second. */
   turnRate: number
+  /** How hard it pulls its heading toward where it wants to go. */
+  turnAccel: number
+  /** Damping on that turn. Low values let it drift past and settle back. */
+  turnDamping: number
+  /** Forward push from one tail stroke, px/second squared. */
+  thrust: number
   /**
    * How far away the fish notices the pointer.
    *
@@ -54,8 +62,6 @@ export type KoiSettings = {
   separation: number
   /** Distance between spine points. */
   segmentLength: number
-  /** Speed added by one tail burst. */
-  dartImpulse: number
   /** Seconds between bursts, min and max. */
   dartInterval: [number, number]
   /** Fraction of speed lost per second while gliding. */
@@ -70,18 +76,22 @@ export type KoiSettings = {
 export const DEFAULT_KOI_SETTINGS: KoiSettings = {
   maxSpeed: 92,
   turnRate: 1.7,
+  turnAccel: 4.2,
+  turnDamping: 2.4,
+  // Sized against drag: at rest this settles around 20px/s, and a burst of
+  // beating carries it to the speed cap.
+  thrust: 150,
   // Large on purpose — see the field note above. A pond-sized radius means
   // the fish always knows where the cursor is.
   attractRadius: 1400,
   attractStrength: 1.8,
   separation: 130,
   segmentLength: 18,
-  dartImpulse: 56,
   // Long gaps between bursts. Frequent darts read as agitation; a koi should
   // look like it has nowhere to be.
   dartInterval: [1.6, 3.6],
   // Low drag, so a burst carries a long way and the glide is the main event.
-  drag: 0.85,
+  drag: 0.9,
   // Beats per second. A cruising koi is around 1Hz and tops out near 2 — the
   // first version ran at 2.1 idle and 9.6 mid-burst, which is where the
   // jitter came from. Above roughly 3Hz the tail also crosses character cells
@@ -187,38 +197,61 @@ export function stepKoi(
   if (koi.head.y < margin) desiredHeading = turnToward(desiredHeading, Math.PI / 2, (1 - koi.head.y / margin) * Math.PI * 0.8)
   if (koi.head.y > bounds.height - margin) desiredHeading = turnToward(desiredHeading, -Math.PI / 2, (1 - (bounds.height - koi.head.y) / margin) * Math.PI * 0.8)
 
-  // A fish steers with its tail, so it turns far better mid-burst than while
-  // gliding. This is what produces the flick-and-glide arc rather than a
+  // --- turning, with momentum ---
+  // A damped spring on heading rather than a fixed turn rate. A hard rate
+  // clamp turns at exactly one speed and stops dead on arrival, which is the
+  // single most mechanical-looking thing a creature can do. A spring
+  // accelerates into the turn, drifts very slightly past, and settles.
+  //
+  // A fish steers with its tail, so it is far more agile mid-burst than while
+  // gliding — that is what produces a flick-and-glide arc instead of a
   // smooth circle.
   const agility = 0.35 + 0.65 * koi.tailEnergy
-  const heading = turnToward(koi.heading, desiredHeading, settings.turnRate * agility * step)
+  const headingError = wrapAngle(desiredHeading - koi.heading)
 
-  // --- burst ---
+  let angularVelocity =
+    koi.angularVelocity + headingError * settings.turnAccel * agility * step
+  angularVelocity *= Math.exp(-settings.turnDamping * step)
+  const maxTurn = settings.turnRate * agility
+  angularVelocity = Math.min(maxTurn, Math.max(-maxTurn, angularVelocity))
+
+  const heading = wrapAngle(koi.heading + angularVelocity * step)
+
+  // --- the tail does the swimming ---
   let dartCooldown = koi.dartCooldown - step
-  let speed = koi.speed
   let tailEnergy = koi.tailEnergy
   const distance = Math.hypot(target.x - koi.head.x, target.y - koi.head.y)
 
+  // A dart is no longer a shove applied to the body — it is a decision to
+  // beat harder. Speed follows from the tail, which is the whole point:
+  // an instant impulse and a waving tail are two unrelated animations, and
+  // the eye reads the tail as decoration. Driving speed from the stroke makes
+  // the fish visibly push itself along.
   if (dartCooldown <= 0) {
-    const eagerness = chasing ? settings.attractStrength : 1
-    // Ease off once it is basically there, so it hovers instead of
+    // Ease off once it is basically there, so it settles rather than
     // overshooting back and forth across the target.
-    const proximity = Math.min(1, distance / 120)
-    speed += settings.dartImpulse * eagerness * (0.35 + 0.65 * proximity)
-    tailEnergy = 1
+    const proximity = Math.min(1, distance / 140)
+    tailEnergy = Math.min(1, 0.45 + 0.55 * proximity)
     const [lo, hi] = settings.dartInterval
     dartCooldown = (lo + random() * (hi - lo)) / (chasing ? settings.attractStrength : 1)
   }
 
-  // --- glide ---
-  speed *= Math.exp(-settings.drag * step)
-  if (speed > settings.maxSpeed) speed = settings.maxSpeed
-
   tailEnergy = Math.max(0, tailEnergy - step / settings.tailDecay)
 
-  // Tail beats faster mid-burst. The phase is what the render wave rides on.
+  // Tail beats faster when working harder. The phase is what the render wave
+  // rides on, and also what the thrust rides on.
   const beat = settings.baseBeat + settings.dartBeat * tailEnergy
   const tailPhase = koi.tailPhase + beat * step * Math.PI * 2
+
+  // Thrust peaks at mid-stroke and falls to nothing at the turnaround, twice
+  // per beat — a fish pushes on both halves of the sweep. The result is a
+  // gentle surge-and-ease in speed that the body's own motion explains.
+  const stroke = Math.abs(Math.cos(tailPhase))
+  const effort = 0.18 + 0.82 * tailEnergy
+
+  let speed = koi.speed + settings.thrust * stroke * effort * step
+  speed *= Math.exp(-settings.drag * step)
+  if (speed > settings.maxSpeed) speed = settings.maxSpeed
 
   let head = {
     x: koi.head.x + Math.cos(heading) * speed * step,
@@ -237,6 +270,7 @@ export function stepKoi(
     ...koi,
     head,
     heading,
+    angularVelocity,
     speed,
     tailPhase,
     tailEnergy,
@@ -489,6 +523,7 @@ export function createKoi(
   return {
     head,
     heading,
+    angularVelocity: 0,
     speed: 18,
     spine,
     wanderTarget: { x: head.x, y: head.y },

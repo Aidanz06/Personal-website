@@ -70,7 +70,7 @@ export const DEFAULT_POND_SETTINGS: PondSettings = {
   koiCount: 1,
   bodyRadius: DEFAULT_BODY_RADIUS,
   tailAmplitude: 15,
-  beatRate: 1,
+  beatRate: 1.3,
   koiBrightness: 0.95,
   attractRadius: DEFAULT_KOI_SETTINGS.attractRadius,
   attractStrength: DEFAULT_KOI_SETTINGS.attractStrength,
