@@ -4,11 +4,12 @@ import { useEffect, useRef } from 'react'
 import { buildAtlas, atlasTile, type Atlas } from '@/lib/ascii/atlas'
 import { parseCssColor } from '@/lib/ascii/color'
 import { gridDimensions, type Grid } from '@/lib/ascii/grid'
-import { luminance } from '@/lib/ascii/luminance'
+import { luminance, luminanceGrid } from '@/lib/ascii/luminance'
 import { orientRamp, rampIndex } from '@/lib/ascii/ramp'
 import { DEFAULT_RAMP } from '@/lib/ascii/constants'
 import { subscribe, pointerState } from '@/lib/ascii/loop'
 import { stepDegradation } from '@/lib/ascii/degrade'
+import { blendFactor } from '@/lib/ascii/blend'
 import { MAX_CELL_SIZE } from '@/lib/ascii/constants'
 import {
   DEFAULT_WAVES,
@@ -30,10 +31,18 @@ import {
 } from '@/lib/pond/koi'
 import { placeStones, type StoneSpec } from '@/lib/pond/stones'
 import {
+  photoDepthFactor,
+  photoOpacity,
+  revealRect,
+  type PhotoGrid,
+  type Rect,
+} from '@/lib/pond/photo'
+import {
   MATERIAL,
   clearField,
   createField,
   stampKoi,
+  stampPhoto,
   stampStone,
   type Field,
 } from '@/lib/pond/field'
@@ -50,6 +59,10 @@ export type PondSettings = {
   tailAmplitude: number
   /** Multiplier on the tail beat rate. Below 1 is calmer. */
   beatRate: number
+  /** Within this distance of the koi, its photograph is fully open. */
+  photoInnerRadius: number
+  /** Beyond this distance, no photograph at all. */
+  photoOuterRadius: number
   koiBrightness: number
   attractRadius: number
   attractStrength: number
@@ -71,6 +84,8 @@ export const DEFAULT_POND_SETTINGS: PondSettings = {
   bodyRadius: DEFAULT_BODY_RADIUS,
   tailAmplitude: 15,
   beatRate: 1.3,
+  photoInnerRadius: 90,
+  photoOuterRadius: 330,
   koiBrightness: 0.95,
   attractRadius: DEFAULT_KOI_SETTINGS.attractRadius,
   attractStrength: DEFAULT_KOI_SETTINGS.attractStrength,
@@ -129,6 +144,11 @@ export type PondProps = {
   scrollDriven?: boolean
   /** Index of the stone currently hovered or focused, if any. */
   highlight?: number | null
+  /**
+   * Photographs the koi carries. Approaching a fish opens the one it is
+   * holding, in place — there is deliberately no navigation involved.
+   */
+  photos?: readonly string[]
   /** Reports the measured frame rate, for the lab readout. */
   onStats?: (stats: { fps: number; cellsDrawn: number; cells: number }) => void
 }
@@ -140,6 +160,7 @@ export function Pond({
   stoneSpecs,
   scrollDriven = false,
   highlight = null,
+  photos,
   onStats,
 }: PondProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -160,6 +181,9 @@ export function Pond({
 
   const scrollDrivenRef = useRef(scrollDriven)
   scrollDrivenRef.current = scrollDriven
+
+  const photosRef = useRef(photos)
+  photosRef.current = photos
 
   const onStatsRef = useRef(onStats)
   onStatsRef.current = onStats
@@ -187,6 +211,16 @@ export function Pond({
 
     let koi: Koi[] = []
     let ripples: Ripple[] = []
+
+    type LoadedPhoto = { image: HTMLImageElement; grid: PhotoGrid; aspect: number }
+    let loadedPhotos: LoadedPhoto[] = []
+    let photoIndex = 0
+    /** True once the current photograph has been opened most of the way. */
+    let photoWasSeen = false
+    /** Latched open: see the note where it is set. */
+    let photoLatched = false
+    /** Smoothed reveal, so opening and closing are eased rather than abrupt. */
+    let photoReveal = 0
 
     // Previous frame's glyph per cell, so only changed cells are redrawn.
     // -1 means "nothing drawn there yet".
@@ -256,6 +290,58 @@ export function Pond({
       if (material === MATERIAL.stone) return 1
       const step = Math.round(tint * (KOI_SHADES - 1))
       return 2 + Math.min(KOI_SHADES - 1, Math.max(0, step))
+    }
+
+    /**
+     * Reduce each photograph to a brightness grid, once.
+     *
+     * Sampled at a fixed resolution and then read with normalised
+     * coordinates, so the region can open to any size without re-sampling the
+     * source every frame.
+     */
+    async function loadPhotos(): Promise<void> {
+      const sources = photosRef.current ?? []
+      const loaded: LoadedPhoto[] = []
+
+      for (const src of sources) {
+        const image = new Image()
+        image.src = src
+        try {
+          await image.decode()
+        } catch {
+          // A missing or broken file should cost one photograph, not the pond.
+          continue
+        }
+        if (image.naturalWidth === 0) continue
+
+        const cols = 150
+        const rows = Math.max(
+          1,
+          Math.round(cols * (image.naturalHeight / image.naturalWidth)),
+        )
+        const sampler = document.createElement('canvas')
+        sampler.width = cols
+        sampler.height = rows
+        const samplerContext = sampler.getContext('2d', { willReadFrequently: true })
+        if (!samplerContext) continue
+        samplerContext.imageSmoothingEnabled = true
+        samplerContext.imageSmoothingQuality = 'high'
+        samplerContext.drawImage(image, 0, 0, cols, rows)
+
+        try {
+          const pixels = samplerContext.getImageData(0, 0, cols, rows).data
+          loaded.push({
+            image,
+            grid: { cols, rows, luminance: luminanceGrid(pixels, cols, rows) },
+            aspect: image.naturalWidth / image.naturalHeight,
+          })
+        } catch {
+          // A cross-origin image taints the canvas; skip it.
+          continue
+        }
+      }
+
+      loadedPhotos = loaded
     }
 
     // ---- sizing ----------------------------------------------------------
@@ -450,6 +536,70 @@ export function Pond({
         stampKoi(field, fish, s.bodyRadius, s.koiBrightness, cw, ch, s.tailAmplitude, worldY)
       }
 
+      // --- the koi opens into the photograph it is carrying ---
+      // No navigation: approaching the fish IS the interaction. Because the
+      // fish is drawn to the cursor, holding still brings it to you and the
+      // picture opens as it arrives.
+      let photoDraw: { image: HTMLImageElement; rect: Rect; opacity: number } | null = null
+
+      if (loadedPhotos.length > 0 && koi.length > 0) {
+        const carrier = koi[0]!
+        let proximity = 0
+        if (pointer) {
+          const distance = Math.hypot(
+            pointer.x - carrier.head.x,
+            pointer.y - carrier.head.y,
+          )
+          proximity = blendFactor(distance, s.photoInnerRadius, s.photoOuterRadius)
+          // Only in the depths — see photoDepthFactor.
+          proximity *= scrollDrivenRef.current ? photoDepthFactor(worldY, height) : 1
+        }
+
+        // Latch, with a wide gap between opening and closing.
+        //
+        // The koi is attracted to the cursor but circles it rather than
+        // settling on it, so raw proximity hovers somewhere short of 1 and
+        // wobbles — which left the characters permanently half-faded over the
+        // picture like a screen door, and flickering as the fish orbited.
+        // Once you have drawn the fish in, the photograph commits to opening
+        // and stays open until you actually leave.
+        if (proximity > 0.72) photoLatched = true
+        if (proximity < 0.3) photoLatched = false
+
+        const target = photoLatched ? 1 : proximity
+        // Exponential smoothing, frame-rate independent: eases both ways, so
+        // nothing ever snaps between states.
+        photoReveal += (target - photoReveal) * (1 - Math.exp(-6 * dt))
+        const reveal = photoReveal
+
+        // Each full look swaps in the next photograph, so approaching the
+        // fish again shows something new rather than the same picture.
+        if (reveal > 0.9) photoWasSeen = true
+        if (reveal < 0.05 && photoWasSeen) {
+          photoWasSeen = false
+          photoIndex = (photoIndex + 1) % loadedPhotos.length
+        }
+
+        if (reveal > 0.01) {
+          const photo = loadedPhotos[photoIndex % loadedPhotos.length]!
+          const targetWidth = Math.min(width * 0.62, 620)
+          const targetHeight = targetWidth / (photo.aspect || 1.5)
+          const rect = revealRect(
+            carrier.head.x,
+            carrier.head.y - worldY,
+            reveal,
+            s.bodyRadius * 2,
+            targetWidth,
+            targetHeight,
+            { width, height },
+          )
+          stampPhoto(field, photo.grid, rect, reveal, cw, ch)
+
+          const opacity = photoOpacity(reveal)
+          if (opacity > 0.01) photoDraw = { image: photo.image, rect, opacity }
+        }
+      }
+
       // --- draw only what changed ---
       context!.setTransform(1, 0, 0, 1, 0, 0)
       let drawn = 0
@@ -476,6 +626,35 @@ export function Pond({
           const tile = atlasTile(atlas, charIndex, colorIndex)
           if (!tile) continue
           context!.drawImage(atlas.canvas, tile.sx, tile.sy, tileW, tileH, dx, dy, tileW, tileH)
+        }
+      }
+
+      // --- and finally the photograph itself ---
+      // The characters hold until the picture is most of the way open, then
+      // hand over. ASCII is the presentation layer, not a wall: a visitor has
+      // to be able to actually see the photograph.
+      if (photoDraw) {
+        const { image, rect, opacity } = photoDraw
+        context!.save()
+        context!.globalAlpha = opacity
+        context!.drawImage(
+          image,
+          rect.x * dpr,
+          rect.y * dpr,
+          rect.width * dpr,
+          rect.height * dpr,
+        )
+        context!.restore()
+
+        // Those cells now have a photograph painted over them, so the
+        // dirty-cell tracking no longer knows what they show. Invalidate them
+        // or they will never be repainted once the picture closes.
+        const c0 = Math.max(0, Math.floor(rect.x / cw))
+        const c1 = Math.min(grid.cols - 1, Math.ceil((rect.x + rect.width) / cw))
+        const r0 = Math.max(0, Math.floor(rect.y / ch))
+        const r1 = Math.min(grid.rows - 1, Math.ceil((rect.y + rect.height) / ch))
+        for (let row = r0; row <= r1; row++) {
+          for (let col = c0; col <= c1; col++) previousChar[row * grid.cols + col] = -1
         }
       }
 
@@ -526,6 +705,8 @@ export function Pond({
       rebuild()
       if (reducedMotionQuery.matches) drawStill()
     }
+
+    void loadPhotos()
 
     refreshRef.current = refresh
     refresh()

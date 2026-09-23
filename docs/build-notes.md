@@ -1089,3 +1089,76 @@ stays where it was dropped instead of sliding along with the viewport.
 
 Eleven new tests, including one asserting that passing no focus band leaves
 the old behaviour bit-for-bit identical, so the lab is unaffected. 177 tests.
+
+### milestone 6b — the koi carries the photographs
+
+The photography was going to be a link to a page with a grid on it. That was
+rejected as not immersive enough, and rightly — it makes the pond a menu.
+
+Now the koi carries the photographs, and approaching it is the entire
+interaction. There is no navigation, no click, and no gallery page.
+
+### how it works, and why it was nearly free
+
+The pond's compositor was built on the idea that everything is brightness
+written into one field. A photograph is just another source writing into it,
+so the koi dissolving into a picture is a crossfade between two numbers per
+cell rather than a separate animation with its own machinery. The three
+stages come out of one value:
+
+1. **far** — an orange koi
+2. **approaching** — the fish's region crossfades into an ASCII rendering of
+   the photograph, opening outward from the fish
+3. **close** — the real photograph itself
+
+Each photo is reduced to a brightness grid once, at a fixed resolution, then
+read with normalised coordinates — so the region can open to any size without
+resampling the source every frame.
+
+Because the fish is *attracted* to the cursor, you never chase it. You hold
+still, it swims to you, and the picture opens as it arrives. That is the
+payoff for inverting the attraction back in milestone 5a.
+
+Adding a photograph is dropping a file into `public/photos/`. It is read at
+build time, so the page stays static and there is no manifest to keep in step.
+
+### three problems worth recording
+
+**The characters hung over the picture like a screen door.** The koi is drawn
+to the cursor but *circles* it rather than settling on it, so raw proximity
+hovered somewhere short of full and wobbled — leaving the ASCII permanently
+half-faded over the photograph, and flickering as the fish orbited.
+
+Fixed with a latch: past 0.72 the photograph commits to opening, and it does
+not close until proximity drops below 0.3. The wide gap between those two
+numbers is what stops it strobing. The value is then eased with frame-rate
+independent exponential smoothing so neither opening nor closing snaps.
+
+**The dirty-cell optimisation did not know about the photograph.** The
+renderer skips any cell whose character has not changed, which is what makes
+the pond cheap — but the photograph is painted over those cells as a bitmap,
+so the tracker's record of what they show becomes a lie, and they would never
+be repainted once the picture closed. The cells under the photo are now
+invalidated every frame it is visible.
+
+**A photograph opening over the name buried the point of the site.** At the
+surface it covered the availability line, and muted grey text on a bright
+picture is unreadable.
+
+The fix is a design rule rather than a patch: **the koi only carries
+photographs in the depths.** Zero willingness across the first screen, ramping
+to full over the next half — professional at the surface, personal further
+down, which is the structure the pond was supposed to have anyway. Verified:
+holding still at the surface opens nothing (44 grey pixels), and the same
+gesture in the depths opens the picture fully (26,733).
+
+### measured
+
+| | |
+|---|---|
+| koi visible, no photo | 236 orange pixels, 41 grey |
+| photograph fully open | 90 orange, 26,748 grey — the characters are fully covered |
+| after moving away | 218 orange, 36 grey — the pond restores exactly |
+
+198 tests. `public/photos/` currently holds only the synthetic test pattern;
+real photographs drop straight in.

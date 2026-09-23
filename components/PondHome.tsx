@@ -24,7 +24,7 @@ import { contacts, site } from '@/lib/site'
  * it work with a keyboard, with a screen reader, and with JS off — the pond
  * is decoration layered behind functioning HTML, never the other way round.
  */
-export function PondHome() {
+export function PondHome({ photos }: { photos: readonly string[] }) {
   const [highlight, setHighlight] = useState<number | null>(null)
 
   return (
@@ -36,6 +36,7 @@ export function PondHome() {
           stoneSpecs={HOME_STONES}
           scrollDriven
           highlight={highlight}
+          photos={photos}
         />
       </div>
 
@@ -101,6 +102,14 @@ export function PondHome() {
             </Link>
           )
         })}
+
+        {/* --- a hint, at the depth where the koi tends to be --- */}
+        <p
+          className="column absolute inset-x-0 font-mono text-small text-muted"
+          style={{ top: `${(POND_DEPTH_VH - 1.05) * 100}vh` }}
+        >
+          the koi carries photographs down here. hold still and let it come to you.
+        </p>
 
         {/* --- the bottom --- */}
         <footer

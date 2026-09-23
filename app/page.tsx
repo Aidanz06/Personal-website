@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { PondHome } from '@/components/PondHome'
+import { listPhotos } from '@/lib/photos'
 import { site } from '@/lib/site'
 
 export const metadata: Metadata = {
@@ -10,5 +11,6 @@ export const metadata: Metadata = {
 }
 
 export default function Home() {
-  return <PondHome />
+  // Read at build time, so the page stays static.
+  return <PondHome photos={listPhotos()} />
 }

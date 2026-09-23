@@ -14,12 +14,15 @@
 
 import type { Koi } from './koi'
 import { koiSilhouette } from './koi'
+import { samplePhoto, type PhotoGrid, type Rect } from './photo'
 
 /** What a cell is showing, so the draw step knows which colour to use. */
 export const MATERIAL = {
   water: 0,
   koi: 1,
   stone: 2,
+  /** A photograph the koi has opened into. Drawn in ink, not koi colour. */
+  photo: 3,
 } as const
 
 export type Material = (typeof MATERIAL)[keyof typeof MATERIAL]
@@ -167,4 +170,53 @@ export function stampStone(
     cellWidth,
     cellHeight,
   )
+}
+
+/**
+ * Write a photograph into the field, over a rectangular region.
+ *
+ * `blend` crossfades it against whatever is already in each cell, so the koi
+ * dissolves into the picture rather than being replaced by it in one frame.
+ * At blend 1 the photograph wins outright.
+ */
+export function stampPhoto(
+  field: Field,
+  photo: PhotoGrid,
+  rect: Rect,
+  blend: number,
+  cellWidth: number,
+  cellHeight: number,
+): void {
+  if (blend <= 0 || rect.width <= 0 || rect.height <= 0) return
+  const strength = Math.min(1, Math.max(0, blend))
+
+  const fromCol = Math.max(0, Math.floor(rect.x / cellWidth))
+  const toCol = Math.min(field.cols - 1, Math.ceil((rect.x + rect.width) / cellWidth))
+  const fromRow = Math.max(0, Math.floor(rect.y / cellHeight))
+  const toRow = Math.min(field.rows - 1, Math.ceil((rect.y + rect.height) / cellHeight))
+
+  for (let row = fromRow; row <= toRow; row++) {
+    const centreY = (row + 0.5) * cellHeight
+    const v = (centreY - rect.y) / rect.height
+    if (v < 0 || v >= 1) continue
+
+    for (let col = fromCol; col <= toCol; col++) {
+      const centreX = (col + 0.5) * cellWidth
+      const u = (centreX - rect.x) / rect.width
+      if (u < 0 || u >= 1) continue
+
+      const index = row * field.cols + col
+      const value = samplePhoto(photo, u, v)
+      const existing = field.luminance[index] ?? 0
+
+      field.luminance[index] = existing + (value - existing) * strength
+      // The cell only calls itself a photograph once the picture is actually
+      // the dominant contributor; before that it keeps the koi's colouring,
+      // which is what makes the fish look like it is turning into the image.
+      if (strength > 0.5) {
+        field.material[index] = MATERIAL.photo
+        field.tint[index] = 0
+      }
+    }
+  }
 }
