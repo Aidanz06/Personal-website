@@ -18,34 +18,50 @@ export type PhotoStoneSpec = {
 }
 
 /** Where the photo rocks begin, in viewport heights. Below the last nav stone. */
-export const PHOTOS_START_VH = 3.15
-/** Vertical gap between consecutive photo rocks. */
-export const PHOTO_STEP_VH = 0.62
+export const PHOTOS_START_VH = 3.0
+/** Vertical gap between consecutive ROWS of photo rocks. */
+export const PHOTO_STEP_VH = 0.58
+/**
+ * How much lower the second rock of a pair sits than the first.
+ *
+ * Two rocks at identical depth read as a grid, which is the gallery page this
+ * replaced. A small offset keeps them scattered.
+ */
+export const PHOTO_PAIR_OFFSET_VH = 0.16
 /** Empty water below the last rock, so the pond does not end abruptly. */
-export const PHOTOS_TAIL_VH = 0.9
+export const PHOTOS_TAIL_VH = 0.75
+/** Rocks per row. */
+export const PHOTOS_PER_ROW = 2
 
 /**
- * Lay the photographs out down the pond.
+ * Lay the photographs out down the pond, two to a row.
  *
- * Staggered left and right rather than stacked in a column: a vertical line
- * of rocks reads as a list, which is exactly the gallery page this was meant
- * to replace.
+ * One rock per depth step is the obvious layout and it makes the pond
+ * enormous — thirteen photographs came to eleven and a half screens. The
+ * tempting fix is to squeeze the vertical spacing, but that packs the rocks
+ * into a dense column and loses the stepping-stone reading altogether.
+ *
+ * Pairing halves the row count while leaving the vertical rhythm exactly as
+ * it was, which is why the pond gets a third shorter without feeling any more
+ * crowded as you descend past it.
  */
 export function placePhotoStones(
   sources: readonly { src: string; original: string }[],
 ): PhotoStoneSpec[] {
   return sources.map((photo, index) => {
-    // Alternating sides, nudged by index so it never looks like a zigzag
-    // stencil either.
-    const left = index % 2 === 0
-    const drift = ((index * 7) % 5) / 5 // 0, 0.4, 0.8, 0.2, 0.6, repeating
-    const xFraction = left ? 0.24 + drift * 0.12 : 0.64 + drift * 0.12
+    const row = Math.floor(index / PHOTOS_PER_ROW)
+    const isRight = index % PHOTOS_PER_ROW === 1
+
+    // Drift per row, so the two columns are not perfectly straight either.
+    const drift = ((row * 7) % 5) / 5
+    const xFraction = isRight ? 0.64 + drift * 0.12 : 0.22 + drift * 0.12
 
     return {
       src: photo.src,
       alt: `[photograph — aidan to describe: ${photo.original.split('/').pop()}]`,
       xFraction,
-      depthVh: PHOTOS_START_VH + index * PHOTO_STEP_VH,
+      depthVh:
+        PHOTOS_START_VH + row * PHOTO_STEP_VH + (isRight ? PHOTO_PAIR_OFFSET_VH : 0),
       radiusFraction: 0.05,
       // Smaller than a navigation stone's floor: a photo rock is a pebble,
       // and it is never the thing a lost visitor needs to find.
@@ -57,12 +73,12 @@ export function placePhotoStones(
 /**
  * How deep the pond needs to be to hold everything.
  *
- * Without photographs it is just the navigation; each one adds a step.
+ * Without photographs it is just the navigation; each ROW adds a step.
  */
 export function pondDepthVh(photoCount: number, baseDepthVh: number): number {
   if (photoCount <= 0) return baseDepthVh
-  return Math.max(
-    baseDepthVh,
-    PHOTOS_START_VH + (photoCount - 1) * PHOTO_STEP_VH + PHOTOS_TAIL_VH,
-  )
+  const lastRow = Math.floor((photoCount - 1) / PHOTOS_PER_ROW)
+  const deepest =
+    PHOTOS_START_VH + lastRow * PHOTO_STEP_VH + PHOTO_PAIR_OFFSET_VH + PHOTOS_TAIL_VH
+  return Math.max(baseDepthVh, deepest)
 }

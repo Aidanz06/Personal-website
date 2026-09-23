@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   fitWithin,
+  photoMaxWidth,
   photoDepthFactor,
   photoOpacity,
   revealRect,
@@ -215,5 +216,44 @@ describe('fitWithin', () => {
     const { width, height } = fitWithin(1.5, 0, 0)
     expect(width).toBe(0)
     expect(height).toBe(0)
+  })
+})
+
+describe('photoMaxWidth', () => {
+  it('gives a phone nearly the whole width', () => {
+    // 60% of 375 is 225px, which is a thumbnail, not a photograph.
+    const w = photoMaxWidth(375)
+    expect(w).toBeGreaterThan(300)
+    expect(w).toBeLessThanOrEqual(375)
+  })
+
+  it('leaves water around the picture on a desktop', () => {
+    const w = photoMaxWidth(1280)
+    expect(w).toBeLessThan(1280 * 0.62)
+  })
+
+  it('caps on a very wide screen rather than filling it', () => {
+    expect(photoMaxWidth(3840)).toBeLessThanOrEqual(640)
+  })
+
+  it('never exceeds the viewport', () => {
+    for (const w of [320, 375, 414, 768, 1024, 1280, 1920, 3840]) {
+      expect(photoMaxWidth(w)).toBeLessThanOrEqual(w)
+    }
+  })
+
+  it('grows with the viewport', () => {
+    let previous = 0
+    for (const w of [320, 375, 640, 768, 1024, 1280, 1920]) {
+      const value = photoMaxWidth(w)
+      expect(value).toBeGreaterThanOrEqual(previous)
+      previous = value
+    }
+  })
+
+  it('returns 0 for nonsense rather than NaN', () => {
+    for (const bad of [0, -100, NaN]) {
+      expect(photoMaxWidth(bad)).toBe(0)
+    }
   })
 })

@@ -33,7 +33,7 @@ export const HOME_STONES: readonly StoneSpec[] = [
     label: 'tailor studio',
     note: 'the thing i built',
     xFraction: 0.3,
-    depthVh: 1.0,
+    depthVh: 0.95,
     radiusFraction: 0.1,
   },
   {
@@ -41,7 +41,7 @@ export const HOME_STONES: readonly StoneSpec[] = [
     label: 'about',
     note: 'and photography',
     xFraction: 0.66,
-    depthVh: 1.75,
+    depthVh: 1.62,
     radiusFraction: 0.09,
   },
   {
@@ -49,13 +49,13 @@ export const HOME_STONES: readonly StoneSpec[] = [
     label: 'resume',
     note: '',
     xFraction: 0.36,
-    depthVh: 2.5,
+    depthVh: 2.3,
     radiusFraction: 0.085,
   },
 ]
 
 /** Total scroll depth, in viewport heights. Leaves room below the last stone. */
-export const POND_DEPTH_VH = 3.3
+export const POND_DEPTH_VH = 3.05
 
 /** The geometry any placeable rock needs, navigation stone or photo rock. */
 export type Placeable = {

@@ -145,3 +145,20 @@ export function fitWithin(
 
   return { width, height: width / safeAspect }
 }
+
+/**
+ * How wide a photograph may open, for a given viewport.
+ *
+ * Not a fixed fraction. On a desktop 60% leaves the picture sitting in the
+ * pond with water around it, which is the intent — but the same 60% on a
+ * phone is 225 pixels, and at that size a photograph is a thumbnail rather
+ * than something you can actually look at. A narrow screen has nothing else
+ * competing for the space, so it gets nearly all of it.
+ */
+export function photoMaxWidth(viewportWidth: number): number {
+  const w = Number.isFinite(viewportWidth) && viewportWidth > 0 ? viewportWidth : 0
+  if (w === 0) return 0
+  if (w < 640) return w * 0.88
+  if (w < 1024) return w * 0.72
+  return Math.min(w * 0.6, 640)
+}

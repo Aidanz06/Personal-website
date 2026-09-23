@@ -34,6 +34,12 @@ describe('HOME_STONES', () => {
     expect(HOME_STONES[0]!.depthVh).toBeGreaterThanOrEqual(0.9)
   })
 
+  it('keeps the navigation within the first three screens', () => {
+    // Someone who only wants the resume should not have to descend the whole
+    // photography section to find it.
+    expect(Math.max(...HOME_STONES.map((s) => s.depthVh))).toBeLessThanOrEqual(2.5)
+  })
+
   it('staggers the stones horizontally so the path reads as a path', () => {
     // Stones in a vertical line look like a list, not stepping stones.
     for (let i = 1; i < HOME_STONES.length; i++) {
@@ -46,8 +52,9 @@ describe('HOME_STONES', () => {
 describe('placeStones', () => {
   it('puts a stone where its fractions say', () => {
     const [first] = placeStones(HOME_STONES, 1000, 800)
-    expect(first!.x).toBeCloseTo(300, 6)
-    expect(first!.worldY).toBeCloseTo(800, 6)
+    const spec = HOME_STONES[0]!
+    expect(first!.x).toBeCloseTo(1000 * spec.xFraction, 6)
+    expect(first!.worldY).toBeCloseTo(800 * spec.depthVh, 6)
   })
 
   it('scales depth with the viewport, so the descent feels the same anywhere', () => {

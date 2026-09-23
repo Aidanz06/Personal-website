@@ -1299,3 +1299,59 @@ screen per photograph and the descent is the point, but it is a long page.
 controls it — 0.62 today, and 0.45 would bring it to about nine screens.
 
 225 tests.
+
+### milestone 6e — a third off the pond, and photographs you can see
+
+Thirteen photographs made the pond 11.5 screens deep. The brief was to cut
+that by 30–40%.
+
+**Three levers, and they are not equally good.**
+
+*Squeezing the vertical spacing* is the obvious one and the worst. At
+thirteen photographs it needs about 0.29 screens between rocks, which packs
+them into a dense column and loses the stepping-stone reading entirely — the
+thing the layout exists for.
+
+*Trimming the start and the tail* buys about half a screen. Real, but not
+enough alone.
+
+*Pairing two rocks per row* is the answer. It halves the row count while
+leaving the vertical rhythm **exactly as it was**, so the pond gets a third
+shorter without feeling any more crowded as you descend past it. The second
+rock of each pair is offset slightly in depth, because two at identical depth
+reads as a grid — which is the gallery page this replaced.
+
+All three together:
+
+| | before | after |
+|---|---|---|
+| pond depth, 13 photographs | 11.49vh | **7.39vh** |
+| rows of photo rocks | 13 | 7 |
+| navigation stones at | 1.0 / 1.75 / 2.5 | 0.95 / 1.62 / 2.3 |
+
+**35.7% shorter.** Measured in the browser at both 1280×860 and 375×667:
+7.4 screens, thirteen rocks, **zero overlapping pairs**, nothing off-screen
+horizontally, and the availability line still above the fold.
+
+### photographs were a thumbnail on a phone
+
+Pairing prompted a check of how large a photograph actually opens, and on a
+phone the answer was **225×152** — 60% of a 375px screen. That is not a
+photograph, it is a thumbnail.
+
+The fraction is now responsive. A desktop keeps 60% so the picture sits in
+the pond with water around it, which is the intent; a narrow screen has
+nothing else competing for the space, so it gets 88% of it.
+
+| viewport | before | after |
+|---|---|---|
+| 375 (phone) | 225×152 | **330×224** |
+| 768 (tablet) | 461×312 | **553×375** |
+| 1280 (desktop) | 600×407 | 640×434 |
+
+### and the koi is 25% faster again
+
+Top speed 161 → 201, thrust 262 → 328 so the resting cruise scales with it
+rather than only the ceiling.
+
+238 tests.

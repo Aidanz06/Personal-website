@@ -31,6 +31,7 @@ import {
 import { placeStones, type StoneSpec } from '@/lib/pond/stones'
 import {
   fitWithin,
+  photoMaxWidth,
   photoOpacity,
   revealRect,
   type PhotoGrid,
@@ -686,11 +687,7 @@ export function Pond({
         if (photo && rock) {
           // Fits both dimensions: a portrait photograph sized on width alone
           // runs off the top and bottom of the screen.
-          const target = fitWithin(
-            photo.aspect,
-            Math.min(width * 0.6, 600),
-            height * 0.7,
-          )
+          const target = fitWithin(photo.aspect, photoMaxWidth(width), height * 0.7)
           const rect = revealRect(
             rock.x,
             rock.worldY - worldY,
