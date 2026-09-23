@@ -103,6 +103,31 @@ export const DEFAULT_KOI_SETTINGS: KoiSettings = {
   tailDecay: 1.6,
 }
 
+/**
+ * How much faster the koi swims while it is outside the visible band.
+ *
+ * A fish catching up is a fish swimming hard, so this is not a cheat — but
+ * the real reason is impatience. At cruising speed a 700px scroll is a seven
+ * to eleven second wait staring at empty water, and nobody waits that long
+ * to see whether a website has a fish in it.
+ *
+ * Returns 1 inside the band, rising to this ceiling a full band away.
+ */
+export const CATCH_UP_MAX = 3.4
+
+export function catchUpBoost(
+  headY: number,
+  bandTop: number,
+  bandBottom: number,
+): number {
+  const bandHeight = Math.max(1, bandBottom - bandTop)
+  const outside =
+    headY < bandTop ? bandTop - headY : headY > bandBottom ? headY - bandBottom : 0
+  if (!Number.isFinite(outside) || outside <= 0) return 1
+  const t = Math.min(1, outside / bandHeight)
+  return 1 + (CATCH_UP_MAX - 1) * t
+}
+
 /** Spine points per fish. 17 at 18px spacing gives a ~290px body. */
 export const DEFAULT_SEGMENTS = 17
 
@@ -189,8 +214,11 @@ export function stepKoi(
   // threshold is far enough off-screen that the fish simply swims in from the
   // side the reader came from, which is what it would have looked like if it
   // had been keeping up all along.
-  const farAbove = koi.head.y < bandTop - bandHeight * 0.9
-  const farBelow = koi.head.y > bandBottom + bandHeight * 0.9
+  // Half a band, not nearly a whole one. Past this the swim back is longer
+  // than anyone will wait, and re-entering is both faster and — because it
+  // happens well off-screen — invisible.
+  const farAbove = koi.head.y < bandTop - bandHeight * 0.5
+  const farBelow = koi.head.y > bandBottom + bandHeight * 0.5
   if (focus && (farAbove || farBelow)) {
     return enterBand(koi, bounds, bandTop, bandBottom, farAbove, settings, random)
   }
@@ -271,6 +299,7 @@ export function stepKoi(
   const heading = wrapAngle(koi.heading + angularVelocity * step)
 
   // --- the tail does the swimming ---
+  const boostPending = focus ? catchUpBoost(koi.head.y, bandTop, bandBottom) : 1
   let dartCooldown = koi.dartCooldown - step
   let tailEnergy = koi.tailEnergy
   const distance = Math.hypot(target.x - koi.head.x, target.y - koi.head.y)
@@ -290,6 +319,9 @@ export function stepKoi(
   }
 
   tailEnergy = Math.max(0, tailEnergy - step / settings.tailDecay)
+  // Out of sight and hurrying: beat hard, so it arrives already moving
+  // rather than easing in from a glide.
+  if (focus && boostPending > 1.05) tailEnergy = Math.max(tailEnergy, 0.85)
 
   // Tail beats faster when working harder. The phase is what the render wave
   // rides on, and also what the thrust rides on.
@@ -302,9 +334,13 @@ export function stepKoi(
   const stroke = Math.abs(Math.cos(tailPhase))
   const effort = 0.18 + 0.82 * tailEnergy
 
-  let speed = koi.speed + settings.thrust * stroke * effort * step
+  // Swimming hard to catch up with a reader who has scrolled away.
+  const boost = boostPending
+
+  let speed = koi.speed + settings.thrust * boost * stroke * effort * step
   speed *= Math.exp(-settings.drag * step)
-  if (speed > settings.maxSpeed) speed = settings.maxSpeed
+  const ceiling = settings.maxSpeed * boost
+  if (speed > ceiling) speed = ceiling
 
   let head = {
     x: koi.head.x + Math.cos(heading) * speed * step,

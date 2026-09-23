@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Pond } from '@/components/Pond'
 import { HOME_STONES, POND_DEPTH_VH } from '@/lib/pond/stones'
+import { placePhotoStones, pondDepthVh } from '@/lib/pond/photoStones'
 import { contacts, site } from '@/lib/site'
 
 /**
@@ -26,6 +27,14 @@ import { contacts, site } from '@/lib/site'
  */
 export function PondHome({ photos }: { photos: readonly string[] }) {
   const [highlight, setHighlight] = useState<number | null>(null)
+  // Hover and focus open a photo rock; a tap pins it, which is the whole
+  // touch story since there is no hover on a phone.
+  const [hoveredPhoto, setHoveredPhoto] = useState<number | null>(null)
+  const [pinnedPhoto, setPinnedPhoto] = useState<number | null>(null)
+  const activePhoto = pinnedPhoto ?? hoveredPhoto
+
+  const photoStones = placePhotoStones(photos)
+  const depthVh = pondDepthVh(photoStones.length, POND_DEPTH_VH)
 
   return (
     <>
@@ -36,11 +45,12 @@ export function PondHome({ photos }: { photos: readonly string[] }) {
           stoneSpecs={HOME_STONES}
           scrollDriven
           highlight={highlight}
-          photos={photos}
+          photoStones={photoStones}
+          activePhoto={activePhoto}
         />
       </div>
 
-      <main className="relative" style={{ minHeight: `${POND_DEPTH_VH * 100}vh` }}>
+      <main className="relative" style={{ minHeight: `${depthVh * 100}vh` }}>
         {/* --- the surface --- */}
         <section className="column pt-[22vh]">
           <h1 className="font-display text-name font-normal">{site.name}</h1>
@@ -103,18 +113,65 @@ export function PondHome({ photos }: { photos: readonly string[] }) {
           )
         })}
 
-        {/* --- a hint, at the depth where the koi tends to be --- */}
-        <p
-          className="column absolute inset-x-0 font-mono text-small text-muted"
-          style={{ top: `${(POND_DEPTH_VH - 1.05) * 100}vh` }}
-        >
-          the koi carries photographs down here. hold still and let it come to you.
-        </p>
+        {/* --- the photo rocks --- */}
+        {photoStones.length > 0 && (
+          <p
+            className="column absolute inset-x-0 font-mono text-small text-muted"
+            style={{ top: `${(photoStones[0]!.depthVh - 0.42) * 100}vh` }}
+          >
+            photographs. rest on a stone to bring one up.
+          </p>
+        )}
+
+        {photoStones.map((spec, index) => {
+          const size = `clamp(52px, min(100vw, 100vh) * ${(spec.radiusFraction * 2).toFixed(3)}, 240px)`
+          const isActive = activePhoto === index
+          return (
+            <button
+              key={spec.src}
+              type="button"
+              // Not a link: nothing navigates. It is a control that surfaces
+              // a picture in place, so it is a button, and it is focusable so
+              // the keyboard path matches the pointer one.
+              aria-label={spec.alt}
+              aria-pressed={pinnedPhoto === index}
+              className="absolute block cursor-pointer"
+              style={{
+                top: `${spec.depthVh * 100}vh`,
+                left: `${spec.xFraction * 100}%`,
+                width: size,
+                height: size,
+                transform: 'translate(-50%, -50%)',
+              }}
+              onMouseEnter={() => setHoveredPhoto(index)}
+              onMouseLeave={() =>
+                setHoveredPhoto((current) => (current === index ? null : current))
+              }
+              onFocus={() => setHoveredPhoto(index)}
+              onBlur={() =>
+                setHoveredPhoto((current) => (current === index ? null : current))
+              }
+              onClick={() =>
+                setPinnedPhoto((current) => (current === index ? null : index))
+              }
+            >
+              <span
+                className={
+                  isActive
+                    ? 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-accent'
+                    : 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-muted'
+                }
+              >
+                {String(index + 1).padStart(2, '0')}
+              </span>
+            </button>
+          )
+        })}
 
         {/* --- the bottom --- */}
         <footer
           className="column absolute inset-x-0"
-          style={{ top: `${(POND_DEPTH_VH - 0.55) * 100}vh` }}
+          style={{ top: `${(depthVh - 0.5) * 100}vh` }}
         >
           <ul className="flex flex-wrap gap-x-2 gap-y-0.5 text-small">
             {contacts.map((contact) => (

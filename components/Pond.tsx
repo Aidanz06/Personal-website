@@ -9,7 +9,6 @@ import { orientRamp, rampIndex } from '@/lib/ascii/ramp'
 import { DEFAULT_RAMP } from '@/lib/ascii/constants'
 import { subscribe, pointerState } from '@/lib/ascii/loop'
 import { stepDegradation } from '@/lib/ascii/degrade'
-import { blendFactor } from '@/lib/ascii/blend'
 import { MAX_CELL_SIZE } from '@/lib/ascii/constants'
 import {
   DEFAULT_WAVES,
@@ -30,13 +29,8 @@ import {
   type Koi,
 } from '@/lib/pond/koi'
 import { placeStones, type StoneSpec } from '@/lib/pond/stones'
-import {
-  photoDepthFactor,
-  photoOpacity,
-  revealRect,
-  type PhotoGrid,
-  type Rect,
-} from '@/lib/pond/photo'
+import { photoOpacity, revealRect, type PhotoGrid, type Rect } from '@/lib/pond/photo'
+import type { PhotoStoneSpec } from '@/lib/pond/photoStones'
 import {
   MATERIAL,
   clearField,
@@ -144,11 +138,10 @@ export type PondProps = {
   scrollDriven?: boolean
   /** Index of the stone currently hovered or focused, if any. */
   highlight?: number | null
-  /**
-   * Photographs the koi carries. Approaching a fish opens the one it is
-   * holding, in place — there is deliberately no navigation involved.
-   */
-  photos?: readonly string[]
+  /** Photo rocks, placed by the page. */
+  photoStones?: readonly PhotoStoneSpec[]
+  /** Index of the photo rock currently hovered, focused or pinned open. */
+  activePhoto?: number | null
   /** Reports the measured frame rate, for the lab readout. */
   onStats?: (stats: { fps: number; cellsDrawn: number; cells: number }) => void
 }
@@ -160,7 +153,8 @@ export function Pond({
   stoneSpecs,
   scrollDriven = false,
   highlight = null,
-  photos,
+  photoStones,
+  activePhoto = null,
   onStats,
 }: PondProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -182,8 +176,11 @@ export function Pond({
   const scrollDrivenRef = useRef(scrollDriven)
   scrollDrivenRef.current = scrollDriven
 
-  const photosRef = useRef(photos)
-  photosRef.current = photos
+  const photoStonesRef = useRef(photoStones)
+  photoStonesRef.current = photoStones
+
+  const activePhotoRef = useRef(activePhoto)
+  activePhotoRef.current = activePhoto
 
   const onStatsRef = useRef(onStats)
   onStatsRef.current = onStats
@@ -206,21 +203,25 @@ export function Pond({
     let atlas: Atlas | null = null
 
     let ground = '#0b100f'
+    let photoHighlightCss = '#f7efe2'
+    let photoShadowCss = '#243230'
     let ramp = POND_RAMP
     let colors: string[] = []
 
     let koi: Koi[] = []
     let ripples: Ripple[] = []
 
-    type LoadedPhoto = { image: HTMLImageElement; grid: PhotoGrid; aspect: number }
+    type LoadedPhoto = {
+      image: HTMLImageElement
+      /** The photograph, filtered to belong to the pond. See stylise(). */
+      styled: HTMLCanvasElement | null
+      grid: PhotoGrid
+      aspect: number
+    }
     let loadedPhotos: LoadedPhoto[] = []
-    let photoIndex = 0
-    /** True once the current photograph has been opened most of the way. */
-    let photoWasSeen = false
-    /** Latched open: see the note where it is set. */
-    let photoLatched = false
-    /** Smoothed reveal, so opening and closing are eased rather than abrupt. */
+    /** Smoothed reveal per rock, so opening and closing are eased. */
     let photoReveal = 0
+    let revealingIndex: number | null = null
 
     // Previous frame's glyph per cell, so only changed cells are redrawn.
     // -1 means "nothing drawn there yet".
@@ -259,6 +260,9 @@ export function Pond({
       const koi3 = read('--color-koi-3', '#f7efe2')
 
       ground = groundRead.css
+      // The two ends of the duotone: the koi's palest tone and the water.
+      photoHighlightCss = koi3.css
+      photoShadowCss = waterRead.css
 
       const groundLuminance = groundRead.rgb ? luminance(...groundRead.rgb) : 0
       const inkLuminance = inkRead.rgb ? luminance(...inkRead.rgb) : 1
@@ -300,7 +304,7 @@ export function Pond({
      * source every frame.
      */
     async function loadPhotos(): Promise<void> {
-      const sources = photosRef.current ?? []
+      const sources = (photoStonesRef.current ?? []).map((stone) => stone.src)
       const loaded: LoadedPhoto[] = []
 
       for (const src of sources) {
@@ -332,6 +336,7 @@ export function Pond({
           const pixels = samplerContext.getImageData(0, 0, cols, rows).data
           loaded.push({
             image,
+            styled: stylise(image),
             grid: { cols, rows, luminance: luminanceGrid(pixels, cols, rows) },
             aspect: image.naturalWidth / image.naturalHeight,
           })
@@ -342,6 +347,70 @@ export function Pond({
       }
 
       loadedPhotos = loaded
+    }
+
+    /**
+     * Filter a photograph so it belongs to the pond.
+     *
+     * A raw colour photograph appearing inside a monochrome, near-black ASCII
+     * pond looks like a browser window opened on top of the artwork. The
+     * filter is what stops the resolve feeling like the effect simply gave up
+     * at the end: desaturated, tinted toward the koi's warm tones, its blacks
+     * sunk toward the pond's ground, and vignetted so it has no hard
+     * rectangular border.
+     *
+     * Done once per photograph at load rather than per frame, and redone when
+     * the theme changes, because the tints come from the theme.
+     */
+    function stylise(image: HTMLImageElement): HTMLCanvasElement | null {
+      const maxWidth = 1400
+      const scale = Math.min(1, maxWidth / Math.max(1, image.naturalWidth))
+      const w = Math.max(1, Math.round(image.naturalWidth * scale))
+      const h = Math.max(1, Math.round(image.naturalHeight * scale))
+
+      const out = document.createElement('canvas')
+      out.width = w
+      out.height = h
+      const c = out.getContext('2d')
+      if (!c) return null
+
+      // Desaturate and firm up the contrast first.
+      c.filter = 'grayscale(1) contrast(1.14) brightness(1.02)'
+      c.drawImage(image, 0, 0, w, h)
+      c.filter = 'none'
+
+      // Duotone, in the pond's own two colours.
+      //
+      // Multiplying by the highlight tint pulls the bright end toward the
+      // koi's palest tone; screening the shadow tint lifts the dark end to
+      // the colour of the water. Between them the photograph's whole range is
+      // remapped into the palette everything else on the page is drawn in —
+      // which is the difference between a picture that surfaced out of the
+      // pond and a browser window opened on top of the artwork.
+      c.globalCompositeOperation = 'multiply'
+      c.fillStyle = photoHighlightCss
+      c.fillRect(0, 0, w, h)
+
+      c.globalCompositeOperation = 'screen'
+      c.fillStyle = photoShadowCss
+      c.fillRect(0, 0, w, h)
+
+      // Vignette, so the photograph fades into the water instead of ending at
+      // a hard rectangle. The outer stop is inside the corners on purpose:
+      // reach it only at the corners and the edges stay visibly straight.
+      c.globalCompositeOperation = 'source-over'
+      const gradient = c.createRadialGradient(
+        w / 2, h / 2, Math.min(w, h) * 0.2,
+        w / 2, h / 2, Math.max(w, h) * 0.56,
+      )
+      gradient.addColorStop(0, 'rgba(0,0,0,0)')
+      gradient.addColorStop(0.62, 'rgba(0,0,0,0)')
+      gradient.addColorStop(1, ground)
+      c.fillStyle = gradient
+      c.fillRect(0, 0, w, h)
+
+      c.globalCompositeOperation = 'source-over'
+      return out
     }
 
     // ---- sizing ----------------------------------------------------------
@@ -374,6 +443,10 @@ export function Pond({
       const fontFamily =
         styles.getPropertyValue('--font-mono').trim() || 'ui-monospace, monospace'
       atlas = buildAtlas(ramp, colors, grid.cellWidth, grid.cellHeight, fontFamily, dpr)
+
+      // The filter's tints come from the theme, so a theme change invalidates
+      // every stylised photograph.
+      for (const photo of loadedPhotos) photo.styled = stylise(photo.image)
 
       // Repaint everything on the next frame.
       context!.setTransform(1, 0, 0, 1, 0, 0)
@@ -536,67 +609,67 @@ export function Pond({
         stampKoi(field, fish, s.bodyRadius, s.koiBrightness, cw, ch, s.tailAmplitude, worldY)
       }
 
-      // --- the koi opens into the photograph it is carrying ---
-      // No navigation: approaching the fish IS the interaction. Because the
-      // fish is drawn to the cursor, holding still brings it to you and the
-      // picture opens as it arrives.
-      let photoDraw: { image: HTMLImageElement; rect: Rect; opacity: number } | null = null
+      // --- photo rocks ---
+      // Hovering, focusing or tapping a rock opens its photograph in place.
+      // Nothing navigates anywhere: the rock IS the photograph.
+      let photoDraw: { photo: LoadedPhoto; rect: Rect; opacity: number } | null = null
 
-      if (loadedPhotos.length > 0 && koi.length > 0) {
-        const carrier = koi[0]!
-        let proximity = 0
-        if (pointer) {
-          const distance = Math.hypot(
-            pointer.x - carrier.head.x,
-            pointer.y - carrier.head.y,
-          )
-          proximity = blendFactor(distance, s.photoInnerRadius, s.photoOuterRadius)
-          // Only in the depths — see photoDepthFactor.
-          proximity *= scrollDrivenRef.current ? photoDepthFactor(worldY, height) : 1
-        }
+      const rockSpecs = photoStonesRef.current ?? []
+      const placedRocks = rockSpecs.length
+        ? placeStones(rockSpecs, width, height).map((p) => ({
+            x: p.x,
+            worldY: p.worldY,
+            radius: p.radius,
+          }))
+        : []
 
-        // Latch, with a wide gap between opening and closing.
-        //
-        // The koi is attracted to the cursor but circles it rather than
-        // settling on it, so raw proximity hovers somewhere short of 1 and
-        // wobbles — which left the characters permanently half-faded over the
-        // picture like a screen door, and flickering as the fish orbited.
-        // Once you have drawn the fish in, the photograph commits to opening
-        // and stays open until you actually leave.
-        if (proximity > 0.72) photoLatched = true
-        if (proximity < 0.3) photoLatched = false
+      const active = activePhotoRef.current
 
-        const target = photoLatched ? 1 : proximity
-        // Exponential smoothing, frame-rate independent: eases both ways, so
-        // nothing ever snaps between states.
-        photoReveal += (target - photoReveal) * (1 - Math.exp(-6 * dt))
-        const reveal = photoReveal
+      // Which rock is opening, and how far. The reveal is deliberately slow:
+      // a picture surfacing out of the water, not a hover state.
+      if (active !== null && active !== revealingIndex && photoReveal < 0.02) {
+        revealingIndex = active
+      }
+      const opening = active !== null && active === revealingIndex
+      const targetReveal = opening ? 1 : 0
+      // Deliberately slow — roughly two and a half seconds each way. This is
+      // a picture surfacing out of the water, not a hover state, and the
+      // ASCII stage needs time to be seen before the photograph takes over.
+      photoReveal += (targetReveal - photoReveal) * (1 - Math.exp(-1.45 * dt))
+      if (!opening && photoReveal < 0.01) revealingIndex = null
 
-        // Each full look swaps in the next photograph, so approaching the
-        // fish again shows something new rather than the same picture.
-        if (reveal > 0.9) photoWasSeen = true
-        if (reveal < 0.05 && photoWasSeen) {
-          photoWasSeen = false
-          photoIndex = (photoIndex + 1) % loadedPhotos.length
-        }
+      placedRocks.forEach((rock, index) => {
+        const screenY = rock.worldY - worldY
+        if (screenY < -rock.radius * 2 || screenY > height + rock.radius * 2) return
+        const lit = index === active
+        stampStone(
+          target,
+          { x: rock.x, y: screenY, radius: rock.radius, href: '', label: '' },
+          lit ? Math.min(1, s.stoneBrightness * 1.9) : s.stoneBrightness * 0.85,
+          cw,
+          ch,
+        )
+      })
 
-        if (reveal > 0.01) {
-          const photo = loadedPhotos[photoIndex % loadedPhotos.length]!
-          const targetWidth = Math.min(width * 0.62, 620)
+      if (revealingIndex !== null && photoReveal > 0.01) {
+        const photo = loadedPhotos[revealingIndex]
+        const rock = placedRocks[revealingIndex]
+        if (photo && rock) {
+          const targetWidth = Math.min(width * 0.6, 600)
           const targetHeight = targetWidth / (photo.aspect || 1.5)
           const rect = revealRect(
-            carrier.head.x,
-            carrier.head.y - worldY,
-            reveal,
-            s.bodyRadius * 2,
+            rock.x,
+            rock.worldY - worldY,
+            photoReveal,
+            rock.radius * 2,
             targetWidth,
             targetHeight,
             { width, height },
           )
-          stampPhoto(field, photo.grid, rect, reveal, cw, ch)
+          stampPhoto(field, photo.grid, rect, photoReveal, cw, ch)
 
-          const opacity = photoOpacity(reveal)
-          if (opacity > 0.01) photoDraw = { image: photo.image, rect, opacity }
+          const opacity = photoOpacity(photoReveal)
+          if (opacity > 0.01) photoDraw = { photo, rect, opacity }
         }
       }
 
@@ -634,11 +707,12 @@ export function Pond({
       // hand over. ASCII is the presentation layer, not a wall: a visitor has
       // to be able to actually see the photograph.
       if (photoDraw) {
-        const { image, rect, opacity } = photoDraw
+        const { photo, rect, opacity } = photoDraw
+        const source = photo.styled ?? photo.image
         context!.save()
         context!.globalAlpha = opacity
         context!.drawImage(
-          image,
+          source,
           rect.x * dpr,
           rect.y * dpr,
           rect.width * dpr,

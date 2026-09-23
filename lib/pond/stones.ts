@@ -57,8 +57,21 @@ export const HOME_STONES: readonly StoneSpec[] = [
 /** Total scroll depth, in viewport heights. Leaves room below the last stone. */
 export const POND_DEPTH_VH = 3.3
 
-export type PlacedStone = {
-  spec: StoneSpec
+/** The geometry any placeable rock needs, navigation stone or photo rock. */
+export type Placeable = {
+  xFraction: number
+  depthVh: number
+  radiusFraction: number
+  /**
+   * Smallest this rock may become on a narrow screen. Navigation stones keep
+   * a generous floor because they are tap targets; photo rocks are allowed
+   * to be genuinely small.
+   */
+  minRadius?: number
+}
+
+export type Placed<T extends Placeable = StoneSpec> = {
+  spec: T
   /** Pixels from the left of the pond. */
   x: number
   /** Pixels from the top of the DOCUMENT, not the viewport. */
@@ -66,24 +79,26 @@ export type PlacedStone = {
   radius: number
 }
 
+export type PlacedStone = Placed<StoneSpec>
+
 /**
  * Turn the specs into pixel positions for a given viewport.
  *
  * Called by the page, and the result is handed to both the canvas and the
  * link layer — one computation, two consumers, no chance of disagreement.
  */
-export function placeStones(
-  specs: readonly StoneSpec[],
+export function placeStones<T extends Placeable>(
+  specs: readonly T[],
   viewportWidth: number,
   viewportHeight: number,
-): PlacedStone[] {
+): Placed<T>[] {
   const smaller = Math.min(viewportWidth, viewportHeight)
   return specs.map((spec) => ({
     spec,
     x: viewportWidth * spec.xFraction,
     worldY: viewportHeight * spec.depthVh,
-    // Clamped so a stone stays a stone: tiny on a short window reads as a
+    // Clamped so a rock stays a rock: tiny on a short window reads as a
     // speck, huge on a wide one swallows the pond.
-    radius: Math.max(46, Math.min(120, smaller * spec.radiusFraction)),
+    radius: Math.max(spec.minRadius ?? 46, Math.min(120, smaller * spec.radiusFraction)),
   }))
 }

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CATCH_UP_MAX,
+  catchUpBoost,
   DEFAULT_BODY_RADIUS,
   DEFAULT_KOI_SETTINGS,
   DEFAULT_SEGMENTS,
@@ -488,6 +490,79 @@ describe('stepKoi — following the reader down the pond', () => {
     }
     expect(a.head.x).toBeCloseTo(b.head.x, 6)
     expect(a.head.y).toBeCloseTo(b.head.y, 6)
+  })
+})
+
+describe('catchUpBoost', () => {
+  it('does not hurry while it is on screen', () => {
+    expect(catchUpBoost(500, 0, 800)).toBe(1)
+    expect(catchUpBoost(0, 0, 800)).toBe(1)
+    expect(catchUpBoost(800, 0, 800)).toBe(1)
+  })
+
+  it('hurries more the further out of sight it is', () => {
+    const near = catchUpBoost(-100, 0, 800)
+    const far = catchUpBoost(-600, 0, 800)
+    expect(near).toBeGreaterThan(1)
+    expect(far).toBeGreaterThan(near)
+  })
+
+  it('tops out rather than accelerating without limit', () => {
+    expect(catchUpBoost(-100000, 0, 800)).toBeCloseTo(CATCH_UP_MAX, 6)
+    expect(catchUpBoost(100000, 0, 800)).toBeCloseTo(CATCH_UP_MAX, 6)
+  })
+
+  it('works in both directions', () => {
+    expect(catchUpBoost(-400, 0, 800)).toBeCloseTo(catchUpBoost(1200, 0, 800), 6)
+  })
+
+  it('survives a degenerate band', () => {
+    expect(Number.isFinite(catchUpBoost(100, 0, 0))).toBe(true)
+    expect(Number.isFinite(catchUpBoost(NaN, 0, 800))).toBe(true)
+  })
+})
+
+describe('stepKoi — catching up', () => {
+  const WORLD2 = { width: 1000, height: 2400 }
+
+  it('crosses a scroll it can swim much faster than at cruising pace', () => {
+    // The complaint this exists for: at cruising speed a scroll of a few
+    // hundred pixels is a many-second wait staring at empty water.
+    const start = 560
+    const focus = { top: 900, bottom: 1700 }
+
+    const run = (withBand: boolean) => {
+      let koi = createKoi({ x: 500, y: start }, Math.PI / 2, DEFAULT_SEGMENTS, 0.5)
+      const rng = seeded(41)
+      for (let i = 0; i < 180; i++) {
+        koi = stepKoi(koi, [], null, WORLD2, 1 / 60, DEFAULT_KOI_SETTINGS, rng,
+          withBand ? focus : undefined)
+      }
+      return koi.head.y - start
+    }
+
+    // Three seconds of swimming: much further when it knows it is behind.
+    expect(run(true)).toBeGreaterThan(run(false) * 1.4)
+  })
+
+  it('stops hurrying once it is back on screen', () => {
+    let koi = createKoi({ x: 500, y: 1300 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const focus = { top: 900, bottom: 1700 }
+    const rng = seeded(43)
+    for (let i = 0; i < 600; i++) {
+      koi = stepKoi(koi, [], null, WORLD2, 1 / 60, DEFAULT_KOI_SETTINGS, rng, focus)
+      if (koi.head.y >= focus.top && koi.head.y <= focus.bottom) {
+        expect(koi.speed).toBeLessThanOrEqual(DEFAULT_KOI_SETTINGS.maxSpeed + 1e-6)
+      }
+    }
+  })
+
+  it('re-enters after half a band, not nearly a whole one', () => {
+    const focus = { top: 1000, bottom: 1800 }
+    // 0.6 of a band above the top: should relocate rather than swim.
+    const koi = createKoi({ x: 500, y: 1000 - 800 * 0.6 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const after = stepKoi(koi, [], null, WORLD2, 1 / 60, DEFAULT_KOI_SETTINGS, seeded(3), focus)
+    expect(after.head.y).toBeGreaterThan(1000 - 200)
   })
 })
 

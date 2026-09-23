@@ -1162,3 +1162,84 @@ gesture in the depths opens the picture fully (26,733).
 
 198 tests. `public/photos/` currently holds only the synthetic test pattern;
 real photographs drop straight in.
+
+### milestone 6c — photo rocks, and a fish that keeps up
+
+Two notes from review: the koi still took too long to arrive after a scroll,
+and the photographs should live on their own small rocks rather than being
+carried by the fish.
+
+### the fish
+
+Two changes, because the problem had two halves.
+
+**It re-enters sooner.** The threshold was nearly a full screen outside the
+visible band, which left plenty of scrolls in the range where it had to swim
+the whole way back — several seconds of empty water. Now half a band.
+
+**It swims harder while out of sight.** `catchUpBoost` scales both thrust and
+the speed ceiling by how far outside the band it is, up to 3.4× a full band
+away, and it beats its tail hard while doing it so it arrives already moving
+rather than easing in from a glide. A fish catching up is a fish swimming
+hard, so it is not a cheat — but the real reason is impatience: nobody waits
+ten seconds to find out whether a website has a fish in it.
+
+Measured on the page. Previously, after a jump to the bottom of the pond, it
+had not reappeared after six and a half seconds. Now it is visible within
+**700ms** and well into frame by two seconds — and after an ordinary
+one-screen scroll it is back almost immediately.
+
+### photo rocks
+
+The koi no longer carries the photographs. Each one gets its own small rock
+in the depths, and resting on a rock opens its picture in place.
+
+This is better than the fish version for a reason worth recording: **it
+removes the waiting.** With the fish you had to hold still and wait for it to
+swim over, which is charming exactly once. A rock is where you left it.
+
+Photo rocks are deliberately not navigation stones. They are `<button>`
+elements, not links, because nothing navigates — and they are smaller, sit
+below every navigation stone, and carry a number rather than a word. Hover
+and focus both open them, so the keyboard path matches the pointer one;
+tapping pins one open, which is the whole touch story since a phone has no
+hover.
+
+The pond grows to fit them: each photograph adds a step of depth, so
+`public/photos/` can hold two or twenty without the layout being redesigned.
+
+### the filter, and what it is for
+
+A raw colour photograph appearing inside a monochrome near-black ASCII pond
+looks like a browser window opened on top of the artwork. So the real image
+is **duotoned into the pond's own two colours**: multiplying by the koi's
+palest tone pulls the bright end warm, screening the water colour lifts the
+dark end to the colour of the pond. Between them the photograph's whole range
+is remapped into the palette everything else is drawn in. A vignette
+dissolves the edges so it has no hard rectangular border.
+
+*(Read as: the filter exists so the photograph does **not** look out of
+place. If the intent was the opposite — a deliberately jarring, foreign
+object surfacing out of the pond — it is the same code with the duotone
+inverted and the vignette removed, so say the word.)*
+
+The transition is slow on purpose — about two and a half seconds each way.
+The ASCII stage needs time to be seen before the photograph takes it over,
+or the resolve is just a fade.
+
+The stylised version is rendered once per photograph at load, not per frame,
+and regenerated when the theme changes because the tints come from the theme.
+
+### verified
+
+| check | result |
+|---|---|
+| koi back in frame after a full-pond jump | visible in 700ms, previously never within 6.5s |
+| photo opens on hover | 8 → 27,212 grey pixels, and 27 again after leaving |
+| photo opens on keyboard focus alone | 15 → 3,811 |
+| tab order | tailor studio → about → resume → photo rocks |
+| 375px | no horizontal scroll, zero overflowing elements, availability above fold |
+| no JavaScript | 3/3 stone links, photo buttons, and the availability line all served |
+| `/lab`, `/lab/pond` in production | both 404 |
+
+218 tests.
