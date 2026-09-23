@@ -70,6 +70,21 @@
 --------------------------------------------------------------------------- */
 
 @layer base {
+  :root {
+    /* Height of the ASCII header slot on the homepage.
+
+       This is the number that satisfies the hard requirement: at 375px wide
+       the availability line must be visible without scrolling. A fixed
+       400-500px header (as the PRD proposes) eats an iPhone SE screen on its
+       own, so the height is fluid and the mobile end is clamped low. See the
+       fold arithmetic in docs/build-notes.md.
+
+       It is declared here rather than in @theme because Tailwind only emits
+       theme variables it can tie to a utility namespace, and height is not
+       one of them. Used as h-(--header-height). */
+    --header-height: clamp(150px, 28vh, 460px);
+  }
+
   html {
     /* Belt and braces against the 375px no-horizontal-scroll requirement. */
     overflow-x: hidden;

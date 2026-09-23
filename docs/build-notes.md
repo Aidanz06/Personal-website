@@ -120,3 +120,130 @@ criterion the PRD already committed to.
 for links and nothing else. It's a stand-in for the real accent color, which
 is still an open question in the PRD. It's one line in `globals.css`; whatever
 replaces it needs to clear 4.5:1 against `#FAFAF8`.
+
+---
+
+## milestone 2 — routes and layout
+
+### what got built
+
+All four routes, rendering real structure with every unwritten piece marked
+as a visible bracketed placeholder. All four are statically generated — the
+build output labels each one `○ (Static)`, meaning the HTML is produced once
+at build time and no server runs when someone visits.
+
+| route | file | built as |
+|---|---|---|
+| `/` | `app/page.tsx` | React component |
+| `/tailor-studio` | `app/(page)/tailor-studio/page.mdx` | MDX |
+| `/about` | `app/(page)/about/page.mdx` | MDX |
+| `/resume` | `app/(page)/resume/page.mdx` | MDX |
+
+### key decisions
+
+**The folder named `(page)` doesn't appear in any URL.** Parentheses around a
+folder name make it a *route group* in the App Router: it groups files so
+they can share a layout, without becoming a path segment. So the three inner
+pages live together and share one layout file, but the URLs stay flat —
+`/about`, not `/page/about`. This matters because the PRD commits to URL
+stability; those paths get pasted into applications that sit in inboxes for
+months.
+
+The homepage sits outside the group because it's the one page with no back
+link and a different vertical rhythm.
+
+**An `.mdx` file *is* the page.** There's no loader, no `getStaticProps`, no
+parsing step to read. Writing prose in `app/(page)/about/page.mdx` produces
+`/about`. Those files contain no styling and no markup — just headings and
+paragraphs — because all the styling is applied centrally in
+`mdx-components.tsx`. That's the file that says "an `h2` in any MDX file
+renders in the serif at 22px." Editing content never means touching React.
+
+**Page titles come from the MDX file itself.** Each `.mdx` exports a
+`metadata` object, same as a `.tsx` page would. The root layout defines a
+template — `%s — aidan zheng` — so `/about` becomes "about — aidan zheng"
+automatically. The homepage opts out of the template using `title.absolute`,
+or it would read "aidan zheng — aidan zheng".
+
+**Placeholder links have no `href`.** Contact entries in `lib/site.ts` carry
+`href: null` until the real destination exists, and the footer renders those
+as plain muted text instead of as anchors. A placeholder string inside an
+`href` would produce a real, clickable link that silently navigates somewhere
+wrong — worse than an obviously missing one.
+
+**The header slot's height is committed now, before the renderer exists.**
+`components/HeaderSlot.tsx` reserves the exact space `<AsciiImage>` will
+occupy in milestone 3. Because the space is already allocated, the renderer
+can't push the page around when it arrives — that's the Cumulative Layout
+Shift budget in the PRD protected by construction rather than by testing for
+it afterwards.
+
+### the 375px fold requirement, measured
+
+This was the one hard requirement in the milestone, so it's worth explaining
+how it was met and how it was checked.
+
+The PRD proposes a 400–500px ASCII header. On an iPhone SE, which is 667px
+tall and shows roughly 554px of that once Safari's toolbars are accounted
+for, a 460px header consumes the entire screen by itself — the name wouldn't
+fit, let alone the availability line.
+
+So the header height is **fluid, not fixed**:
+
+```css
+--header-height: clamp(150px, 28vh, 460px);
+```
+
+`clamp` takes a minimum, a preferred value, and a maximum. The preferred
+value is 28% of the viewport height, so the header scales with the screen; it
+never shrinks below 150px and never grows past 460px. Small phone gets a
+187px header, desktop gets the full 460px the PRD asked for.
+
+**Verified with real measurements, not arithmetic.** Chrome was driven
+through the DevTools Protocol at emulated mobile viewports — Node 25 ships a
+native WebSocket, so this needed no new dependency and nothing was added to
+the project:
+
+| viewport | header | availability line bottom | visible in Safari | headroom |
+|---|---|---|---|---|
+| 375 × 667 | 187px | 401px | ~554px | **152px** |
+| 375 × 600 | 168px | 383px | ~498px | **115px** |
+
+Both pass, and with margin — while displaying a placeholder that wraps to two
+lines. The real availability line will almost certainly be shorter.
+
+Horizontal scroll was checked on all four routes by comparing the document's
+`scrollWidth` against its `clientWidth` and listing every element whose
+bounding box crosses the viewport edge. **Zero overflowing elements on every
+route.**
+
+### non-obvious things
+
+**A screenshot lied, and measuring caught it.** The first check used Chrome's
+plain `--screenshot` flag with `--window-size=375,667
+--force-device-scale-factor=2`. The resulting image appeared to show text
+spilling past the right gutter — an apparent layout bug. Measuring the actual
+DOM showed the padding was a correct 20px on both sides and nothing
+overflowed at all; the flag combination had rendered at a different CSS
+viewport than the one requested. Re-capturing through the DevTools Protocol,
+where the page's own `innerWidth` can be read back and confirmed as 375,
+produced a correct image.
+
+The lesson worth keeping: for a layout requirement, assert against measured
+numbers from the DOM, not against how a screenshot looks.
+
+**The photo grid has visible outlines, and they're temporary.** Twelve empty
+slots on `/about` are drawn with hairline borders purely so the placeholder
+is visible. Real photographs fill those cells edge to edge and the borders
+come off — the "no boxes, no cards" rule stays intact. The grid is also *not*
+wired to the ASCII renderer; that's explicitly deferred, though the renderer
+is being built so tiles like these can use it later.
+
+**There is no nav bar anywhere.** The homepage carries its three links
+inline, and every other page carries exactly one small link back. A
+persistent header would compete with the ASCII header for attention and add
+furniture to a design whose entire argument is that it has none.
+
+**One attribute exists only for testing.** The availability line carries
+`data-availability` so the fold measurement can find it reliably instead of
+depending on something brittle like "the second paragraph."
