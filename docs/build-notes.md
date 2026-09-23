@@ -591,3 +591,179 @@ measurement disagrees with what you can see, suspect the measurement first.**
 Re-verified on the dark build: no horizontal scroll at 375px, zero
 overflowing elements, the availability line above the fold with 102px of
 headroom, `/lab` still 404s in production, 80 unit tests passing.
+
+---
+
+## milestone 5 — the koi pond (spike)
+
+### what got built
+
+A working ASCII koi pond at `/lab/pond`, dev-only, with sliders for every
+parameter. Water, cursor ripples, fish wakes, koi that steer and school, and
+stones. No new dependencies.
+
+| file | what it does |
+|---|---|
+| `lib/pond/water.ts` | The surface. Three sine waves summed into a height field. |
+| `lib/pond/ripples.ts` | Expanding rings from the cursor and from the fish. |
+| `lib/pond/koi.ts` | Steering, and the spine that makes a body bend. |
+| `lib/pond/field.ts` | The compositor everything writes into. |
+| `lib/ascii/atlas.ts` | Pre-rendered glyphs, so drawing is a blit not a text layout. |
+| `components/Pond.tsx` | The only file that touches a canvas. |
+
+131 unit tests, up from 80.
+
+### the idea that makes it work: one field
+
+Everything in the pond writes brightness into a single buffer, one value per
+character cell. Water writes a height, ripples add to it, stones and fish
+stamp over it. Then the renderer maps that buffer through the density ramp
+and draws characters — exactly the same final step a photograph goes through.
+
+This is why a koi turning into a photograph is going to be cheap when we get
+there: a fish and a photo are not different kinds of thing, they are
+different sources writing into the same field. The morph is a crossfade
+between two numbers, not a special effect.
+
+The field also carries a *material* per cell (water, koi, stone) and, for
+koi, a position along the body. That is what lets colour apply only to the
+fish while everything else stays monochrome.
+
+### the water is a pure function, not a simulation
+
+There is no state in the water at all. `waveHeight(x, y, t)` answers "how
+high is the surface here, now" for any point and any moment, by summing three
+sine waves.
+
+That has three consequences worth knowing. It can be sampled at any
+resolution, so coarsening the grid when the frame rate drops needs no special
+handling. It can be sampled at any *offset*, which is what will make the pond
+scroll as depth in the next milestone. And it is testable without a browser —
+there are tests asserting it stays in range, moves over time, and does not
+visibly repeat across a screen width.
+
+The frequencies are deliberately unrelated. Frequencies sharing a common
+factor tile, and the eye finds the repetition immediately.
+
+### how a chain of dots reads as a fish
+
+Each koi is a head that steers plus a chain of spine points, where every
+point is pulled to sit exactly one segment-length behind the one in front.
+That single constraint produces the S-curve a koi makes when it turns: the
+body cannot pivot instantly, so it trails and bends. No springs, no physics
+engine.
+
+Two details do most of the work:
+
+**The pointer attracts rather than repels.** That is an interaction decision,
+not a physical one. The fish are going to carry the photographs, so they have
+to be catchable — and hovering something that flees is the most frustrating
+interaction there is. Inverting it means you never chase: you hold still and
+a fish comes to you.
+
+**The body is widest just behind the head.** A profile that peaks in the
+middle looks like a grain of rice.
+
+### the performance problem, and whether it survived
+
+Milestone 3's notes said plainly that drawing ~3,600 characters per frame
+would not hold 60fps, and that the photograph renderer only worked because
+its character layer never changes. The pond breaks that assumption — the
+water moves, so characters change every frame.
+
+Two fixes, both measured:
+
+**A glyph atlas.** Every ramp character is pre-rendered once in every colour
+it can appear in, into a sprite sheet. Per frame the renderer blits tiles
+instead of calling `fillText`, which does font matching, shaping and layout
+before it rasterises anything.
+
+**Dirty-cell tracking.** The renderer remembers which character and colour
+each cell showed last frame and skips any cell that has not changed. Water is
+slow and mostly blank, so the overwhelming majority of cells are identical
+frame to frame.
+
+Measured in the browser, at 4,224 cells with five koi and the cursor moving:
+
+> **redrew 50 of 4224 cells last frame — 1%**
+
+Fifty blits per frame instead of four thousand text draws. The concern was
+real and it is gone.
+
+The other half of the cost is computing the field itself, which does touch
+every cell. Benchmarked in Node, away from any browser frame-rate cap:
+
+| | |
+|---|---|
+| cells per frame | 4,224 |
+| live ripples | 14 |
+| field cost per frame | **0.377 ms** |
+| share of a 60fps budget | **2.3%** |
+
+### the fix that mattered most visually
+
+The first version rendered still water as a perfectly regular lattice of
+dots — every single cell drew *something*, so the pond looked like graph
+paper.
+
+The fix is one character: the pond's ramp has a **blank** at its sparse end
+that the photograph ramp does not. The quietest water now draws nothing, and
+the atlas skips it without a blit. After that change, **95.8% of the canvas
+is bare ground** — and the koi are the only bright thing in the frame, which
+is most of why the reference image works.
+
+It survives the automatic ramp flip in both directions: on a dark ground the
+ramp reverses and the blank lands on the dim end; on a light ground it stays
+put and lands on the bright end. Either way the quietest water is empty.
+
+### three bugs, caught by tests and by measuring
+
+**Fish frozen on arrival.** A new koi was seeded with its own position as its
+wander target, so it steered toward the spot it was already on, decelerated
+to a stop, and sat motionless for up to three seconds — exactly while someone
+is deciding whether the page is worth staying on. Caught by a test asserting
+a fish moves with no pointer present.
+
+**The body profile peaked in the middle.** The curve was supposed to be
+widest behind the head; it was widest at the midpoint, which renders as a
+grain of rice rather than a fish. Caught by a test asserting the widest point
+falls in the front half.
+
+**Reduced motion showed an empty box.** Under `prefers-reduced-motion` the
+pond never subscribes to the frame loop, so it draws one still frame instead.
+But the first rebuild runs before layout has given the container a size and
+bails out, and the real rebuild arrives from the ResizeObserver a moment
+later — with nothing left to draw the pond. Found by checking that the canvas
+had any lit pixels at all, rather than just that it wasn't animating. Worth
+noting: the "is it static?" check passed the whole time. A still image and a
+blank one are both perfectly static.
+
+### a sizing finding worth keeping
+
+Character cells are twice as tall as they are wide, so vertical resolution is
+half of horizontal. A fish with a 11px body radius covers barely one row and
+renders as a horizontal dash. It needs ~30px to span three or four rows and
+read as a body. That is now the default and there is a test asserting a koi
+occupies at least three rows.
+
+### how to run it
+
+```
+npm run dev
+```
+
+then **http://localhost:3000/lab/pond**
+
+Sliders for cell size and aspect, water base and amplitude, ripple strength,
+koi count, body radius and brightness, attract radius and strength, and stone
+brightness. The readout under the pond shows live frame rate and what
+fraction of cells actually had to be redrawn.
+
+Both `/lab` and `/lab/pond` 404 in production, verified, with no lab markup
+in the response.
+
+### what is not built yet
+
+Scroll-as-depth, stones as real links with previews, and fish carrying
+photographs. Those are milestone 6, and they should wait until the pond
+itself looks right.
