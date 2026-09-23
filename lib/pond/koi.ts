@@ -74,13 +74,13 @@ export type KoiSettings = {
 }
 
 export const DEFAULT_KOI_SETTINGS: KoiSettings = {
-  maxSpeed: 92,
+  maxSpeed: 161,
   turnRate: 1.7,
   turnAccel: 4.2,
   turnDamping: 2.4,
-  // Sized against drag: at rest this settles around 20px/s, and a burst of
+  // Sized against drag: at rest this settles around 35px/s, and a burst of
   // beating carries it to the speed cap.
-  thrust: 150,
+  thrust: 262,
   // Large on purpose — see the field note above. A pond-sized radius means
   // the fish always knows where the cursor is.
   attractRadius: 1400,
@@ -138,6 +138,19 @@ export function turnToward(from: number, to: number, maxDelta: number): number {
 
 // --- the step -------------------------------------------------------------
 
+/**
+ * The slice of the world the reader can currently see.
+ *
+ * The koi swims in WORLD coordinates, not screen ones — but it is told where
+ * the reader is looking and wanders inside that band. Screen-space would glue
+ * it to the viewport, so scrolling slides the water past a motionless fish;
+ * pure world-space would leave it behind the moment you scrolled, and most of
+ * the descent would be empty water. Wandering within the focus band gives the
+ * behaviour that actually reads right: it lags when you scroll, then swims
+ * back into frame after you.
+ */
+export type FocusBand = { top: number; bottom: number }
+
 export function stepKoi(
   koi: Koi,
   others: readonly Koi[],
@@ -146,20 +159,54 @@ export function stepKoi(
   dt: number,
   settings: KoiSettings = DEFAULT_KOI_SETTINGS,
   random: () => number = Math.random,
+  focus?: FocusBand,
 ): Koi {
   // Guard against a huge dt after a stalled tab, which would otherwise
   // teleport the fish across the pond in a single frame.
   const step = Math.min(Math.max(dt, 0), 0.05)
 
+  // Where is it allowed to wander? The visible band if we were given one,
+  // otherwise the whole pond.
+  const bandTop = focus ? focus.top : 0
+  const bandBottom = focus ? focus.bottom : bounds.height
+  const bandHeight = Math.max(1, bandBottom - bandTop)
+
+  // If the reader has scrolled away, the fish is suddenly a long way outside
+  // the band. Re-target at once rather than waiting out the wander timer —
+  // that wait is the difference between a fish that follows you down and one
+  // that seems to have been abandoned upstream.
+  const slack = bandHeight * 0.35
+  const strandedAbove = koi.head.y < bandTop - slack
+  const strandedBelow = koi.head.y > bandBottom + slack
+
+  // Past a certain distance, swimming back is not a plan. A reader who jumps
+  // to the bottom of a three-screen pond leaves the fish roughly 1,700px
+  // behind, which at any believable swimming speed is a twenty-five second
+  // trip — and the pond sits empty for all of it.
+  //
+  // So beyond a screen's distance it re-enters from the near edge instead,
+  // heading inward. It is a relocation, but never a visible one: the
+  // threshold is far enough off-screen that the fish simply swims in from the
+  // side the reader came from, which is what it would have looked like if it
+  // had been keeping up all along.
+  const farAbove = koi.head.y < bandTop - bandHeight * 0.9
+  const farBelow = koi.head.y > bandBottom + bandHeight * 0.9
+  if (focus && (farAbove || farBelow)) {
+    return enterBand(koi, bounds, bandTop, bandBottom, farAbove, settings, random)
+  }
+
   let wanderTimer = koi.wanderTimer - step
   let wanderTarget = koi.wanderTarget
   const arrived =
     Math.hypot(wanderTarget.x - koi.head.x, wanderTarget.y - koi.head.y) < 70
-  if (wanderTimer <= 0 || arrived) {
+  const targetOutOfBand =
+    wanderTarget.y < bandTop - slack || wanderTarget.y > bandBottom + slack
+
+  if (wanderTimer <= 0 || arrived || strandedAbove || strandedBelow || targetOutOfBand) {
     // Keep away from the very edges so it does not spend its life in a corner.
     wanderTarget = {
       x: bounds.width * (0.12 + random() * 0.76),
-      y: bounds.height * (0.12 + random() * 0.76),
+      y: bandTop + bandHeight * (0.15 + random() * 0.7),
     }
     wanderTimer = 2.2 + random() * 3.4
   }
@@ -194,8 +241,14 @@ export function stepKoi(
   const margin = 90
   if (koi.head.x < margin) desiredHeading = turnToward(desiredHeading, 0, (1 - koi.head.x / margin) * Math.PI * 0.8)
   if (koi.head.x > bounds.width - margin) desiredHeading = turnToward(desiredHeading, Math.PI, (1 - (bounds.width - koi.head.x) / margin) * Math.PI * 0.8)
-  if (koi.head.y < margin) desiredHeading = turnToward(desiredHeading, Math.PI / 2, (1 - koi.head.y / margin) * Math.PI * 0.8)
-  if (koi.head.y > bounds.height - margin) desiredHeading = turnToward(desiredHeading, -Math.PI / 2, (1 - (bounds.height - koi.head.y) / margin) * Math.PI * 0.8)
+
+  // Vertically it is turned back at the edges of the VISIBLE band, not of the
+  // whole document — in a pond three screens deep, document edges would only
+  // matter twice in the entire descent.
+  const topEdge = bandTop + margin
+  const bottomEdge = bandBottom - margin
+  if (koi.head.y < topEdge) desiredHeading = turnToward(desiredHeading, Math.PI / 2, Math.min(1, (topEdge - koi.head.y) / margin) * Math.PI * 0.8)
+  if (koi.head.y > bottomEdge) desiredHeading = turnToward(desiredHeading, -Math.PI / 2, Math.min(1, (koi.head.y - bottomEdge) / margin) * Math.PI * 0.8)
 
   // --- turning, with momentum ---
   // A damped spring on heading rather than a fixed turn rate. A hard rate
@@ -260,6 +313,8 @@ export function stepKoi(
 
   // Hard clamp as a safety net; the wall steering above should mean this
   // almost never fires.
+  // Clamped to the pond, not to the band: the fish is allowed to be
+  // off-screen, which is exactly what lets it swim back in.
   const edge = 8
   head = {
     x: Math.min(bounds.width - edge, Math.max(edge, head.x)),
@@ -537,5 +592,58 @@ export function createKoi(
     tailPhase: Math.random() * Math.PI * 2,
     tailEnergy: 0.5,
     dartCooldown: 0,
+  }
+}
+
+/**
+ * Re-enter the visible band from whichever edge the fish was stranded beyond,
+ * pointing inward with its body trailing off-screen behind it.
+ *
+ * Deterministic given `random`, so the behaviour can be tested.
+ */
+function enterBand(
+  koi: Koi,
+  bounds: { width: number; height: number },
+  bandTop: number,
+  bandBottom: number,
+  fromAbove: boolean,
+  settings: KoiSettings,
+  random: () => number,
+): Koi {
+  const margin = settings.segmentLength * 3
+  const entryY = fromAbove ? bandTop - margin : bandBottom + margin
+  // Pointing into the band: down when entering from the top, up from below.
+  const heading = fromAbove ? Math.PI / 2 : -Math.PI / 2
+
+  const x = Math.min(
+    bounds.width * 0.85,
+    Math.max(bounds.width * 0.15, bounds.width * (0.2 + random() * 0.6)),
+  )
+  const head = { x, y: Math.min(bounds.height - 8, Math.max(8, entryY)) }
+
+  const spine: Vec[] = []
+  for (let i = 0; i < koi.spine.length; i++) {
+    spine.push({
+      x: head.x - Math.cos(heading) * settings.segmentLength * i,
+      y: head.y - Math.sin(heading) * settings.segmentLength * i,
+    })
+  }
+
+  return {
+    ...koi,
+    head,
+    heading,
+    angularVelocity: 0,
+    // Arrives with some way on, so it glides in rather than appearing and
+    // then starting from a standstill.
+    speed: settings.maxSpeed * 0.45,
+    spine,
+    wanderTarget: {
+      x: bounds.width * (0.2 + random() * 0.6),
+      y: bandTop + (bandBottom - bandTop) * (0.25 + random() * 0.5),
+    },
+    wanderTimer: 2 + random() * 2,
+    tailEnergy: 0.9,
+    dartCooldown: 0.4,
   }
 }

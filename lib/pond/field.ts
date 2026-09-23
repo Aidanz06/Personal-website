@@ -121,12 +121,14 @@ export function stampKoi(
   cellWidth: number,
   cellHeight: number,
   tailAmplitude?: number,
+  /** Subtracted from every y, to turn world coordinates into screen ones. */
+  offsetY = 0,
 ): void {
   for (const stamp of koiSilhouette(koi, bodyRadius, tailAmplitude)) {
     stampBlob(
       field,
       stamp.x,
-      stamp.y,
+      stamp.y - offsetY,
       stamp.radius,
       brightness * stamp.strength,
       MATERIAL.koi,

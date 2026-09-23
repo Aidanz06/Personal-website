@@ -362,6 +362,135 @@ describe('stepKoi — fluidity', () => {
   })
 })
 
+describe('stepKoi — following the reader down the pond', () => {
+  // A pond three screens deep, with the reader looking at the second screen.
+  const WORLD = { width: 1000, height: 2400 }
+  const band = (top: number) => ({ top, bottom: top + 800 })
+
+  const swim = (koi: Koi, focus: { top: number; bottom: number }, frames: number, rng = seeded(23)) => {
+    let current = koi
+    for (let i = 0; i < frames; i++) {
+      current = stepKoi(current, [], null, WORLD, 1 / 60, DEFAULT_KOI_SETTINGS, rng, focus)
+    }
+    return current
+  }
+
+  it('re-enters from the near edge when the reader jumps a long way', () => {
+    // Swimming the whole distance would take ~25 seconds across a
+    // three-screen pond, and the water would be empty for all of it.
+    const koi = createKoi({ x: 500, y: 100 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const focus = band(1500)
+    const after = stepKoi(koi, [], null, WORLD, 1 / 60, DEFAULT_KOI_SETTINGS, seeded(3), focus)
+
+    // Just outside the top edge, pointing down into view.
+    expect(after.head.y).toBeLessThan(focus.top)
+    expect(after.head.y).toBeGreaterThan(focus.top - 200)
+    expect(after.heading).toBeCloseTo(Math.PI / 2, 6)
+    expect(after.speed).toBeGreaterThan(0)
+  })
+
+  it('re-enters from below when the reader scrolls back up', () => {
+    const koi = createKoi({ x: 500, y: 2300 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const focus = band(0)
+    const after = stepKoi(koi, [], null, WORLD, 1 / 60, DEFAULT_KOI_SETTINGS, seeded(3), focus)
+    expect(after.head.y).toBeGreaterThan(focus.bottom)
+    expect(after.heading).toBeCloseTo(-Math.PI / 2, 6)
+  })
+
+  it('does not relocate for a scroll it can simply swim after', () => {
+    // Relocating on a small scroll would be visible, and wrong.
+    const koi = createKoi({ x: 500, y: 700 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const after = stepKoi(koi, [], null, WORLD, 1 / 60, DEFAULT_KOI_SETTINGS, seeded(3), band(800))
+    expect(Math.hypot(after.head.x - 500, after.head.y - 700)).toBeLessThan(20)
+  })
+
+  it('keeps its spine intact when it re-enters', () => {
+    const koi = createKoi({ x: 500, y: 100 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const after = stepKoi(koi, [], null, WORLD, 1 / 60, DEFAULT_KOI_SETTINGS, seeded(3), band(1500))
+    expect(after.spine).toHaveLength(DEFAULT_SEGMENTS)
+    for (let i = 1; i < after.spine.length; i++) {
+      const d = Math.hypot(
+        after.spine[i]!.x - after.spine[i - 1]!.x,
+        after.spine[i]!.y - after.spine[i - 1]!.y,
+      )
+      expect(d).toBeCloseTo(DEFAULT_KOI_SETTINGS.segmentLength, 6)
+    }
+  })
+
+  it('swims back into frame after the reader scrolls away', () => {
+    // The whole point. Screen-space glues the fish to the viewport; pure
+    // world-space abandons it upstream and leaves the descent empty.
+    const koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const after = swim(koi, band(1200), 900)
+    expect(after.head.y).toBeGreaterThan(1200)
+    expect(after.head.y).toBeLessThan(2000)
+  })
+
+  it('heads downward immediately, not after the wander timer expires', () => {
+    // Waiting out the timer is the difference between a fish that follows you
+    // and one that looks abandoned.
+    const koi = {
+      ...createKoi({ x: 500, y: 200 }, 0, DEFAULT_SEGMENTS, 0.5),
+      wanderTarget: { x: 500, y: 200 },
+      wanderTimer: 999,
+    }
+    const after = swim(koi, band(1400), 8)
+    expect(after.wanderTarget.y).toBeGreaterThan(1400)
+  })
+
+  it('stays within the visible band once it has caught up', () => {
+    const koi = createKoi({ x: 500, y: 1600 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const focus = band(1200)
+    let current = koi
+    const rng = seeded(29)
+    let strayed = 0
+    for (let i = 0; i < 1800; i++) {
+      current = stepKoi(current, [], null, WORLD, 1 / 60, DEFAULT_KOI_SETTINGS, rng, focus)
+      if (current.head.y < focus.top - 400 || current.head.y > focus.bottom + 400) strayed++
+    }
+    expect(strayed).toBe(0)
+  })
+
+  it('follows a reader scrolling continuously downward', () => {
+    let current = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const rng = seeded(31)
+    let top = 0
+    for (let i = 0; i < 1500; i++) {
+      top = Math.min(1600, top + 1.1) // a steady scroll
+      current = stepKoi(current, [], null, WORLD, 1 / 60, DEFAULT_KOI_SETTINGS, rng, band(top))
+    }
+    // It should be somewhere near the reader, not stranded at the surface.
+    expect(current.head.y).toBeGreaterThan(1200)
+  })
+
+  it('may leave the screen, but never the pond', () => {
+    // Being briefly off-screen is what lets it swim back in.
+    let current = createKoi({ x: 500, y: 1200 }, 0, DEFAULT_SEGMENTS, 0.5)
+    const rng = seeded(37)
+    for (let i = 0; i < 1200; i++) {
+      const top = i % 200 < 100 ? 0 : 1600 // reader jumping about
+      current = stepKoi(current, [], null, WORLD, 1 / 60, DEFAULT_KOI_SETTINGS, rng, band(top))
+      expect(current.head.y).toBeGreaterThanOrEqual(0)
+      expect(current.head.y).toBeLessThanOrEqual(WORLD.height)
+    }
+  })
+
+  it('behaves exactly as before when given no band', () => {
+    const koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)
+    let a = koi
+    let b = koi
+    for (let i = 0; i < 200; i++) {
+      a = stepKoi(a, [], null, { width: 1000, height: 600 }, 1 / 60, DEFAULT_KOI_SETTINGS, seeded(5))
+      b = stepKoi(b, [], null, { width: 1000, height: 600 }, 1 / 60, DEFAULT_KOI_SETTINGS, seeded(5), {
+        top: 0,
+        bottom: 600,
+      })
+    }
+    expect(a.head.x).toBeCloseTo(b.head.x, 6)
+    expect(a.head.y).toBeCloseTo(b.head.y, 6)
+  })
+})
+
 describe('stepKoi — constraints', () => {
   it('stays inside the pond', () => {
     let koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)

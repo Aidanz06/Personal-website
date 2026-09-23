@@ -299,9 +299,10 @@ export function Pond({
 
     function seedKoi(): void {
       const count = Math.max(0, Math.round(settingsRef.current.koiCount))
+      const seedTop = scrollDrivenRef.current ? window.scrollY : 0
       koi = Array.from({ length: count }, (_, i) =>
         createKoi(
-          { x: Math.random() * width, y: Math.random() * height },
+          { x: Math.random() * width, y: seedTop + Math.random() * height },
           Math.random() * Math.PI * 2,
           DEFAULT_SEGMENTS,
           i / Math.max(1, count - 1),
@@ -323,16 +324,25 @@ export function Pond({
       // position, so sampling it at an offset costs nothing — descending is
       // literally just adding a number to y.
       const worldY = scrollDrivenRef.current ? window.scrollY : 0
+      // The koi swims the whole document; the viewport is only the part of it
+      // the reader happens to be looking at.
+      const worldHeight = scrollDrivenRef.current
+        ? Math.max(height, document.documentElement.scrollHeight)
+        : height
+      const focusBand = { top: worldY, bottom: worldY + height }
 
       // Pointer in local coordinates.
       const rect = container!.getBoundingClientRect()
       const localX = pointerState.x - rect.left
       const localY = pointerState.y - rect.top
+      // World coordinates, so a ripple stays where it was dropped instead of
+      // sliding with the viewport.
+      const worldPointerY = localY + worldY
       const pointerInside =
         pointerState.seen &&
         localX >= -80 && localX <= width + 80 &&
         localY >= -80 && localY <= height + 80
-      const pointer = pointerInside ? { x: localX, y: localY } : null
+      const pointer = pointerInside ? { x: localX, y: worldPointerY } : null
 
       // Drop a ripple as the pointer moves, rate limited so a fast mouse does
       // not flood the list.
@@ -362,7 +372,7 @@ export function Pond({
         for (let col = 0; col < grid.cols; col++) {
           const x = (col + 0.5) * cw
           const h = waveHeight(x, y + worldY, seconds, DEFAULT_WAVES)
-          const r = ripplesAt(ripples, x, y, seconds, DEFAULT_RIPPLE_SETTINGS)
+          const r = ripplesAt(ripples, x, y + worldY, seconds, DEFAULT_RIPPLE_SETTINGS)
           let value = s.waterBase + h * s.waterAmplitude + r * 0.35
           if (value < 0) value = 0
           else if (value > 1) value = 1
@@ -415,20 +425,29 @@ export function Pond({
       let interest = pointer
       if (highlighted !== null && visibleStones[highlighted]) {
         const stone = visibleStones[highlighted]!
-        interest = { x: stone.x, y: stone.y }
+        interest = { x: stone.x, y: stone.y + worldY }
       }
 
       koi = koi.map((fish) =>
-        stepKoi(fish, koi, interest, { width, height }, dt, {
-          ...DEFAULT_KOI_SETTINGS,
-          attractRadius: s.attractRadius,
-          attractStrength: s.attractStrength,
-          baseBeat: DEFAULT_KOI_SETTINGS.baseBeat * s.beatRate,
-          dartBeat: DEFAULT_KOI_SETTINGS.dartBeat * s.beatRate,
-        }),
+        stepKoi(
+          fish,
+          koi,
+          interest,
+          { width, height: worldHeight },
+          dt,
+          {
+            ...DEFAULT_KOI_SETTINGS,
+            attractRadius: s.attractRadius,
+            attractStrength: s.attractStrength,
+            baseBeat: DEFAULT_KOI_SETTINGS.baseBeat * s.beatRate,
+            dartBeat: DEFAULT_KOI_SETTINGS.dartBeat * s.beatRate,
+          },
+          Math.random,
+          focusBand,
+        ),
       )
       for (const fish of koi) {
-        stampKoi(field, fish, s.bodyRadius, s.koiBrightness, cw, ch, s.tailAmplitude)
+        stampKoi(field, fish, s.bodyRadius, s.koiBrightness, cw, ch, s.tailAmplitude, worldY)
       }
 
       // --- draw only what changed ---

@@ -1038,3 +1038,54 @@ The fish carrying photographs — a koi that resolves into an ASCII photo as
 you approach it, then into the real photograph under the cursor. That is the
 last piece of the original idea and it needs real photographs to be worth
 building. Stone hover previews of their destination are also still open.
+
+### milestone 6a — the koi follows you down
+
+Three notes from review: the fish stayed put as the pond scrolled past it,
+it should swim into frame as the reader descends, and it should be 1.75×
+faster.
+
+**The fish was glued to the viewport** because it swam in screen
+coordinates. Scrolling moved the water and the stones past a fish that never
+moved — which reads as a sticker on the glass rather than an animal in the
+water.
+
+The fix is neither extreme. Screen-space glues it to the viewport; pure
+world-space abandons it the moment you scroll, and most of a three-screen
+descent would be empty water. Instead the koi now swims in **world
+coordinates** but is told which slice of the world the reader can see — a
+*focus band* — and wanders inside it. So it lags behind a scroll and then
+swims after you, which is the behaviour that actually reads as a creature
+following you down.
+
+Two details make it work:
+
+- It re-targets **immediately** when the band moves away, rather than waiting
+  out its wander timer. That wait is the difference between a fish that
+  follows you and one that looks abandoned upstream.
+- It is turned back at the edges of the **visible band**, not of the
+  document. In a pond three screens deep, document edges would only come up
+  twice in the entire descent.
+
+**Re-entry, for jumps it cannot swim.** A reader who scrolls straight to the
+bottom leaves the fish roughly 1,700px behind — a twenty-five second trip at
+any believable swimming speed, with the pond empty for all of it. So beyond
+about a screen's distance the koi re-enters from the near edge instead,
+pointing inward with its body trailing off-screen behind it.
+
+It is a relocation, but never a visible one: the threshold is far enough
+off-screen that what you see is a fish swimming in from the side you came
+from, exactly as if it had been keeping up. Measured on the real page, after
+a jump to the bottom of the pond it appears at the very top edge and descends
+into view over the next few seconds.
+
+**Speed ×1.75.** Top speed 92 → 161, and thrust 150 → 262 so the resting
+cruise scales with it rather than only the ceiling. The beat rate is
+unchanged, so the fish covers more ground per stroke — which reads as more
+powerful rather than more frantic.
+
+Ripples and the pointer moved into world coordinates too, so a ripple now
+stays where it was dropped instead of sliding along with the viewport.
+
+Eleven new tests, including one asserting that passing no focus band leaves
+the old behaviour bit-for-bit identical, so the lab is unaffected. 177 tests.
