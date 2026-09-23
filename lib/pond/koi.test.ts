@@ -183,8 +183,11 @@ describe('stepKoi — attraction', () => {
     const far = Math.hypot(pointer.x - 60, pointer.y - 60)
     expect(DEFAULT_KOI_SETTINGS.attractRadius).toBeGreaterThan(far)
 
-    const after = run(corner, pointer, 400)
-    expect(Math.hypot(pointer.x - after.head.x, pointer.y - after.head.y)).toBeLessThan(far * 0.5)
+    // 20 seconds. A calm koi crosses a pond at a stroll, not a sprint — the
+    // earlier version of this test allowed 6 seconds, which only passed
+    // because the fish was moving twice as fast as it should have been.
+    const after = run(corner, pointer, 1200)
+    expect(Math.hypot(pointer.x - after.head.x, pointer.y - after.head.y)).toBeLessThan(far * 0.4)
   })
 
   it('needs no click — a pointer position is the entire input', () => {
@@ -244,6 +247,38 @@ describe('stepKoi — burst and glide', () => {
       current = stepKoi(current, [], null, BOUNDS, 1 / 60, DEFAULT_KOI_SETTINGS, () => 0.99)
     }
     expect(justDarted).toBeGreaterThan(current.tailEnergy)
+  })
+
+  it('beats slowly enough to read as a sweep, not a flicker', () => {
+    // Above roughly 3Hz the tail crosses character cells faster than the grid
+    // can describe it and the motion reads as buzzing. An earlier version ran
+    // at 2.1Hz idle and 9.6Hz mid-burst, which looked like jitter.
+    const idleHz = DEFAULT_KOI_SETTINGS.baseBeat
+    const burstHz = DEFAULT_KOI_SETTINGS.baseBeat + DEFAULT_KOI_SETTINGS.dartBeat
+    expect(idleHz).toBeLessThanOrEqual(1.2)
+    expect(burstHz).toBeLessThanOrEqual(3)
+
+    // And confirm the phase actually advances at that rate over a second.
+    const koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)
+    let current = { ...koi, tailPhase: 0, tailEnergy: 0, dartCooldown: 99 }
+    for (let i = 0; i < 60; i++) {
+      current = stepKoi(current, [], null, BOUNDS, 1 / 60, DEFAULT_KOI_SETTINGS, () => 0.5)
+    }
+    const beatsInOneSecond = current.tailPhase / (Math.PI * 2)
+    expect(beatsInOneSecond).toBeLessThanOrEqual(1.2)
+  })
+
+  it('carries about one wavelength on the body, not several', () => {
+    // Two wiggles at once reads as buzzing rather than swimming.
+    const straightSpine = Array.from({ length: DEFAULT_SEGMENTS }, (_, i) => ({ x: 500 - i * 18, y: 300 }))
+    const out = flutterSpine(straightSpine, 0, 1, 15)
+    const offsets = out.map((p, i) => p.y - straightSpine[i]!.y)
+    let crossings = 0
+    for (let i = 1; i < offsets.length; i++) {
+      if (Math.abs(offsets[i]!) > 0.15 && Math.abs(offsets[i - 1]!) > 0.15 &&
+          Math.sign(offsets[i]!) !== Math.sign(offsets[i - 1]!)) crossings++
+    }
+    expect(crossings).toBeLessThanOrEqual(2)
   })
 
   it('always advances the tail phase, even while gliding', () => {

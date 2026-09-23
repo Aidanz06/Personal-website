@@ -54,8 +54,10 @@ export function PondBench() {
           onChange={(v) => set('koiCount', v)} />
         <Slider label="bodyRadius" value={settings.bodyRadius} min={6} max={90} step={1} unit="px"
           onChange={(v) => set('bodyRadius', v)} />
-        <Slider label="tailAmplitude" value={settings.tailAmplitude} min={0} max={90} step={1} unit="px"
+        <Slider label="tailAmplitude" value={settings.tailAmplitude} min={0} max={60} step={1} unit="px"
           onChange={(v) => set('tailAmplitude', v)} />
+        <Slider label="beatRate" value={settings.beatRate} min={0.2} max={4} step={0.1} unit="×"
+          onChange={(v) => set('beatRate', v)} />
         <Slider label="koiBrightness" value={settings.koiBrightness} min={0.1} max={1} step={0.05} unit=""
           onChange={(v) => set('koiBrightness', v)} />
         <Slider label="attractRadius" value={settings.attractRadius} min={0} max={700} step={10} unit="px"

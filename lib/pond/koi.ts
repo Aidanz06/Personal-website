@@ -68,20 +68,29 @@ export type KoiSettings = {
 }
 
 export const DEFAULT_KOI_SETTINGS: KoiSettings = {
-  maxSpeed: 128,
-  turnRate: 2.6,
+  maxSpeed: 92,
+  turnRate: 1.7,
   // Large on purpose — see the field note above. A pond-sized radius means
   // the fish always knows where the cursor is.
   attractRadius: 1400,
   attractStrength: 1.8,
   separation: 130,
   segmentLength: 18,
-  dartImpulse: 74,
-  dartInterval: [0.55, 1.9],
-  drag: 1.35,
-  baseBeat: 2.1,
-  dartBeat: 7.5,
-  tailDecay: 0.85,
+  dartImpulse: 56,
+  // Long gaps between bursts. Frequent darts read as agitation; a koi should
+  // look like it has nowhere to be.
+  dartInterval: [1.6, 3.6],
+  // Low drag, so a burst carries a long way and the glide is the main event.
+  drag: 0.85,
+  // Beats per second. A cruising koi is around 1Hz and tops out near 2 — the
+  // first version ran at 2.1 idle and 9.6 mid-burst, which is where the
+  // jitter came from. Above roughly 3Hz the tail also crosses character cells
+  // faster than the grid can describe, so it stops reading as a sweep and
+  // starts reading as flicker.
+  baseBeat: 0.5,
+  dartBeat: 1.5,
+  // Slow fade, so a burst eases off instead of snapping back to idle.
+  tailDecay: 1.6,
 }
 
 /** Spine points per fish. 17 at 18px spacing gives a ~290px body. */
@@ -99,7 +108,7 @@ export const DEFAULT_SEGMENTS = 17
  *
  * Keep it near a quarter of the body length; koi are roughly 4:1.
  */
-export const DEFAULT_BODY_RADIUS = 50
+export const DEFAULT_BODY_RADIUS = 40
 
 // --- angles ---------------------------------------------------------------
 
@@ -288,7 +297,11 @@ export function flutterSpine(
   tailPhase: number,
   tailEnergy: number,
   amplitude: number,
-  waveNumber = 0.55,
+  // Phase lag per spine point. Across ~17 points this puts a little under one
+  // wavelength on the body, which is what a real fish carries. The first
+  // version used 0.55, packing 1.5 wavelengths on — so the body wiggled in
+  // two places at once and read as buzzing rather than swimming.
+  waveNumber = 0.3,
 ): Vec[] {
   const n = spine.length
   if (n < 2) return [...spine]
@@ -384,7 +397,7 @@ export type Stamp = {
 export function koiSilhouette(
   koi: Koi,
   bodyRadius: number,
-  tailAmplitude = bodyRadius * 0.6,
+  tailAmplitude = bodyRadius * 0.38,
 ): Stamp[] {
   const display = flutterSpine(koi.spine, koi.tailPhase, koi.tailEnergy, tailAmplitude)
   const n = display.length

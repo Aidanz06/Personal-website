@@ -846,3 +846,57 @@ steady taper reads as a comma.
 
 At 8,250 cells on the finer grid, with the fish and fins and a moving cursor:
 **224 of 8,250 cells redrawn per frame — 3%.** 149 tests passing.
+
+### milestone 5b — calming the fish
+
+Tuned by eye against the lab: body radius 40, tail amplitude 15, water base
+0.15. The interesting note was that the tail "jitters way too fast".
+
+It did, and by a lot. The tail was beating at **2.1Hz idle and 9.6Hz
+mid-burst**. A cruising koi is around 1Hz and tops out near 2. On top of that
+the flutter wave packed about 1.5 wavelengths onto the body, so it was
+wiggling in two places at once — buzzing rather than swimming.
+
+There is also a threshold specific to rendering on a character grid: above
+roughly **3Hz the tail crosses cells faster than the grid can describe it**,
+so instead of reading as a sweep it reads as flicker. Smooth motion needs the
+tail to spend several frames in each cell.
+
+What changed:
+
+| | before | after |
+|---|---|---|
+| idle beat | 2.1 Hz | 0.5 Hz |
+| beat mid-burst | 9.6 Hz | 2.0 Hz |
+| wavelengths on the body | ~1.5 | ~0.8 |
+| seconds between darts | 0.55–1.9 | 1.6–3.6 |
+| drag | 1.35 | 0.85 |
+| top speed | 128 | 92 |
+| turn rate | 2.6 | 1.7 |
+
+Lower drag matters as much as the slower beat: it means a burst carries
+further and the glide becomes the main event rather than a brief pause
+between flicks.
+
+**Measured, not eyeballed.** Cells redrawn per frame halved, from 224 to a
+mean of 111. That number is a direct proxy for visual busyness — a character
+only redraws when it actually changes, so fewer redraws per frame is
+literally what "calmer" means on this grid.
+
+Two regression tests lock it in: one asserting the idle and burst beat rates
+stay under 1.2Hz and 3Hz, and one asserting the flutter wave crosses zero at
+most twice along the body, so the "two wiggles at once" look cannot come
+back. A `beatRate` slider scales both rates for further tuning.
+
+One test had to change with it: "notices the pointer from across the pond"
+allowed six seconds, which only passed because the fish had been moving twice
+as fast as it should. A calm koi crosses a pond at a stroll, so it now gets
+twenty.
+
+**A note on water base at 0.15.** The blank character only appears below a
+luminance of about 0.056. At base 0.15 with amplitude 0.09 the water's
+darkest trough is 0.06 — just above that line — so no cell is ever empty and
+the surface spans only two ramp characters. That is why it reads as an even
+screen of dots rather than as waves. Raising `waterAmplitude` to around 0.15
+drops the troughs below the blank threshold while lifting the crests, giving
+four levels and actual wave structure. Left at 0.09 pending a look.

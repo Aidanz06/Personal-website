@@ -48,6 +48,8 @@ export type PondSettings = {
   bodyRadius: number
   /** How far the tail sweeps, in pixels. */
   tailAmplitude: number
+  /** Multiplier on the tail beat rate. Below 1 is calmer. */
+  beatRate: number
   koiBrightness: number
   attractRadius: number
   attractStrength: number
@@ -62,12 +64,13 @@ export const DEFAULT_POND_SETTINGS: PondSettings = {
   // aspect of 2 wastes vertical resolution — and vertical rows are exactly
   // what the fish needs to read as a body rather than a bar.
   cellAspect: 1.7,
-  waterBase: 0.07,
+  waterBase: 0.15,
   waterAmplitude: 0.09,
   rippleStrength: 0.45,
   koiCount: 1,
   bodyRadius: DEFAULT_BODY_RADIUS,
-  tailAmplitude: DEFAULT_BODY_RADIUS * 0.6,
+  tailAmplitude: 15,
+  beatRate: 1,
   koiBrightness: 0.95,
   attractRadius: DEFAULT_KOI_SETTINGS.attractRadius,
   attractStrength: DEFAULT_KOI_SETTINGS.attractStrength,
@@ -328,6 +331,8 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
           ...DEFAULT_KOI_SETTINGS,
           attractRadius: s.attractRadius,
           attractStrength: s.attractStrength,
+          baseBeat: DEFAULT_KOI_SETTINGS.baseBeat * s.beatRate,
+          dartBeat: DEFAULT_KOI_SETTINGS.dartBeat * s.beatRate,
         }),
       )
       for (const fish of koi) {
