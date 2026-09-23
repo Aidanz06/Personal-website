@@ -1,3 +1,4 @@
+import { ThemeSwitcher } from '@/components/ThemeSwitcher'
 import { contacts } from '@/lib/site'
 
 /**
@@ -20,6 +21,7 @@ export function Footer() {
           </li>
         ))}
       </ul>
+      <ThemeSwitcher className="mt-1.5" />
     </footer>
   )
 }

@@ -52,3 +52,28 @@ export function rampGrid(luminances: Float32Array, ramp: string): string[] {
   }
   return out
 }
+
+/**
+ * Point the ramp the right way for the current theme.
+ *
+ * rampIndex() maps a dark pixel to the DENSE end of the ramp, which is
+ * correct when the characters are dark ink on a light ground: a dense glyph
+ * deposits more ink and so reads darker.
+ *
+ * Invert the page — light characters on a dark ground — and that reverses:
+ * a dense glyph now emits more LIGHT, so it reads brighter, and mapping dark
+ * pixels to it produces a photographic negative.
+ *
+ * Rather than make every caller remember which way round the site currently
+ * is, this derives it: if the ink is brighter than the ground, the ramp is
+ * reversed. A new theme therefore needs no renderer change at all.
+ */
+export function orientRamp(
+  ramp: string,
+  groundLuminance: number,
+  inkLuminance: number,
+): string {
+  const isLightOnDark = inkLuminance > groundLuminance
+  if (!isLightOnDark) return ramp
+  return [...ramp].reverse().join('')
+}

@@ -18,8 +18,9 @@ import {
   gridDimensions,
   type Grid,
 } from '@/lib/ascii/grid'
-import { luminanceGrid } from '@/lib/ascii/luminance'
-import { rampGrid } from '@/lib/ascii/ramp'
+import { luminance, luminanceGrid } from '@/lib/ascii/luminance'
+import { orientRamp, rampGrid } from '@/lib/ascii/ramp'
+import { parseCssColor } from '@/lib/ascii/color'
 import { selectRenderMode, type RenderMode } from '@/lib/ascii/mode'
 import { pointerState, subscribe } from '@/lib/ascii/loop'
 
@@ -151,11 +152,42 @@ export function AsciiImage({
     let slowFrames = 0
     let unsubscribe: (() => void) | null = null
 
-    const styles = getComputedStyle(container)
-    const ground = styles.getPropertyValue('--color-ground').trim() || FALLBACK_GROUND
-    const ink = styles.getPropertyValue('--color-ink').trim() || FALLBACK_INK
-    const monoFamily =
-      styles.getPropertyValue('--font-mono').trim() || 'ui-monospace, monospace'
+    // Theme colours, re-read whenever the theme changes. `let`, not `const`:
+    // a theme switch has to reach the canvas too, and the cached layers are
+    // painted in whatever these held at the time.
+    let ground = FALLBACK_GROUND
+    let ink = FALLBACK_INK
+    let orientedRamp = paramsRef.current.ramp
+    let monoFamily = 'ui-monospace, monospace'
+
+    function readTheme(): void {
+      const styles = getComputedStyle(container!)
+      monoFamily =
+        styles.getPropertyValue('--font-mono').trim() || 'ui-monospace, monospace'
+
+      // Prefer the token; fall back to real resolved properties if a browser
+      // hands back an unsubstituted var(). `color` is inherited from body and
+      // always resolves to an rgb() triple.
+      const groundToken = styles.getPropertyValue('--color-ground').trim()
+      const inkToken = styles.getPropertyValue('--color-ink').trim()
+
+      const groundRgb =
+        parseCssColor(groundToken) ??
+        parseCssColor(getComputedStyle(document.body).backgroundColor)
+      const inkRgb = parseCssColor(inkToken) ?? parseCssColor(styles.color)
+
+      ground = groundRgb ? `rgb(${groundRgb.join(',')})` : FALLBACK_GROUND
+      ink = inkRgb ? `rgb(${inkRgb.join(',')})` : FALLBACK_INK
+
+      // Point the ramp the right way for this theme. On a dark ground a dense
+      // glyph reads BRIGHT, so the mapping has to invert or the photo comes
+      // out as a negative.
+      const groundLuminance = groundRgb ? luminance(...groundRgb) : 1
+      const inkLuminance = inkRgb ? luminance(...inkRgb) : 0
+      orientedRamp = orientRamp(paramsRef.current.ramp, groundLuminance, inkLuminance)
+    }
+
+    readTheme()
 
     // ---- building the two static layers ---------------------------------
 
@@ -170,7 +202,8 @@ export function AsciiImage({
       // quadratically for a difference nobody can see on a photograph.
       dpr = Math.min(window.devicePixelRatio || 1, 2)
 
-      const { cellAspect: aspect, ramp: currentRamp } = paramsRef.current
+      const { cellAspect: aspect } = paramsRef.current
+      const currentRamp = orientedRamp
       grid = gridDimensions(cssWidth, cssHeight, activeCellSize, aspect)
 
       // Size the visible canvas in device pixels, then scale the drawing
@@ -478,6 +511,18 @@ export function AsciiImage({
     reducedMotionQuery.addEventListener('change', handleReducedMotionChange)
     finePointerQuery.addEventListener('change', handleReducedMotionChange)
 
+    // A theme switch changes the ground, the ink and the ramp direction, all
+    // of which are baked into the cached layers — so they have to be redrawn.
+    const themeObserver = new MutationObserver(() => {
+      if (mode === 'static') return
+      readTheme()
+      buildLayers()
+    })
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    })
+
     if (mode !== 'static') {
       if (img.complete && img.naturalWidth > 0) {
         handleImageReady()
@@ -490,6 +535,7 @@ export function AsciiImage({
       detach()
       intersectionObserver.disconnect()
       resizeObserver.disconnect()
+      themeObserver.disconnect()
       window.removeEventListener('scroll', refreshRect)
       window.removeEventListener('resize', refreshRect)
       reducedMotionQuery.removeEventListener('change', handleReducedMotionChange)

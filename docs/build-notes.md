@@ -468,3 +468,126 @@ to go in `public/lab/` before the actual question can be answered.
 
 The same file is currently sitting in the homepage header as
 `public/header-placeholder.png`, with a bracketed caption saying so.
+
+---
+
+## milestone 4 — dark design system and swappable themes
+
+### what changed and why
+
+The site pivoted: the homepage is becoming an ASCII koi pond, and the
+reference for it is luminous characters on a near-black ground. That inverts
+the original design — off-white ground, near-black ink — and because the pond
+also sits behind the inner pages, it inverts the whole site rather than just
+one page.
+
+The PRD deferred dark mode to v1.1 on the grounds that it doubles the design
+surface. That reasoning doesn't apply here: dark isn't being *added*
+alongside light, it's *replacing* it. One palette, not two.
+
+### themes are one attribute
+
+Colours are no longer written directly into the Tailwind theme. They point at
+slots:
+
+```css
+@theme {
+  --color-ground: var(--t-ground);
+  --color-ink:    var(--t-ink);
+}
+
+:root, [data-theme='koi'] { --t-ground: #0b100f; --t-ink: #ece7dd; }
+[data-theme='phosphor']   { --t-ground: #0a0714; --t-ink: #cfe8c8; }
+[data-theme='paper']      { --t-ground: #fafaf8; --t-ink: #1a1a1a; }
+```
+
+Setting `data-theme` on `<html>` is the whole mechanism. Every utility class,
+every component, and the canvas renderer all resolve through those slots, so
+none of them knows or cares which theme is active. Adding a fourth theme is a
+CSS block plus one line in `lib/themes.ts` — no component changes.
+
+Three themes ship: **koi** (the default — a pond at night, traditional kohaku
+orange and cream), **phosphor** (the CRT reading, matching the reference
+image), and **paper** (the original light design, kept because it costs
+nothing and makes it obvious when something has been hardcoded).
+
+### colour belongs to living things only
+
+The design system has no colour, by design — the visual budget goes on type
+and whitespace. The koi are the single exception. Water, stone, rules and
+body text all stay monochrome; only the fish carry a gradient, running head
+to tail across three tokens.
+
+A useful consequence: the link accent is no longer an arbitrary pick, which
+was an open question in the PRD. It's drawn from the koi. On the default
+theme that's `#f0813a`, the same orange as the fish.
+
+### avoiding the white flash
+
+The server has no idea which theme a returning visitor picked — that lives in
+their browser's `localStorage`. Render the default and correct it in a React
+effect, and there's a beat where the wrong theme is on screen. On a site
+whose ground is near-black, that beat is a **full-screen white flash on every
+page load**.
+
+`components/ThemeScript.tsx` is a tiny inline script in the document head
+that reads storage and sets the attribute before the browser paints anything.
+It has to be inline and blocking; a module or deferred script runs too late.
+It's wrapped in try/catch because reading `localStorage` throws outright in
+some privacy modes.
+
+### the ramp had to flip, and it flips itself
+
+The renderer maps a dark pixel to the *dense* end of the character ramp.
+That's correct on paper: a dense glyph like `@` deposits more dark ink, so it
+reads darker.
+
+Invert the page and that reverses. On a dark ground a dense glyph emits more
+*light*, so it reads brighter — and mapping dark pixels to it produces a
+photographic negative.
+
+Rather than hardcode a direction, `orientRamp()` derives it: if the ink is
+brighter than the ground, the ramp is reversed. So a new theme needs no
+renderer change at all. There's a test asserting the property that actually
+matters — that a dark pixel reads dark in *both* orientations.
+
+The renderer also now watches for theme changes. It caches its rendered
+layers, so the ground, the ink and the ramp direction are all baked in at
+draw time; a `MutationObserver` on `data-theme` rebuilds them.
+
+### two bugs, both found by measuring
+
+**The contrast problem from milestone 1 solved itself.** Muted text at the
+specified 55% measured 3.84:1 on the off-white ground and failed AA. On the
+dark grounds the same 55% measures **5.26:1 and passes**, because light ink
+on a dark ground has far more room to recede into. Only `paper` still needs
+62%, so each theme now owns its own mix percentage instead of sharing one.
+Measured in a real browser, every text colour clears 4.5:1 in every theme:
+
+| theme | body text | muted text | links |
+|---|---|---|---|
+| koi | 15.56:1 | 5.26:1 | 7.22:1 |
+| phosphor | 15.22:1 | 5.01:1 | 11.81:1 |
+| paper | 16.65:1 | 4.80:1 | 5.21:1 |
+
+**A colour-parsing bug in shipped code.** The first contrast audit reported
+muted text at 1.09:1 — catastrophically bad — while the screenshots plainly
+showed a correct grey. The audit was wrong, not the CSS: Chrome returns
+anything derived from `color-mix()` as `color(srgb 0.52 0.52 0.50)`, with
+channels as 0–1 floats rather than 0–255, and the parser treated them as
+0–255 and divided by 255 again.
+
+That mattered beyond the test, because `parseCssColor` in the renderer had
+the same gap: it read `#hex` and `rgb()` but returned null for `color(srgb)`,
+so a themed colour defined with `color-mix` would have silently fallen back
+to a hardcoded default. Fixed test-first, including refusing colour spaces it
+can't convert (`display-p3`) rather than misreading their channels as sRGB.
+
+The lesson is the same one from milestone 2, in a new costume: **when a
+measurement disagrees with what you can see, suspect the measurement first.**
+
+### still true after the pivot
+
+Re-verified on the dark build: no horizontal scroll at 375px, zero
+overflowing elements, the availability line above the fold with 102px of
+headroom, `/lab` still 404s in production, 80 unit tests passing.

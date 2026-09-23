@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { fontVariables } from './fonts'
+import { ThemeScript } from '@/components/ThemeScript'
 import { site } from '@/lib/site'
+import { DEFAULT_THEME } from '@/lib/themes'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -20,7 +22,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={fontVariables}>
+    // data-theme is set here for the server-rendered markup and immediately
+    // corrected by ThemeScript from localStorage, before first paint.
+    <html lang="en" className={fontVariables} data-theme={DEFAULT_THEME}>
+      <head>
+        <ThemeScript />
+      </head>
       <body>{children}</body>
     </html>
   )

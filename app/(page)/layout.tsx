@@ -1,4 +1,5 @@
 import { BackLink } from '@/components/BackLink'
+import { ThemeSwitcher } from '@/components/ThemeSwitcher'
 
 /**
  * Shared chrome for /tailor-studio, /about and /resume.
@@ -17,6 +18,9 @@ export default function PageLayout({
     <main className="column py-3">
       <BackLink />
       <article className="mt-4">{children}</article>
+      <footer className="mt-6 border-t border-rule pt-2">
+        <ThemeSwitcher />
+      </footer>
     </main>
   )
 }
