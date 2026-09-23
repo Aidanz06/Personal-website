@@ -1,78 +1,124 @@
 /**
  * The koi.
  *
- * Each fish is a head that steers, plus a chain of spine points that follow
- * it. Everything here is a pure step function — state in, next state out —
- * so the behaviour can be tested without a canvas or a clock.
+ * A fish is a head with a heading and a speed, a chain of spine points that
+ * trail behind it, and a tail that beats. Everything here is a pure step
+ * function — state in, next state out — so the behaviour can be tested
+ * without a canvas or a clock.
+ *
+ * Locomotion is deliberately NOT constant-velocity steering. Real fish, and
+ * the ones in Animal Crossing that this is chasing, move in bursts: a few
+ * hard tail beats that drive them forward, then a long glide while they
+ * slow, then another burst. Modelling that is the difference between
+ * something that drifts around the screen and something that looks alive.
  */
 
 export type Vec = { x: number; y: number }
 
 export type Koi = {
   head: Vec
-  velocity: Vec
-  /** Spine points from head to tail. Index 0 is at the head. */
+  /** Radians. The fish always faces where it is going. */
+  heading: number
+  /** Scalar px/second. Decays constantly and is topped up by darts. */
+  speed: number
+  /** Spine points from head to tail base, before the tail beat is applied. */
   spine: Vec[]
-  /** Where it wanders to when nothing is attracting it. */
   wanderTarget: Vec
-  /** Seconds until it picks a new wander target. */
   wanderTimer: number
   /** Which koi colour this fish leans toward, 0..1. */
   hue: number
+  /** Phase of the tail beat, radians. */
+  tailPhase: number
+  /** How hard it is currently beating, 0..1. Spikes on a dart, then decays. */
+  tailEnergy: number
+  /** Seconds until the next burst. */
+  dartCooldown: number
 }
 
 export type KoiSettings = {
   maxSpeed: number
-  /** How hard it can turn. Low values give the long lazy arcs koi actually swim. */
-  maxForce: number
-  /** Distance at which the pointer starts attracting it. */
+  /** Radians/second the fish can turn while beating hard. */
+  turnRate: number
+  /**
+   * How far away the fish notices the pointer.
+   *
+   * This is a DETECTION radius, not a pull radius: beyond it the fish is
+   * unaware of the cursor entirely. It has to be large enough to cover the
+   * pond, or the fish spends most of its time unable to see you and the
+   * whole interaction reads as broken.
+   */
   attractRadius: number
-  /** How strongly the pointer pulls, relative to wandering. */
+  /** How much more eagerly it darts when chasing the pointer. */
   attractStrength: number
-  /** How close two fish get before they push apart. */
+  /** How close two fish get before they turn away from each other. */
   separation: number
   /** Distance between spine points. */
   segmentLength: number
+  /** Speed added by one tail burst. */
+  dartImpulse: number
+  /** Seconds between bursts, min and max. */
+  dartInterval: [number, number]
+  /** Fraction of speed lost per second while gliding. */
+  drag: number
+  /** Beats per second when idle, and the extra beats when darting. */
+  baseBeat: number
+  dartBeat: number
+  /** Seconds for a burst's tail energy to fade. */
+  tailDecay: number
 }
 
 export const DEFAULT_KOI_SETTINGS: KoiSettings = {
-  maxSpeed: 46,
-  maxForce: 34,
-  attractRadius: 260,
-  attractStrength: 1.9,
-  separation: 70,
-  segmentLength: 11,
+  maxSpeed: 128,
+  turnRate: 2.6,
+  // Large on purpose — see the field note above. A pond-sized radius means
+  // the fish always knows where the cursor is.
+  attractRadius: 1400,
+  attractStrength: 1.8,
+  separation: 130,
+  segmentLength: 18,
+  dartImpulse: 74,
+  dartInterval: [0.55, 1.9],
+  drag: 1.35,
+  baseBeat: 2.1,
+  dartBeat: 7.5,
+  tailDecay: 0.85,
 }
 
-/** Spine points per fish. ~22 at the default spacing gives a 230px body. */
-export const DEFAULT_SEGMENTS = 22
+/** Spine points per fish. 17 at 18px spacing gives a ~290px body. */
+export const DEFAULT_SEGMENTS = 17
 
 /**
  * Body radius at the widest point, in pixels.
  *
- * This has to be much larger than it first seems. Character cells are twice
- * as tall as they are wide, so vertical resolution is half of horizontal: a
- * radius of 11px covers barely one row and the fish renders as a thin
- * horizontal line rather than a body. At 30px it spans three or four rows,
- * which is what makes it read as a koi.
+ * Sized by ROW COUNT, not by how big it looks in pixels. Vertical resolution
+ * is the scarce one — cells are far taller than they are wide — and a body
+ * spanning only three or four rows cannot describe a curve, so it reads as a
+ * horizontal bar however correct its pixel proportions are. At 50px against
+ * a ~12px cell height the body covers eight or nine rows, which is the point
+ * where it starts to look like a fish.
+ *
+ * Keep it near a quarter of the body length; koi are roughly 4:1.
  */
-export const DEFAULT_BODY_RADIUS = 30
+export const DEFAULT_BODY_RADIUS = 50
 
-const clampMagnitude = (v: Vec, max: number): Vec => {
-  const m = Math.hypot(v.x, v.y)
-  if (m <= max || m === 0) return v
-  return { x: (v.x / m) * max, y: (v.y / m) * max }
+// --- angles ---------------------------------------------------------------
+
+export function wrapAngle(angle: number): number {
+  const twoPi = Math.PI * 2
+  let a = (angle + Math.PI) % twoPi
+  if (a < 0) a += twoPi
+  return a - Math.PI
 }
 
-/**
- * Steer one fish and drag its spine along behind it.
- *
- * The pointer ATTRACTS rather than repels, and that is a deliberate
- * interaction decision rather than a physical one. The fish carry the
- * photographs, so they have to be catchable — and hovering something that
- * flees is the single most frustrating interaction there is. Inverting it
- * means you never chase: you hold still and a fish comes to you.
- */
+/** Rotate `from` toward `to` by at most `maxDelta`, the short way round. */
+export function turnToward(from: number, to: number, maxDelta: number): number {
+  const diff = wrapAngle(to - from)
+  if (Math.abs(diff) <= maxDelta) return wrapAngle(to)
+  return wrapAngle(from + Math.sign(diff) * maxDelta)
+}
+
+// --- the step -------------------------------------------------------------
+
 export function stepKoi(
   koi: Koi,
   others: readonly Koi[],
@@ -80,80 +126,112 @@ export function stepKoi(
   bounds: { width: number; height: number },
   dt: number,
   settings: KoiSettings = DEFAULT_KOI_SETTINGS,
+  random: () => number = Math.random,
 ): Koi {
   // Guard against a huge dt after a stalled tab, which would otherwise
-  // teleport every fish across the pond in one frame.
+  // teleport the fish across the pond in a single frame.
   const step = Math.min(Math.max(dt, 0), 0.05)
 
   let wanderTimer = koi.wanderTimer - step
   let wanderTarget = koi.wanderTarget
-  if (wanderTimer <= 0) {
+  const arrived =
+    Math.hypot(wanderTarget.x - koi.head.x, wanderTarget.y - koi.head.y) < 70
+  if (wanderTimer <= 0 || arrived) {
+    // Keep away from the very edges so it does not spend its life in a corner.
     wanderTarget = {
-      x: Math.random() * bounds.width,
-      y: Math.random() * bounds.height,
+      x: bounds.width * (0.12 + random() * 0.76),
+      y: bounds.height * (0.12 + random() * 0.76),
     }
-    wanderTimer = 2.5 + Math.random() * 3.5
+    wanderTimer = 2.2 + random() * 3.4
   }
 
-  // Seek: the pointer if it is close enough, otherwise the wander target.
+  // --- what is it interested in? ---
   let target = wanderTarget
-  let weight = 1
+  let chasing = false
   if (pointer) {
     const d = Math.hypot(pointer.x - koi.head.x, pointer.y - koi.head.y)
     if (d < settings.attractRadius) {
       target = pointer
-      // Pull hardest at the edge of the radius and ease off up close, so
-      // fish gather around the cursor instead of piling onto it.
-      weight = settings.attractStrength * (0.35 + 0.65 * (d / settings.attractRadius))
+      chasing = true
     }
   }
 
-  const toTarget = { x: target.x - koi.head.x, y: target.y - koi.head.y }
-  const distance = Math.hypot(toTarget.x, toTarget.y) || 1
-  const desired = {
-    x: (toTarget.x / distance) * settings.maxSpeed,
-    y: (toTarget.y / distance) * settings.maxSpeed,
-  }
+  let desiredHeading = Math.atan2(target.y - koi.head.y, target.x - koi.head.x)
 
-  let steer = {
-    x: (desired.x - koi.velocity.x) * weight,
-    y: (desired.y - koi.velocity.y) * weight,
-  }
-
-  // Separation: push away from anyone too close, harder the closer they are.
+  // --- turn away from neighbours ---
   for (const other of others) {
     if (other === koi) continue
     const dx = koi.head.x - other.head.x
     const dy = koi.head.y - other.head.y
     const d = Math.hypot(dx, dy)
     if (d > 0 && d < settings.separation) {
-      const push = (settings.separation - d) / settings.separation
-      steer.x += (dx / d) * push * settings.maxForce * 1.6
-      steer.y += (dy / d) * push * settings.maxForce * 1.6
+      const away = Math.atan2(dy, dx)
+      const urgency = (settings.separation - d) / settings.separation
+      desiredHeading = turnToward(desiredHeading, away, urgency * Math.PI * 0.9)
     }
   }
 
-  steer = clampMagnitude(steer, settings.maxForce)
+  // --- turn away from the walls, before hitting them ---
+  const margin = 90
+  if (koi.head.x < margin) desiredHeading = turnToward(desiredHeading, 0, (1 - koi.head.x / margin) * Math.PI * 0.8)
+  if (koi.head.x > bounds.width - margin) desiredHeading = turnToward(desiredHeading, Math.PI, (1 - (bounds.width - koi.head.x) / margin) * Math.PI * 0.8)
+  if (koi.head.y < margin) desiredHeading = turnToward(desiredHeading, Math.PI / 2, (1 - koi.head.y / margin) * Math.PI * 0.8)
+  if (koi.head.y > bounds.height - margin) desiredHeading = turnToward(desiredHeading, -Math.PI / 2, (1 - (bounds.height - koi.head.y) / margin) * Math.PI * 0.8)
 
-  let velocity = clampMagnitude(
-    { x: koi.velocity.x + steer.x * step, y: koi.velocity.y + steer.y * step },
-    settings.maxSpeed,
-  )
+  // A fish steers with its tail, so it turns far better mid-burst than while
+  // gliding. This is what produces the flick-and-glide arc rather than a
+  // smooth circle.
+  const agility = 0.35 + 0.65 * koi.tailEnergy
+  const heading = turnToward(koi.heading, desiredHeading, settings.turnRate * agility * step)
 
-  let head = { x: koi.head.x + velocity.x * step, y: koi.head.y + velocity.y * step }
+  // --- burst ---
+  let dartCooldown = koi.dartCooldown - step
+  let speed = koi.speed
+  let tailEnergy = koi.tailEnergy
+  const distance = Math.hypot(target.x - koi.head.x, target.y - koi.head.y)
 
-  // Turn away at the edges rather than wrapping. A fish popping from one
-  // side of the pond to the other breaks the illusion instantly.
-  const margin = 24
-  if (head.x < margin) { head.x = margin; velocity = { ...velocity, x: Math.abs(velocity.x) } }
-  if (head.x > bounds.width - margin) { head.x = bounds.width - margin; velocity = { ...velocity, x: -Math.abs(velocity.x) } }
-  if (head.y < margin) { head.y = margin; velocity = { ...velocity, y: Math.abs(velocity.y) } }
-  if (head.y > bounds.height - margin) { head.y = bounds.height - margin; velocity = { ...velocity, y: -Math.abs(velocity.y) } }
+  if (dartCooldown <= 0) {
+    const eagerness = chasing ? settings.attractStrength : 1
+    // Ease off once it is basically there, so it hovers instead of
+    // overshooting back and forth across the target.
+    const proximity = Math.min(1, distance / 120)
+    speed += settings.dartImpulse * eagerness * (0.35 + 0.65 * proximity)
+    tailEnergy = 1
+    const [lo, hi] = settings.dartInterval
+    dartCooldown = (lo + random() * (hi - lo)) / (chasing ? settings.attractStrength : 1)
+  }
+
+  // --- glide ---
+  speed *= Math.exp(-settings.drag * step)
+  if (speed > settings.maxSpeed) speed = settings.maxSpeed
+
+  tailEnergy = Math.max(0, tailEnergy - step / settings.tailDecay)
+
+  // Tail beats faster mid-burst. The phase is what the render wave rides on.
+  const beat = settings.baseBeat + settings.dartBeat * tailEnergy
+  const tailPhase = koi.tailPhase + beat * step * Math.PI * 2
+
+  let head = {
+    x: koi.head.x + Math.cos(heading) * speed * step,
+    y: koi.head.y + Math.sin(heading) * speed * step,
+  }
+
+  // Hard clamp as a safety net; the wall steering above should mean this
+  // almost never fires.
+  const edge = 8
+  head = {
+    x: Math.min(bounds.width - edge, Math.max(edge, head.x)),
+    y: Math.min(bounds.height - edge, Math.max(edge, head.y)),
+  }
 
   return {
     ...koi,
     head,
-    velocity,
+    heading,
+    speed,
+    tailPhase,
+    tailEnergy,
+    dartCooldown,
     wanderTarget,
     wanderTimer,
     spine: followSpine(head, koi.spine, settings.segmentLength),
@@ -194,20 +272,82 @@ export function followSpine(
   return next
 }
 
+/**
+ * Apply the tail beat: a wave travelling from head to tail.
+ *
+ * Each spine point is pushed sideways, perpendicular to the body, by a sine
+ * whose phase lags further down the body. That lag is the whole trick — every
+ * point moving together is a fish wagging rigidly, whereas a travelling wave
+ * is how a fish actually swims, and the eye knows the difference instantly.
+ *
+ * Amplitude grows toward the tail so the head barely moves and the tail
+ * sweeps, and scales with how hard the fish is currently beating.
+ */
+export function flutterSpine(
+  spine: readonly Vec[],
+  tailPhase: number,
+  tailEnergy: number,
+  amplitude: number,
+  waveNumber = 0.55,
+): Vec[] {
+  const n = spine.length
+  if (n < 2) return [...spine]
+
+  const effort = 0.3 + 0.7 * Math.min(1, Math.max(0, tailEnergy))
+  const out: Vec[] = []
+
+  for (let i = 0; i < n; i++) {
+    const point = spine[i]!
+    const t = i / (n - 1)
+
+    // Cubic ramp: the head is effectively rigid, the tail does the work.
+    const local = amplitude * Math.pow(t, 1.7) * effort
+    if (local < 0.01) {
+      out.push({ x: point.x, y: point.y })
+      continue
+    }
+
+    // Body direction at this point, from the neighbour in front.
+    const ahead = spine[Math.max(0, i - 1)]!
+    const behind = spine[Math.min(n - 1, i + 1)]!
+    const dx = behind.x - ahead.x
+    const dy = behind.y - ahead.y
+    const len = Math.hypot(dx, dy) || 1
+
+    // Perpendicular to the body.
+    const px = -dy / len
+    const py = dx / len
+
+    const offset = Math.sin(tailPhase - i * waveNumber) * local
+    out.push({ x: point.x + px * offset, y: point.y + py * offset })
+  }
+
+  return out
+}
+
 /** Where along the body the fish is widest, 0 = head, 1 = tail. */
-const SHOULDER = 0.22
+const SHOULDER = 0.2
 /** Width at the very nose, relative to the widest point. */
-const NOSE_WIDTH = 0.62
+const NOSE_WIDTH = 0.55
+/**
+ * Width at the wrist, where the tail fin attaches.
+ *
+ * Generous on purpose. Taper the body to a point and the fin reads as a
+ * separate smudge floating behind the fish, because there is nothing solid
+ * joining them — the whole thing looks like a tadpole. A fat wrist is what
+ * makes body and tail read as one animal.
+ */
+const WRIST_WIDTH = 0.26
 
 /**
  * Body thickness along the spine, 0..1.
  *
- * Widest just behind the head and tapering to nothing at the tail — that
- * asymmetry is what makes a row of blobs read as a fish rather than a worm.
- * A profile that peaks in the middle looks like a grain of rice.
+ * Widest just behind the head and tapering toward the tail — that asymmetry
+ * is what makes a row of blobs read as a fish rather than a worm. A profile
+ * that peaks in the middle looks like a grain of rice.
  *
- * Two pieces: a smoothstep from the nose out to the shoulder, then a taper
- * to zero at the tail.
+ * It does not taper fully to zero: the body meets the tail fin at a narrow
+ * but real wrist, which is what the fin attaches to.
  */
 export function spineWidth(index: number, count: number): number {
   if (count <= 1) return 1
@@ -218,8 +358,104 @@ export function spineWidth(index: number, count: number): number {
     return NOSE_WIDTH + (1 - NOSE_WIDTH) * (u * u * (3 - 2 * u))
   }
 
+  // Near-linear taper rather than a steep curve: the body stays full most of
+  // its length and only narrows close to the tail, which is what a koi
+  // actually looks like from above.
   const u = (t - SHOULDER) / (1 - SHOULDER)
-  return Math.pow(1 - u, 1.6)
+  return WRIST_WIDTH + (1 - WRIST_WIDTH) * Math.pow(1 - u, 1.1)
+}
+
+/** One blob to draw. The renderer knows nothing about fish anatomy. */
+export type Stamp = {
+  x: number
+  y: number
+  radius: number
+  strength: number
+  /** Position along the colour gradient, 0..1. */
+  tint: number
+}
+
+/**
+ * Turn a fish into a list of blobs: body, tail fin, pectoral fins.
+ *
+ * Kept separate from the stepping so the silhouette can be unit tested, and
+ * so the renderer never needs to know what a fin is.
+ */
+export function koiSilhouette(
+  koi: Koi,
+  bodyRadius: number,
+  tailAmplitude = bodyRadius * 0.6,
+): Stamp[] {
+  const display = flutterSpine(koi.spine, koi.tailPhase, koi.tailEnergy, tailAmplitude)
+  const n = display.length
+  const stamps: Stamp[] = []
+  if (n === 0) return stamps
+
+  const tintAt = (t: number) => Math.min(1, Math.max(0, t * 0.72 + koi.hue * 0.28))
+
+  // --- body ---
+  for (let i = 0; i < n; i++) {
+    const point = display[i]!
+    const width = spineWidth(i, n)
+    const t = n > 1 ? i / (n - 1) : 0
+    stamps.push({
+      x: point.x,
+      y: point.y,
+      radius: bodyRadius * width,
+      strength: 0.6 + 0.4 * width,
+      tint: tintAt(t),
+    })
+  }
+
+  if (n < 3) return stamps
+
+  // --- tail fin ---
+  // Two lobes splaying back from the wrist, forked like a real caudal fin.
+  // It inherits the tail's sideways motion for free, because the wrist it
+  // hangs off is already part of the flutter wave.
+  const tail = display[n - 1]!
+  const wrist = display[n - 3]!
+  const backAngle = Math.atan2(tail.y - wrist.y, tail.x - wrist.x)
+  const finLength = bodyRadius * 1.15
+  const spread = 0.55
+
+  for (const side of [-1, 1]) {
+    const angle = backAngle + side * spread
+    for (const [reach, size] of [[0.32, 0.5], [0.62, 0.42], [0.92, 0.3]] as const) {
+      stamps.push({
+        x: tail.x + Math.cos(angle) * finLength * reach,
+        y: tail.y + Math.sin(angle) * finLength * reach,
+        radius: bodyRadius * size,
+        // Bright enough to land in the dense half of the ramp. Below about
+        // 0.5 a fin maps to sparse characters and visually evaporates.
+        strength: 0.62,
+        tint: tintAt(1),
+      })
+    }
+  }
+
+  // --- pectoral fins ---
+  // Just behind the head, sweeping gently out of phase with the tail.
+  const shoulderIndex = Math.max(1, Math.round(n * 0.22))
+  const shoulder = display[shoulderIndex]!
+  const ahead = display[shoulderIndex - 1]!
+  const bodyAngle = Math.atan2(shoulder.y - ahead.y, shoulder.x - ahead.x)
+  const sweep = Math.sin(koi.tailPhase * 0.8) * 0.3
+
+  for (const side of [-1, 1]) {
+    const angle = bodyAngle + side * (1.15 + sweep * side)
+    for (const [reach, size] of [[0.5, 0.34], [0.85, 0.24]] as const) {
+      stamps.push({
+        x: shoulder.x + Math.cos(angle) * bodyRadius * reach,
+        y: shoulder.y + Math.sin(angle) * bodyRadius * reach,
+        radius: bodyRadius * size,
+        strength: 0.52,
+        tint: tintAt(0.25),
+      })
+    }
+  }
+
+  return stamps
 }
 
 /** Build a koi at rest, its spine trailing straight back from the head. */
@@ -239,15 +475,19 @@ export function createKoi(
   }
   return {
     head,
-    velocity: { x: Math.cos(heading) * 12, y: Math.sin(heading) * 12 },
+    heading,
+    speed: 18,
     spine,
     wanderTarget: { x: head.x, y: head.y },
     // Zero, not a random delay: stepKoi picks a real target on the very
     // first frame. Seeded with its own position and a timer still running, a
-    // fish seeks the spot it is already on, decelerates to a stop, and sits
-    // frozen for up to three seconds — so the pond looks dead on load,
-    // exactly when someone is deciding whether to stay.
+    // fish seeks the spot it is already on, stops, and sits frozen — so the
+    // pond looks dead on load, exactly when someone is deciding whether to
+    // stay.
     wanderTimer: 0,
     hue,
+    tailPhase: Math.random() * Math.PI * 2,
+    tailEnergy: 0.5,
+    dartCooldown: 0,
   }
 }

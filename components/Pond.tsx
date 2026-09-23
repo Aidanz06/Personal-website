@@ -46,6 +46,8 @@ export type PondSettings = {
   rippleStrength: number
   koiCount: number
   bodyRadius: number
+  /** How far the tail sweeps, in pixels. */
+  tailAmplitude: number
   koiBrightness: number
   attractRadius: number
   attractStrength: number
@@ -53,18 +55,30 @@ export type PondSettings = {
 }
 
 export const DEFAULT_POND_SETTINGS: PondSettings = {
-  cellSize: 9,
-  cellAspect: 2,
-  waterBase: 0.10,
+  // One fish, rendered well, on a finer grid. A single koi can carry far more
+  // detail than five can — fins and a tail beat only read at this size.
+  cellSize: 7,
+  // 1.7, not 2. A monospace glyph box is about 0.6 wide to 1 tall, so a cell
+  // aspect of 2 wastes vertical resolution — and vertical rows are exactly
+  // what the fish needs to read as a body rather than a bar.
+  cellAspect: 1.7,
+  waterBase: 0.07,
   waterAmplitude: 0.09,
   rippleStrength: 0.45,
-  koiCount: 5,
+  koiCount: 1,
   bodyRadius: DEFAULT_BODY_RADIUS,
+  tailAmplitude: DEFAULT_BODY_RADIUS * 0.6,
   koiBrightness: 0.95,
   attractRadius: DEFAULT_KOI_SETTINGS.attractRadius,
   attractStrength: DEFAULT_KOI_SETTINGS.attractStrength,
   stoneBrightness: 0.45,
 }
+
+/**
+ * Settings that cannot be changed on the fly — they decide the size of the
+ * grid, the atlas and the fish population, so changing one means rebuilding.
+ */
+const STRUCTURAL_KEYS = ['cellSize', 'cellAspect', 'koiCount'] as const
 
 /** How many gradient steps the koi colours get in the atlas. */
 const KOI_SHADES = 6
@@ -97,6 +111,7 @@ export type PondProps = {
 export function Pond({ className, settings, stones = [], onStats }: PondProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const refreshRef = useRef<(() => void) | null>(null)
 
   const settingsRef = useRef<PondSettings>({ ...DEFAULT_POND_SETTINGS, ...settings })
   settingsRef.current = { ...DEFAULT_POND_SETTINGS, ...settings }
@@ -137,6 +152,9 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
     let previousColor: Int16Array = new Int16Array(0)
 
     let activeCellSize = settingsRef.current.cellSize
+    // The cell size the props last asked for, as distinct from the working
+    // size, which runtime degradation may have coarsened.
+    let requestedCellSize = settingsRef.current.cellSize
     let slowFrames = 0
     let lastTime = performance.now()
     let lastRippleAt = 0
@@ -199,6 +217,13 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
       width = container!.clientWidth
       height = container!.clientHeight
       if (width <= 0 || height <= 0) return
+
+      // A new cell size from the props overrides whatever degradation had
+      // settled on. Without this the slider moves and nothing happens.
+      if (settingsRef.current.cellSize !== requestedCellSize) {
+        requestedCellSize = settingsRef.current.cellSize
+        activeCellSize = requestedCellSize
+      }
 
       dpr = Math.min(window.devicePixelRatio || 1, 2)
       canvas!.width = Math.round(width * dpr)
@@ -306,7 +331,7 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
         }),
       )
       for (const fish of koi) {
-        stampKoi(field, fish, s.bodyRadius, s.koiBrightness, cw, ch)
+        stampKoi(field, fish, s.bodyRadius, s.koiBrightness, cw, ch, s.tailAmplitude)
       }
 
       // --- draw only what changed ---
@@ -386,6 +411,7 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
       if (reducedMotionQuery.matches) drawStill()
     }
 
+    refreshRef.current = refresh
     refresh()
 
     if (!reducedMotionQuery.matches) attach()
@@ -422,6 +448,7 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
     reducedMotionQuery.addEventListener('change', handleReducedMotion)
 
     return () => {
+      refreshRef.current = null
       detach()
       intersectionObserver.disconnect()
       resizeObserver.disconnect()
@@ -429,6 +456,16 @@ export function Pond({ className, settings, stones = [], onStats }: PondProps) {
       reducedMotionQuery.removeEventListener('change', handleReducedMotion)
     }
   }, [])
+
+  // The main effect runs once and owns all the mutable state, so a prop
+  // change reaches it only through settingsRef — which is enough for values
+  // read every frame, but not for ones baked into the grid, the atlas or the
+  // fish population. Those need an explicit rebuild, or their sliders are
+  // silently dead.
+  const structuralKey = STRUCTURAL_KEYS.map((key) => settingsRef.current[key]).join('|')
+  useEffect(() => {
+    refreshRef.current?.()
+  }, [structuralKey])
 
   return (
     <div ref={containerRef} className={`relative overflow-hidden ${className ?? ''}`}>

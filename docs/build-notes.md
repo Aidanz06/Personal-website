@@ -767,3 +767,82 @@ in the response.
 Scroll-as-depth, stones as real links with previews, and fish carrying
 photographs. Those are milestone 6, and they should wait until the pond
 itself looks right.
+
+### milestone 5a — one fish, properly
+
+Three things came out of looking at the first pond: two sliders were dead,
+the fish barely reacted to the cursor, and the whole thing should be one
+well-drawn koi rather than a school of rough ones.
+
+**Three sliders were silently dead.** `cellSize`, `cellAspect` and `koiCount`
+are all baked into things built once — the grid, the glyph atlas, the fish
+population — and the main effect runs a single time and owns all of that
+state. Prop changes reached it through a ref, which is enough for values read
+every frame (radii, brightness, water) but not for these. Moving those
+sliders did nothing until an unrelated resize happened to trigger a rebuild.
+
+Fixed with a second effect that watches only the structural values and forces
+a rebuild. The rebuild also had to learn that a new `cellSize` from the props
+overrides whatever the frame-rate degradation had settled on, or the slider
+would be overruled by the safety net.
+
+**The attraction radius was smaller than the pond.** It defaulted to 260px in
+a 1158px-wide pond, and it is a *detection* radius — beyond it the fish is
+unaware of the cursor entirely. So for most of the pond the fish genuinely
+could not see you, which reads exactly like the feature being broken. The
+unit test passed throughout because it placed the pointer 140px away.
+
+It is now 1400px — bigger than any pond it will sit in — and there is a test
+asserting the radius exceeds the diagonal of the pond it is swimming in.
+
+**Locomotion was rewritten for burst and glide.** The fish used to steer with
+constant-velocity forces, which moves it like a cursor. Real fish, and the
+Animal Crossing ones this is chasing, swim in bursts: a few hard tail beats,
+then a long glide while they slow, then another burst.
+
+A koi is now a heading and a scalar speed rather than a velocity vector.
+Speed decays constantly against drag and is topped up by periodic darts;
+heading turns toward whatever it is interested in. One detail does a lot of
+work: **the fish turns far better mid-burst than while gliding**, because it
+steers with its tail. That is what produces a flick-and-glide arc instead of
+a smooth circle.
+
+**The tail beats as a travelling wave.** Each spine point is pushed sideways,
+perpendicular to the body, by a sine whose phase lags further down the body.
+The lag is the entire trick: every point moving in step is a fish wagging
+rigidly, whereas a wave running head to tail is how a fish actually swims,
+and the eye knows the difference immediately. Amplitude ramps cubically so
+the head is effectively rigid and the tail does the sweeping, and it scales
+with how hard the fish is currently beating — so a dart is visible as a
+harder beat, not just as more speed.
+
+It also gives the fins their movement for free: the tail fin hangs off the
+wrist, which is already part of the wave.
+
+### what made it read as a fish rather than a shape
+
+Three passes, each fixing something specific:
+
+**It was flat.** Five character rows cannot describe a curve, so the body
+read as a horizontal bar however correct its pixel proportions were. Two
+fixes: the cell aspect went from 2.0 to **1.7**, because a monospace glyph
+box is about 0.6 wide to 1 tall and an aspect of 2 throws away vertical rows
+— which are the scarce resource here. And the fish got bigger, sized by *row
+count* rather than by how large it looked in pixels.
+
+**It was a tadpole.** The body tapered to a point, so the tail fin floated
+behind it as a detached smudge with nothing joining the two. Koi have a fat
+wrist where the fin attaches; the minimum body width went from 0.12 to 0.26.
+
+**The fins evaporated.** They were stamped at 0.36–0.42 brightness, which
+maps to the sparse end of the ramp — so they rendered as scattered dots
+rather than as fins. Anything below about 0.5 disappears. Raised to 0.52–0.62.
+
+The body profile also changed from a steady taper to near-full through the
+middle with a late narrowing, which is what a koi looks like from above. A
+steady taper reads as a comma.
+
+### still cheap
+
+At 8,250 cells on the finer grid, with the fish and fins and a moving cursor:
+**224 of 8,250 cells redrawn per frame — 3%.** 149 tests passing.

@@ -13,7 +13,7 @@
  */
 
 import type { Koi } from './koi'
-import { spineWidth } from './koi'
+import { koiSilhouette } from './koi'
 
 /** What a cell is showing, so the draw step knows which colour to use. */
 export const MATERIAL = {
@@ -107,7 +107,12 @@ export function stampBlob(
   }
 }
 
-/** Stamp a whole fish, head to tail. */
+/**
+ * Stamp a whole fish: body, tail fin and pectoral fins.
+ *
+ * The anatomy lives in koi.ts — this just draws whatever blobs it is handed,
+ * so the compositor never needs to know what a fin is.
+ */
 export function stampKoi(
   field: Field,
   koi: Koi,
@@ -115,26 +120,17 @@ export function stampKoi(
   brightness: number,
   cellWidth: number,
   cellHeight: number,
+  tailAmplitude?: number,
 ): void {
-  const count = koi.spine.length
-  for (let i = 0; i < count; i++) {
-    const point = koi.spine[i]!
-    const width = spineWidth(i, count)
-    if (width <= 0.01) continue
-
-    // Tint runs head to tail and is offset per fish, so a school is not all
-    // the same colour.
-    const along = count > 1 ? i / (count - 1) : 0
-    const tint = Math.min(1, Math.max(0, along * 0.75 + koi.hue * 0.25))
-
+  for (const stamp of koiSilhouette(koi, bodyRadius, tailAmplitude)) {
     stampBlob(
       field,
-      point.x,
-      point.y,
-      bodyRadius * width,
-      brightness * (0.55 + 0.45 * width),
+      stamp.x,
+      stamp.y,
+      stamp.radius,
+      brightness * stamp.strength,
       MATERIAL.koi,
-      tint,
+      stamp.tint,
       cellWidth,
       cellHeight,
     )
