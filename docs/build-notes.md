@@ -1355,3 +1355,31 @@ Top speed 161 → 201, thrust 262 → 328 so the resting cruise scales with it
 rather than only the ceiling.
 
 238 tests.
+
+### milestone 6f — faster again
+
+Top speed 201 → 251, thrust 328 → 410, so the resting cruise scales with the
+ceiling rather than only the top end.
+
+| | |
+|---|---|
+| top speed | 251 px/s |
+| idle drift | 52 px/s (21% of top) |
+| catching up, off-screen | 853 px/s ceiling |
+
+One test had to change, and the way it changed is the point. "Keeps swimming
+gently without ever darting" asserted an idle speed under 45px/s — an
+absolute number calibrated to a thrust value that has now moved three times,
+so it failed on a change that was entirely intentional. It now asserts the
+idle drift is between 3% and 30% **of top speed**, because what the test
+actually cares about is the *ratio* between drifting and sprinting: if idle
+creeps toward a cruise, a burst stops reading as a burst. That version
+survives any future speed tuning without being hand-edited.
+
+**Measured across the speed changes.** Tracking the koi's displacement
+between samples on the real page: mean 10.0px originally, 51.2px now. The
+surge ratio between the slowest and fastest sample is 3.5×, down from 8.8× —
+still a clear surge-and-glide, but worth knowing that the character flattens
+as speed rises. Push much further and it will read as a constant glide.
+
+238 tests.

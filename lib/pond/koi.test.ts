@@ -325,14 +325,20 @@ describe('stepKoi — fluidity', () => {
 
   it('keeps swimming gently without ever darting', () => {
     // Idle tail beating alone must be enough to move it, or the fish stalls
-    // between bursts and looks like it is being dragged.
+    // between bursts and looks like it is being dragged — but it must still
+    // be a drift rather than a cruise, or a burst reads as nothing special.
+    //
+    // Expressed against maxSpeed rather than as absolute pixels, so tuning
+    // the fish's speed does not require hand-editing this number: what
+    // matters is the RATIO between drifting and sprinting.
     const koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)
     let current = { ...koi, tailEnergy: 0, dartCooldown: 1e9, speed: 0 }
     for (let i = 0; i < 300; i++) {
       current = stepKoi(current, [], null, BOUNDS, 1 / 60, DEFAULT_KOI_SETTINGS, () => 0.5)
     }
-    expect(current.speed).toBeGreaterThan(5)
-    expect(current.speed).toBeLessThan(45)
+    const fraction = current.speed / DEFAULT_KOI_SETTINGS.maxSpeed
+    expect(fraction).toBeGreaterThan(0.03)
+    expect(fraction).toBeLessThan(0.3)
   })
 
   it('carries momentum through a turn instead of stopping dead', () => {

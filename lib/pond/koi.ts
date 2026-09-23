@@ -74,13 +74,13 @@ export type KoiSettings = {
 }
 
 export const DEFAULT_KOI_SETTINGS: KoiSettings = {
-  maxSpeed: 201,
+  maxSpeed: 251,
   turnRate: 1.7,
   turnAccel: 4.2,
   turnDamping: 2.4,
-  // Sized against drag: at rest this settles around 44px/s, and a burst of
+  // Sized against drag: at rest this settles around 55px/s, and a burst of
   // beating carries it to the speed cap.
-  thrust: 328,
+  thrust: 410,
   // Large on purpose — see the field note above. A pond-sized radius means
   // the fish always knows where the cursor is.
   attractRadius: 1400,
