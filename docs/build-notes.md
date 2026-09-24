@@ -2061,3 +2061,52 @@ first — the first version of it counted the word in the comment explaining
 the attribute and failed on its own documentation.
 
 353 tests.
+
+### fix — the page transition was throwing the stones off their labels
+
+Reported as "stones aren't rendering right". It was the page-change animation
+added in step 7, and the mechanism is worth writing down because it is not
+obvious from either piece on its own.
+
+**Any `transform` other than `none` makes an element the containing block for
+its `position: fixed` descendants.** The animation was on `.page-flow`, the
+wrapper around the whole page. The pond is a `fixed inset-0` canvas *inside*
+that wrapper. So for the 480ms the animation ran, `inset-0` stopped meaning
+"the viewport" and started meaning "this wrapper" — which on the homepage is
+**737 viewport-heights tall**.
+
+The canvas then measured its container at the height of the whole document
+and placed the stones at `documentHeight * depthVh`, while the real anchors,
+positioned in CSS `vh`, stayed at `viewportHeight * depthVh`. The drawn stones
+and the links they are supposed to sit under ended up thousands of pixels
+apart.
+
+**And it did not end when the animation did.** At that size the grid is about
+666,000 cells. The frame rate collapsed, and runtime degradation — which is
+one-way by design, as its own comment says — ratcheted the cell size to its
+ceiling and left it there. The container snapped back to the viewport half a
+second later; the coarse grid did not. So the real symptom was not a
+half-second glitch but a pond that rendered in enormous characters for the
+rest of the session.
+
+Two fixes, one for each half:
+
+**The transform moved to `main`,** which is a *sibling* of the pond container
+in both layouts rather than an ancestor. The content still rises; the water is
+left alone. A test parses `globals.css`, finds every `@keyframes` block that
+touches `transform`, and asserts every selector using it is scoped to
+`> main`.
+
+**Degradation now recalibrates when the box changes size.** A coarsened cell
+size is a judgement about the box it was measured in; a large enough change
+in area makes it a judgement about some other box. `shouldRecalibrate()`
+compares areas — area, not dimensions, because that is what the cost scales
+with, and turning a phone sideways costs exactly the same. The threshold is
+1.5x, which ignores a mobile address bar appearing (about 1.1x) and a rotation
+(exactly 1.0x), and catches a 7.4x explosion.
+
+That second fix is the more valuable one: the first stops this particular
+layout bug, the second stops any future transient from permanently ruining the
+rendering.
+
+364 tests.

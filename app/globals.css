@@ -216,7 +216,19 @@
 
 /* The page-change animation: content rises into place as the wave crosses the
    water behind it. Deliberately short — this is a hint that something moved,
-   not a curtain to sit through. See components/PageFlow.tsx. */
+   not a curtain to sit through. See components/PageFlow.tsx.
+
+   IT IS ON `main`, NOT ON THE WRAPPER, AND THAT MATTERS.
+
+   Any transform other than `none` makes an element the containing block for
+   its position:fixed descendants. The pond is a `fixed inset-0` canvas, and
+   the wrapper contains it — so animating the wrapper made `inset-0` resolve
+   to a box 737 viewport-heights tall rather than to the viewport. The canvas
+   then drew the stones at documentHeight * depthVh while the real links, in
+   vh units, stayed at viewportHeight * depthVh, and the two came apart.
+
+   `main` is a SIBLING of the pond container in both layouts, so putting the
+   transform there moves the content and leaves the water alone. */
 @keyframes page-flow {
   from {
     opacity: 0;
@@ -228,12 +240,12 @@
   }
 }
 
-.page-flow {
+.page-flow > main {
   animation: page-flow 480ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-flow {
+  .page-flow > main {
     animation: none;
   }
 }

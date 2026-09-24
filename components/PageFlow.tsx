@@ -12,6 +12,13 @@ import { requestPageSplash } from '@/lib/pond/splash'
  * water is the only thing on this site that survives a navigation, so it is
  * the only thing that can connect the two pages.
  *
+ * The animation lands on the `<main>` inside, not on this wrapper. A
+ * transform makes an element the containing block for its position:fixed
+ * descendants, and the pond is a fixed, full-viewport canvas that this
+ * wrapper contains — animating the wrapper resized the pond to the height of
+ * the whole document and threw the stones off their labels. `main` is a
+ * sibling of the pond container, so the content moves and the water does not.
+ *
  * Keying the wrapper on the path is what runs the CSS animation: a new key is
  * a new element, and a new element starts its animation from the beginning.
  * The alternative — React's <ViewTransition>, which would also animate the

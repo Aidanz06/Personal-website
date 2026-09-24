@@ -7,7 +7,7 @@ import { luminanceGrid } from '@/lib/ascii/luminance'
 import { rampIndex } from '@/lib/ascii/ramp'
 import { DEFAULT_RAMP } from '@/lib/ascii/constants'
 import { subscribe, pointerState } from '@/lib/ascii/loop'
-import { stepDegradation } from '@/lib/ascii/degrade'
+import { shouldRecalibrate, stepDegradation } from '@/lib/ascii/degrade'
 import { MAX_CELL_SIZE } from '@/lib/ascii/constants'
 import {
   DEFAULT_WAVES,
@@ -309,6 +309,8 @@ export function Pond({
     // size, which runtime degradation may have coarsened.
     let requestedCellSize = settingsRef.current.cellSize
     let slowFrames = 0
+    /** The box the current cell size was judged against. */
+    let measuredBox = { width: 0, height: 0 }
     let lastTime = performance.now()
     let lastRippleAt = 0
     let visible = true
@@ -511,6 +513,15 @@ export function Pond({
         requestedCellSize = settingsRef.current.cellSize
         activeCellSize = requestedCellSize
       }
+
+      // A coarsened grid is a judgement about the box it was measured in. If
+      // the box has changed size dramatically, that judgement is about some
+      // other box, so try the fine grid again and let degradation re-decide.
+      if (shouldRecalibrate(measuredBox, { width, height })) {
+        activeCellSize = requestedCellSize
+        slowFrames = 0
+      }
+      measuredBox = { width, height }
 
       dpr = Math.min(window.devicePixelRatio || 1, 2)
       canvas!.width = Math.round(width * dpr)

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEGRADE_BELOW_FPS,
   SUSTAINED_SLOW_FRAMES,
+  shouldRecalibrate,
   stepDegradation,
   type DegradeState,
 } from './degrade'
@@ -108,5 +109,46 @@ describe('stepDegradation — bad input', () => {
   it('treats the trigger as strictly below, never equal', () => {
     expect(run(start(), DEGRADE_BELOW_FPS, 1000).coarsenings).toBe(0)
     expect(run(start(), DEGRADE_BELOW_FPS - 1, SUSTAINED_SLOW_FRAMES).coarsenings).toBe(1)
+  })
+})
+
+describe('shouldRecalibrate', () => {
+  const box = (width: number, height: number) => ({ width, height })
+
+  it('leaves a steady box alone', () => {
+    expect(shouldRecalibrate(box(1280, 860), box(1280, 860))).toBe(false)
+  })
+
+  it('ignores the small changes a browser makes on its own', () => {
+    // A mobile address bar showing and hiding moves the viewport height by
+    // about a tenth. Re-testing the fine grid on every one of those would
+    // undo degradation on exactly the devices that need it.
+    expect(shouldRecalibrate(box(390, 844), box(390, 760))).toBe(false)
+    expect(shouldRecalibrate(box(1280, 860), box(1280, 960))).toBe(false)
+  })
+
+  it('ignores a rotation, which costs the same either way', () => {
+    // Same pixel count, same work. Area is what the cost scales with.
+    expect(shouldRecalibrate(box(375, 667), box(667, 375))).toBe(false)
+  })
+
+  it('recalibrates when the box grows enormously', () => {
+    // The actual bug: a transform on an ancestor made a fixed, full-viewport
+    // canvas resolve against the whole document instead.
+    expect(shouldRecalibrate(box(1280, 860), box(1280, 6339))).toBe(true)
+  })
+
+  it('recalibrates when it shrinks back again', () => {
+    // Otherwise the coarse grid chosen for the huge box outlives it.
+    expect(shouldRecalibrate(box(1280, 6339), box(1280, 860))).toBe(true)
+  })
+
+  it('has nothing to compare against on the first measurement', () => {
+    expect(shouldRecalibrate(box(0, 0), box(1280, 860))).toBe(false)
+  })
+
+  it('refuses to act on a degenerate or nonsense box', () => {
+    expect(shouldRecalibrate(box(1280, 860), box(0, 860))).toBe(false)
+    expect(shouldRecalibrate(box(1280, 860), box(Number.NaN, 860))).toBe(false)
   })
 })
