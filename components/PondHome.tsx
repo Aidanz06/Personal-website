@@ -9,6 +9,7 @@ import { placePhotoStones, pondDepthVh } from '@/lib/pond/photoStones'
 import { isCaptionEmpty } from '@/lib/captions'
 import type { Photo } from '@/lib/photos'
 import { contacts, site } from '@/lib/site'
+import { asciiBanner } from '@/lib/banner'
 
 /**
  * The homepage: a pond you descend.
@@ -33,6 +34,18 @@ import { contacts, site } from '@/lib/site'
  * decimal places of a viewport height is well under a pixel, and it keeps the
  * inline styles readable when someone opens the inspector.
  */
+/** "photo gallery" as ASCII art: one line for wide screens, stacked for phones. */
+const GALLERY_TITLE_WIDE = asciiBanner('photo gallery').join('\n')
+const GALLERY_TITLE_STACKED = [...asciiBanner('photo'), '', ...asciiBanner('gallery')].join('\n')
+/**
+ * How far above the first photo rock the title starts, in viewport heights.
+ *
+ * Was 0.25 for a one-line note. The stacked title is eleven rows, about 95px
+ * on a phone at a 0.62 line height; 0.28 leaves clear water above the first
+ * rock at every size.
+ */
+const GALLERY_TITLE_LIFT_VH = 0.28
+
 function vh(value: number): string {
   return `${(value * 100).toFixed(4)}vh`
 }
@@ -131,13 +144,37 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
         })}
 
         {/* --- the photo rocks --- */}
+        {/* The gallery's heading, drawn in characters like everything else
+            in the pond, in the theme's muted tone so it changes with it.
+            One line where there is room; stacked on a phone, where 60
+            characters will not fit at a size anyone can read.
+
+            Line height 0.62, about a monospace glyph's width, so each
+            "pixel" of the font is square and the strokes join. At the usual
+            line height the letters came out twice as tall as they are wide
+            and fell apart into dots.
+
+            A screen reader gets the words from the hidden <h2>. The art is
+            hidden from it: read aloud, it is a minute of "number sign". */}
         {photoStones.length > 0 && (
-          <p
-            className="column absolute inset-x-0 font-mono text-small text-muted"
-            style={{ top: vh(photoStones[0]!.depthVh - 0.25) }}
+          <div
+            className="column absolute inset-x-0"
+            style={{ top: vh(photoStones[0]!.depthVh - GALLERY_TITLE_LIFT_VH) }}
           >
-            photographs. rest on a stone to bring one up.
-          </p>
+            <h2 className="sr-only">photo gallery</h2>
+            <pre
+              aria-hidden="true"
+              className="hidden font-mono text-[16px] leading-[0.62] text-muted sm:block"
+            >
+              {GALLERY_TITLE_WIDE}
+            </pre>
+            <pre
+              aria-hidden="true"
+              className="font-mono text-[14px] leading-[0.62] text-muted sm:hidden"
+            >
+              {GALLERY_TITLE_STACKED}
+            </pre>
+          </div>
         )}
 
         {photoStones.map((spec, index) => {

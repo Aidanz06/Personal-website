@@ -2897,3 +2897,33 @@ as they were before, just cooler now: the duotone for a light ground has
 always compressed them. That's unchanged here and worth a separate look.
 
 541 tests.
+
+## the gallery's heading, in characters
+
+"photographs. rest on a stone to bring one up." is replaced by **photo
+gallery**, drawn as ASCII art in the theme's muted tone, so it changes with
+the theme like every other character in the pond.
+
+- **The font is hand-written** in `lib/banner.ts`: five rows, only the ten
+  letters the heading uses. A figlet-style library would be a dependency for
+  ten letters, and its standard font puts "photo gallery" at about 90
+  characters. This one is 60 on a line, and 33 stacked, which is what a phone
+  gets. A letter the font doesn't have throws instead of silently dropping
+  out of a heading.
+- **Line height 0.62.** A monospace glyph is about 0.6 as wide as it is
+  tall, so at a normal line height each font pixel was a tall, thin cell and
+  the letters fell apart into dots. Matching the row pitch to the glyph width
+  makes the pixels square and joins the strokes. Checked in Chrome: unreadable
+  before, clear after.
+- **Screen readers get the words.** A visually hidden `<h2>photo
+  gallery</h2>` carries them, and the art is `aria-hidden`. Read aloud, it
+  would be a minute of "number sign". The gallery also gets a real heading,
+  which it didn't have before.
+- **Spacing, measured:** at 375 the stacked title has 78px of clear water
+  above it to the listening stone's label and 65px below it to the first
+  photo rock. At 1280 those are 101px and 148px. No horizontal scroll.
+
+The old line also explained how the rocks work. That explanation is gone,
+at Aidan's request: hovering or tapping a rock is the only way in now.
+
+548 tests.
