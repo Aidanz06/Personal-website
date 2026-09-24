@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_THEME, THEMES, THEME_STORAGE_KEY, isThemeId } from './themes'
+import { DEFAULT_THEME, THEMES, THEME_STORAGE_KEY, isThemeId, themeScript } from './themes'
 
 const read = (...parts: string[]) => readFileSync(join(process.cwd(), ...parts), 'utf8')
 
@@ -55,18 +55,43 @@ describe('the no-flash script and hydration', () => {
     expect(body).not.toContain('suppressHydrationWarning')
   })
 
-  it('writes the attribute the script reads, under the key it reads', () => {
-    const script = read('components', 'ThemeScript.tsx')
-    expect(script).toContain('dataset.theme')
-    expect(script).toContain('THEME_STORAGE_KEY')
-    expect(THEME_STORAGE_KEY.length).toBeGreaterThan(0)
+  it('renders the tested script, which writes the attribute under the key it reads', () => {
+    expect(read('components', 'ThemeScript.tsx')).toContain('themeScript()')
+    expect(themeScript()).toContain('dataset.theme')
+    expect(themeScript()).toContain(JSON.stringify(THEME_STORAGE_KEY))
+  })
+  // Falling back when storage throws is tested by running the script, below.
+})
+
+describe('the no-flash script, run', () => {
+  // Runs the real script against a stand-in page and storage.
+  function run(stored: string | null, throws = false): string | undefined {
+    const html = { dataset: {} as Record<string, string> }
+    const storage = {
+      getItem: (key: string) => {
+        if (throws) throw new Error('denied')
+        return key === THEME_STORAGE_KEY ? stored : null
+      },
+    }
+    new Function('localStorage', 'document', themeScript())(storage, { documentElement: html })
+    return html.dataset.theme
+  }
+
+  it('applies a saved theme', () => {
+    expect(run('paper')).toBe('paper')
   })
 
-  it('still falls back to the default when storage throws', () => {
-    // Private browsing refuses localStorage outright, and an unguarded read
-    // there leaves the page with no theme at all.
-    const script = read('components', 'ThemeScript.tsx')
-    expect(script).toContain('catch')
-    expect(script).toContain('DEFAULT_THEME')
+  it('falls back to the default for anything that is not a theme', () => {
+    // Critique of 2026-09-24 (second run): the script applied whatever was
+    // stored, and a stale or mistyped value ("dark", from an older version,
+    // or someone poking at devtools) matches no theme block in the CSS, so
+    // the page rendered with no theme at all.
+    for (const stored of ['dark', '', 'KOI', '"paper"', null]) {
+      expect(run(stored)).toBe(DEFAULT_THEME)
+    }
+  })
+
+  it('falls back when storage throws', () => {
+    expect(run('paper', true)).toBe(DEFAULT_THEME)
   })
 })

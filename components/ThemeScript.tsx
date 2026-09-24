@@ -1,4 +1,4 @@
-import { DEFAULT_THEME, THEME_STORAGE_KEY } from '@/lib/themes'
+import { themeScript } from '@/lib/themes'
 
 /**
  * Applies the saved theme before the browser paints anything.
@@ -14,13 +14,7 @@ import { DEFAULT_THEME, THEME_STORAGE_KEY } from '@/lib/themes'
  * some privacy modes.
  */
 export function ThemeScript() {
-  const script = `
-(function(){try{
-  var t = localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
-  document.documentElement.dataset.theme = t || ${JSON.stringify(DEFAULT_THEME)};
-}catch(e){
-  document.documentElement.dataset.theme = ${JSON.stringify(DEFAULT_THEME)};
-}})();`
-
-  return <script dangerouslySetInnerHTML={{ __html: script }} />
+  // Built in lib/themes.ts, where it is tested by running it: it applies the
+  // stored theme only when it is a real one, and the default otherwise.
+  return <script dangerouslySetInnerHTML={{ __html: themeScript() }} />
 }

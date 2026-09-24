@@ -3614,3 +3614,21 @@ Checked in Chrome for koi, paper and phosphor, at 1280 and 375. The photo
 fades into the water on all four sides, and closing it leaves no residue. The
 second and third tests were written as each problem appeared in the browser.
 The third was red first; the second landed with its fix.
+
+### /listening's title, the /about order, a pond 404, a checked theme
+
+- **/listening's h1 is `text-name`**, like every other page title, instead
+  of `text-heading`. `lib/pageHeadings.test.ts` checks every page's title,
+  the 404 included.
+- **The /about grid runs newest first**, through the same `orderGallery` as
+  the pond. It was in filename order, with june 2026 sitting among may 2025.
+- **A 404 in the pond** (`app/not-found.tsx`): the inner pages' quiet water,
+  "nothing here / this part of the pond is empty." and "↑ back to the
+  surface". It replaces Next's unstyled default. It returns a real 404
+  status and is noindexed.
+- **The no-flash theme script only applies a real theme.** It applied
+  whatever was in `aidan-theme`, and a stale or hand-edited value matched no
+  CSS theme block. The script now lives in `lib/themes.ts` as
+  `themeScript()` and is tested by running it against a stand-in page. The
+  first browser check still showed "dark": Chrome had served its cached copy
+  of the old build. With the cache disabled, "dark" falls back to koi.

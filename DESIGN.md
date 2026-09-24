@@ -298,6 +298,9 @@ The site's navigation: a real link laid over a stone drawn in the canvas.
 A button, not a link: nothing navigates. The rock *is* the picture.
 - **Shape:** a smaller round character stone. At least 52px across for a
   photo, 60px for an album; album size scales with play count.
+- **Accessible name:** starts with the visible name, then the description
+  ("qianling bridge: A stone arch bridge…"), so what a voice-control user
+  sees is what they can say.
 - **Label:** below it, in Drowned Grey, or koi orange while open. A photo
   rock's label is the name Aidan wrote for it (`captions.json` → `name`),
   as swaying Gallery Text; a rock with no name has no label. An album rock shows its rank (`01`–`05`). Hidden while its own
@@ -334,7 +337,9 @@ to the greeting. The koi follows the reader down and back up.
 ### Surfacing Picture (signature)
 How any image appears in the pond. A photograph resolves from coarse pond
 characters into the real image, duotoned from Tancho Cream to the water's
-colour and vignetted into the ground. An album cover resolves into its own
+colour and faded to transparent at every side, so it dissolves into the
+water around it with no box: the characters under it step aside as it
+arrives, and never leave a frame of dots. An album cover resolves into its own
 finer ASCII art instead: 4px characters, a 16-step ramp measured from the
 site's own mono font, contrast stretched per cover, drawn in ink with
 feathered edges, drifting slowly. A cover last.fm has no art for opens as
