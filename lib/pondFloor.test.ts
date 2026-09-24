@@ -14,14 +14,10 @@ import { contacts } from './site'
 const home = readFileSync(join(process.cwd(), 'components/PondHome.tsx'), 'utf8')
 
 describe('the pond floor', () => {
-  it('links github, the one destination known so far', () => {
-    expect(contacts.find((c) => c.label === 'github')?.href).toBe('https://github.com/Aidanz06')
-  })
-
-  it('keeps the unknown ones as placeholders, never guessed', () => {
-    for (const label of ['email', 'linkedin']) {
-      expect(contacts.find((c) => c.label === label)?.href).toBeNull()
-    }
+  it('links email, and only email', () => {
+    // Aidan's call: no github or linkedin on the site.
+    expect(contacts.map((c) => c.label)).toEqual(['email'])
+    expect(contacts[0]?.href).toBe('mailto:zheng.ai@northeastern.edu')
   })
 
   it('sits the footer on the bottom of the page, not partway up the last screen', () => {

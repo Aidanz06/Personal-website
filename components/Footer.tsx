@@ -1,7 +1,7 @@
 import { contacts } from '@/lib/site'
 
 /**
- * Homepage footer: email, github, linkedin.
+ * Contact footer: the links in lib/site.ts (currently email only).
  *
  * Entries without a real destination render as muted text rather than as
  * links, so a placeholder can never be clicked into a dead route.

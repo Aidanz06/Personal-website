@@ -33,12 +33,7 @@ export type Contact = {
   readonly placeholder: string
 }
 
+// Email only: Aidan chose not to list github or linkedin.
 export const contacts: readonly Contact[] = [
-  { label: 'email', href: null, placeholder: '[email — aidan to add]' },
-  { label: 'github', href: 'https://github.com/Aidanz06', placeholder: '' },
-  {
-    label: 'linkedin',
-    href: null,
-    placeholder: '[linkedin url — aidan to add]',
-  },
+  { label: 'email', href: 'mailto:zheng.ai@northeastern.edu', placeholder: '' },
 ]

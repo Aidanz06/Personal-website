@@ -3422,3 +3422,14 @@ horizontal scroll, and the climb lands at `scrollY 0` with focus on the
 greeting.
 
 614 tests.
+
+## contact: email only
+
+Aidan gave his email and chose to list neither GitHub nor LinkedIn, so the
+footer is now a single `email` link to `mailto:zheng.ai@northeastern.edu`.
+This reverses the github link from the delight step. `lib/pondFloor.test.ts`
+now pins it: exactly one contact, the email, with that href.
+
+The address was typed as `nrtheastern.edu`, which I read as a typo for
+`northeastern.edu` (the school named on the homepage) and flagged back to
+Aidan.

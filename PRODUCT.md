@@ -95,7 +95,8 @@ it, and the site is built so that everything is also real, accessible HTML.
   awaiting Aidan's check.
 - **Listening:** live last.fm data for the user `azyaya123`.
 - **Absent, and not to be fabricated:** /about prose (four placeholders),
-  contact URLs and email, testimonials, metrics, press. Nothing about Tailor
+  testimonials, metrics, press. Contact is email only
+  (`zheng.ai@northeastern.edu`); Aidan chose not to list GitHub or LinkedIn. Nothing about Tailor
   Studio's usage or results beyond what Aidan states.
 
 ## Product Principles
