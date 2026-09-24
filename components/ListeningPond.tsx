@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import { Pond, type PhotoRect } from '@/components/Pond'
 import { BackLink } from '@/components/BackLink'
 import { ThemeMenu } from '@/components/ThemeMenu'
 import { listeningFallbackMarkup } from '@/lib/listening/fallback'
 import { formatAsOf, onRepeatLabel } from '@/lib/listening/format'
 import { listeningLayout } from '@/lib/listening/rocks'
+import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
 import type { ListeningData } from '@/lib/listening/types'
 
 /**
@@ -80,27 +81,23 @@ function captionWidth(coverWidth: number): string {
 }
 
 export function ListeningPond({ data }: { data: ListeningData }) {
-  // Hover and focus open a rock; a tap pins it, which is the whole touch
-  // story since there is no hover on a phone.
-  const [hovered, setHovered] = useState<number | null>(null)
-  const [pinned, setPinned] = useState<number | null>(null)
-  const active = pinned ?? hovered
+  // Hover and focus open a rock; a click or tap pins it, and a second one
+  // closes it. See lib/pond/rockSelection.ts.
+  const [selection, select] = useReducer(rockSelection, initialRockSelection)
+  const active = activeRock(selection)
+  const pinned = selection.pinned
   // Where the open cover has settled, so the caption can sit under it. The
   // pond reports this twice per rock, not once per frame.
   const [rect, setRect] = useState<PhotoRect | null>(null)
 
   // Esc closes whatever is open, pinned or not. On the window rather than the
   // button, because a rock pinned by a tap does not have focus — and a cover
-  // you cannot dismiss from the keyboard is a trap.
-  //
-  // (The brief described this as matching the photo rocks. They have no Esc
-  // handler; this is new here, and the homepage is left as it was.)
+  // you cannot dismiss from the keyboard is a trap. The homepage's photo
+  // rocks do the same.
   useEffect(() => {
     if (active === null) return
     function close(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return
-      setPinned(null)
-      setHovered(null)
+      if (event.key === 'Escape') select({ type: 'escape' })
     }
     window.addEventListener('keydown', close)
     return () => window.removeEventListener('keydown', close)
@@ -136,7 +133,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
 
       <main className="listening-pond relative" style={{ minHeight: vh(depthVh) }}>
         <div className="column py-3">
-          <div className="flex items-baseline gap-1">
+          <div className="flex items-baseline gap-2">
             <BackLink />
             <ThemeMenu />
           </div>
@@ -185,13 +182,11 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                   height: rockSize(rock.radiusFraction, rock.minRadius),
                   transform: 'translate(-50%, -50%)',
                 }}
-                onMouseEnter={() => setHovered(index)}
-                onMouseLeave={() =>
-                  setHovered((current) => (current === index ? null : current))
-                }
-                onFocus={() => setHovered(index)}
-                onBlur={() => setHovered((current) => (current === index ? null : current))}
-                onClick={() => setPinned((current) => (current === index ? null : index))}
+                onMouseEnter={() => select({ type: 'enter', index })}
+                onMouseLeave={() => select({ type: 'leave', index })}
+                onFocus={() => select({ type: 'focus', index })}
+                onBlur={() => select({ type: 'blur', index })}
+                onClick={() => select({ type: 'click', index })}
               >
                 {/* A pebble carries its rank, because the ranking is the
                     information. */}

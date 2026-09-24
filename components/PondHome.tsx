@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import { Pond, type PhotoRect } from '@/components/Pond'
 import { ThemeMenu } from '@/components/ThemeMenu'
 import { HOME_STONES, POND_DEPTH_VH } from '@/lib/pond/stones'
@@ -10,6 +10,7 @@ import { isCaptionEmpty } from '@/lib/captions'
 import type { Photo } from '@/lib/photos'
 import { contacts, site } from '@/lib/site'
 import { asciiBanner } from '@/lib/banner'
+import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
 
 /**
  * The homepage: a pond you descend.
@@ -51,14 +52,29 @@ function vh(value: number): string {
 
 export function PondHome({ photos }: { photos: readonly Photo[] }) {
   const [highlight, setHighlight] = useState<number | null>(null)
-  // Hover and focus open a photo rock; a tap pins it, which is the whole
-  // touch story since there is no hover on a phone.
-  const [hoveredPhoto, setHoveredPhoto] = useState<number | null>(null)
-  const [pinnedPhoto, setPinnedPhoto] = useState<number | null>(null)
-  const activePhoto = pinnedPhoto ?? hoveredPhoto
+  // Hover and focus open a photo rock; a click or tap pins it, and a second
+  // one closes it. See lib/pond/rockSelection.ts for why closing is the part
+  // that has to be exact on a phone.
+  const [selection, select] = useReducer(rockSelection, initialRockSelection)
+  const activePhoto = activeRock(selection)
+  const pinnedPhoto = selection.pinned
+
+  // Esc closes whatever is open, the same as on /listening.
+  useEffect(() => {
+    if (activePhoto === null) return
+    function close(event: KeyboardEvent) {
+      if (event.key === 'Escape') select({ type: 'escape' })
+    }
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [activePhoto])
   // Where the open photograph has settled, so the caption can sit under it.
   // The pond reports this twice per photograph, not once per frame.
   const [photoRect, setPhotoRect] = useState<PhotoRect | null>(null)
+  // A photograph has finished opening. The labels are HTML over the canvas,
+  // so on a short screen — a phone turned sideways is 375px tall — they sit
+  // on top of the picture unless they step aside while it is showing.
+  const photoOpen = photoRect !== null && activePhoto === photoRect.index
 
   const photoStones = placePhotoStones(
     photos.map((photo) => ({ ...photo, alt: photo.caption.alt })),
@@ -122,7 +138,11 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               {/* The label sits BELOW the stone, not on it. Centred on the
                   stone it lands on the brightest part of the drawing and
                   becomes unreadable. */}
-              <span className="absolute top-full left-1/2 w-max -translate-x-1/2 pt-1 text-center">
+              <span
+                className={`absolute top-full left-1/2 w-max -translate-x-1/2 pt-1 text-center transition-opacity duration-500 ${
+                  photoOpen ? 'opacity-0' : 'opacity-100'
+                }`}
+              >
                 <span
                   className={
                     highlight === index
@@ -157,7 +177,9 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
             hidden from it: read aloud, it is a minute of "number sign". */}
         {photoStones.length > 0 && (
           <div
-            className="column absolute inset-x-0"
+            className={`column absolute inset-x-0 transition-opacity duration-500 ${
+              photoOpen ? 'opacity-0' : 'opacity-100'
+            }`}
             style={{ top: vh(photoStones[0]!.depthVh - GALLERY_TITLE_LIFT_VH) }}
           >
             <h2 className="sr-only">photo gallery</h2>
@@ -221,27 +243,26 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
                 height: size,
                 transform: 'translate(-50%, -50%)',
               }}
-              onMouseEnter={() => setHoveredPhoto(index)}
-              onMouseLeave={() =>
-                setHoveredPhoto((current) => (current === index ? null : current))
-              }
-              onFocus={() => setHoveredPhoto(index)}
-              onBlur={() =>
-                setHoveredPhoto((current) => (current === index ? null : current))
-              }
-              onClick={() =>
-                setPinnedPhoto((current) => (current === index ? null : index))
-              }
+              onMouseEnter={() => select({ type: 'enter', index })}
+              onMouseLeave={() => select({ type: 'leave', index })}
+              onFocus={() => select({ type: 'focus', index })}
+              onBlur={() => select({ type: 'blur', index })}
+              onClick={() => select({ type: 'click', index })}
             >
-              <span
-                className={
-                  isActive
-                    ? 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-accent'
-                    : 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-muted'
-                }
-              >
-                {String(index + 1).padStart(2, '0')}
-              </span>
+              {/* Hidden while this rock's own photograph is showing: it
+                  opens centred on the rock, and an orange number in the
+                  middle of the picture is the first thing the eye lands on. */}
+              {!(isActive && photoOpen) && (
+                <span
+                  className={
+                    isActive
+                      ? 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-accent'
+                      : 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-muted'
+                  }
+                >
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+              )}
               {!isCaptionEmpty(photos[index]!.caption) && (
                 <span id={`photo-caption-${index}`} className="sr-only">
                   {photos[index]!.caption.description}
@@ -263,9 +284,13 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               aria-hidden="true"
               className="pointer-events-none fixed"
               style={{
-                left: photoRect.x,
+                // Held inside the page's 20px gutters. On a phone a
+                // photograph opens nearly full width and is clamped against
+                // the edge of the screen, and a caption following it there
+                // would touch the glass. Same rule as on /listening.
+                left: `clamp(20px, ${photoRect.x}px, calc(100vw - 20px - min(${photoRect.width}px, 100vw - 40px)))`,
                 top: photoRect.y + photoRect.height + 8,
-                width: photoRect.width,
+                width: `min(${photoRect.width}px, calc(100vw - 40px))`,
               }}
             >
               {photos[photoRect.index]!.caption.headline && (
@@ -295,7 +320,9 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
             {contacts.map((contact) => (
               <li key={contact.label}>
                 {contact.href ? (
-                  <a href={contact.href}>{contact.label}</a>
+                  <a href={contact.href} className="hit-area">
+                    {contact.label}
+                  </a>
                 ) : (
                   <span className="text-muted">{contact.placeholder}</span>
                 )}

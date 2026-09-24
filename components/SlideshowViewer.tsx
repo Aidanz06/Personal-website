@@ -412,7 +412,7 @@ export function SlideshowViewer({ slides }: { slides: readonly Slide[] }) {
           type="button"
           onClick={() => go(-1)}
           disabled={index === 0}
-          className="font-mono text-small text-muted disabled:opacity-40"
+          className="hit-area font-mono text-small text-muted disabled:opacity-40"
           aria-label="previous slide"
         >
           ←
@@ -421,7 +421,7 @@ export function SlideshowViewer({ slides }: { slides: readonly Slide[] }) {
           type="button"
           onClick={() => go(1)}
           disabled={index === count - 1}
-          className="font-mono text-small text-muted disabled:opacity-40"
+          className="hit-area font-mono text-small text-muted disabled:opacity-40"
           aria-label="next slide"
         >
           →

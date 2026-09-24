@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { fontVariables } from './fonts'
 import { PageFlow } from '@/components/PageFlow'
 import { ThemeScript } from '@/components/ThemeScript'
@@ -15,6 +15,19 @@ export const metadata: Metadata = {
     template: `%s — ${site.name}`,
   },
   description: site.description,
+}
+
+/**
+ * `viewport-fit=cover` lets the page run under a phone's notch and rounded
+ * corners in landscape instead of stopping short in two black bars. The pond
+ * is full-bleed and fixed, so the water goes all the way to the glass; the
+ * reading column keeps its text clear of the notch with safe-area padding
+ * (see `column` in globals.css). Zoom stays enabled.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

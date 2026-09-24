@@ -8,7 +8,7 @@ import Link from 'next/link'
  */
 export function BackLink() {
   return (
-    <Link href="/" className="text-small">
+    <Link href="/" className="hit-area text-small">
       ← aidan zheng
     </Link>
   )

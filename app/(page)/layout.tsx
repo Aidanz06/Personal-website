@@ -19,7 +19,7 @@ export default function PageLayout({
     <>
       <PondBackdrop />
       <main className="column py-3">
-        <div className="flex items-baseline gap-1">
+        <div className="flex items-baseline gap-2">
           <BackLink />
           <ThemeMenu />
         </div>

@@ -123,7 +123,7 @@ export function ThemeMenu({ className }: { className?: string }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={label ? `theme: ${label}` : 'theme'}
-        className="cursor-pointer font-mono text-small text-muted"
+        className="hit-area cursor-pointer font-mono text-small text-muted"
         onClick={() => setOpen((current) => !current)}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown') {
@@ -162,8 +162,8 @@ export function ThemeMenu({ className }: { className?: string }) {
                 onKeyDown={(event) => onMenuKeyDown(event, index)}
                 className={
                   isCurrent
-                    ? 'flex w-full cursor-pointer items-center gap-1 py-0.5 pr-1.5 text-left font-mono text-small text-ink'
-                    : 'flex w-full cursor-pointer items-center gap-1 py-0.5 pr-1.5 text-left font-mono text-small text-muted'
+                    ? 'flex w-full cursor-pointer items-center gap-1 py-0.5 pr-1.5 text-left font-mono text-small text-ink pointer-coarse:py-[11.5px]'
+                    : 'flex w-full cursor-pointer items-center gap-1 py-0.5 pr-1.5 text-left font-mono text-small text-muted pointer-coarse:py-[11.5px]'
                 }
               >
                 {/* The swatch shows the target theme's real colours by

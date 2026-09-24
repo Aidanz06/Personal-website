@@ -292,9 +292,11 @@ A button, not a link: nothing navigates. The rock *is* the picture.
   photo, 60px for an album; album size scales with play count.
 - **Label:** a two-digit mono number below it, in Drowned Grey, or koi
   orange while open. Hidden while an album cover is showing.
-- **States:** hover or focus opens it and a tap pins it (`aria-pressed`).
-  Opening takes about 2.5 seconds: characters first, then the picture
-  handing over. On /listening, Esc closes it.
+- **States:** hover or focus opens it, a click or tap pins it
+  (`aria-pressed`), and a second click or tap closes it outright. Esc
+  closes it on both pages. Opening takes about 2.5 seconds: characters
+  first, then the picture handing over. While a picture is open, the
+  stone labels and section heading fade out of its way.
 - **Caption:** mono, under the opened picture. Place and date in Drowned
   Grey, then a personal line in ink, then exposure in Caption size. Album
   captions are "title · artist". A blank field is left out, never shown as
@@ -318,7 +320,10 @@ because it couldn't do anything.
 ### Text Controls
 Every other control is a word or a character in mono label size, Drowned
 Grey: `← aidan zheng`, slideshow previous and next, the slide counter.
-Disabled means 40% opacity. There are no button shapes.
+Disabled means 40% opacity. There are no button shapes. Each one carries
+`hit-area`, an invisible layer that makes the tappable area at least 44×44
+without changing what's drawn. The controls stay as small as the design
+wants, and a finger can still hit them.
 
 ### Links
 Koi orange, with a 1px underline offset 0.2em, thickening to 2px on hover

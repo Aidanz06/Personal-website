@@ -2957,3 +2957,64 @@ canvas would. That's the price of the size.
 
 548 tests.
 
+
+## mobile pass (/impeccable adapt)
+
+Phones are the main concern in PRODUCT.md, so every page was measured in
+Chrome, with touch emulation, at 375×667 portrait, 667×375 landscape and
+320×568. The measurements covered every tappable element's size,
+horizontal overflow and text size, plus a real tap-by-tap test of the rocks.
+It held up well: no horizontal scroll anywhere, including at 320, and every
+stone and rock was already a comfortable target. Six things were wrong.
+
+**1. A second tap didn't close a rock.** It's the same on the homepage and
+on /listening. On a phone one tap is three events (the pointer enters, the
+button takes focus, then the click), and the focus left over from the first
+tap still counted as hovering. The second tap unpinned the rock, but the
+picture stayed open, while `aria-pressed` told a screen reader it was
+closed. The open/close logic is now one pure reducer,
+`lib/pond/rockSelection.ts`, shared by both pages and tested with the real
+touch sequence. The failing test came first, and the first fix was wrong in
+an instructive way: closing whenever the rock was already *showing* closed
+it on the very first tap, because that tap's own enter and focus had
+already opened it. It closes when the rock is already *pinned*. The
+homepage also gained Esc-to-close, matching /listening.
+
+**2. Three controls were too small to tap.** The theme glyph was **8×21px**.
+"← aidan zheng" was 100×21, and the slideshow arrows 19×21. The design
+wants them to look that small, so they still do: a `hit-area` utility adds
+an invisible layer centred on the control, extended on each axis by exactly
+how far it falls short of 44px (`min(0px, (100% - 44px) / 2)`, zero for
+anything already big enough). The theme menu's options grow to 44px tall on
+touch screens only (`pointer-coarse`). The gap between the back link and the
+glyph went from 8px to 16px so the glyph's tap zone doesn't take taps meant
+for the link. Measured: every point across "← aidan zheng" goes to the link
+except a 2px sliver past the "g".
+
+**3. iOS's grey tap flash.** iOS paints a translucent grey rectangle over
+anything tapped, which over a rock is a box on the pond. It's turned off
+with `-webkit-tap-highlight-color: transparent`, and the focus ring still
+shows.
+
+**4. The notch in landscape.** `viewport-fit=cover`, so the water runs to
+the glass. The reading column's side padding is now
+`max(20px, env(safe-area-inset-*))`, so text stays clear of the notch. Zoom
+is still allowed.
+
+**5. Text on top of an opened photo in landscape.** At 375px tall a
+photograph reaches up to the stone labels and the gallery heading, which are
+HTML and so draw over it. They now fade out while a photograph is showing,
+as /listening already did.
+
+**6. Small overlaps.** The open rock's orange number sat in the middle of
+its photograph, and the homepage caption sat flush against the screen edge
+on phones. The number now hides while its photo is open, and the caption is
+held inside the 20px gutters, as on /listening. Measured at 320, 375, 667 and
+1280: every caption between 20px and the right gutter.
+
+Confirmed in one follow-up round: targets are at least 44 on every page at
+every size, and tapping a rock twice closes it on both pages. The 12px
+captions ("as of", photo dates) were left alone on purpose. They're the
+designed caption size for secondary metadata.
+
+559 tests.
