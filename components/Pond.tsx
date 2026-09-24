@@ -2,10 +2,9 @@
 
 import { useEffect, useRef } from 'react'
 import { buildAtlas, atlasTile, type Atlas } from '@/lib/ascii/atlas'
-import { parseCssColor } from '@/lib/ascii/color'
 import { gridDimensions, type Grid } from '@/lib/ascii/grid'
-import { luminance, luminanceGrid } from '@/lib/ascii/luminance'
-import { orientRamp, rampIndex } from '@/lib/ascii/ramp'
+import { luminanceGrid } from '@/lib/ascii/luminance'
+import { rampIndex } from '@/lib/ascii/ramp'
 import { DEFAULT_RAMP } from '@/lib/ascii/constants'
 import { subscribe, pointerState } from '@/lib/ascii/loop'
 import { stepDegradation } from '@/lib/ascii/degrade'
@@ -29,6 +28,7 @@ import {
   type Koi,
 } from '@/lib/pond/koi'
 import { placeStones, type StoneSpec } from '@/lib/pond/stones'
+import { pondPalette } from '@/lib/pond/theme'
 import {
   fitWithin,
   photoMaxWidth,
@@ -298,51 +298,16 @@ export function Pond({
 
     function readTheme(): void {
       const styles = getComputedStyle(container!)
-      const read = (token: string, fallback: string) => {
-        const rgb = parseCssColor(styles.getPropertyValue(token).trim())
-        return rgb ? { css: `rgb(${rgb.join(',')})`, rgb } : { css: fallback, rgb: null }
-      }
-
-      const groundRead = read('--color-ground', '#0b100f')
-      const inkRead = read('--color-ink', '#ece7dd')
-      const waterRead = read('--color-water', '#243230')
-      // Stones are drawn in the muted tone, not full ink. They sit directly
-      // behind their own labels, and at full strength they compete with the
-      // text for the same pale colour — which makes the navigation, the one
-      // thing on this page that has to be readable, hard to read.
-      const stoneRead = read('--color-muted', '#7f7f7e')
-      const koi1 = read('--color-koi-1', '#d2451e')
-      const koi2 = read('--color-koi-2', '#f0813a')
-      const koi3 = read('--color-koi-3', '#f7efe2')
-
-      ground = groundRead.css
-      // The two ends of the duotone: the koi's palest tone and the water.
-      photoHighlightCss = koi3.css
-      photoShadowCss = waterRead.css
-
-      const groundLuminance = groundRead.rgb ? luminance(...groundRead.rgb) : 0
-      const inkLuminance = inkRead.rgb ? luminance(...inkRead.rgb) : 1
-      ramp = orientRamp(POND_RAMP, groundLuminance, inkLuminance)
-
-      // Colour index 0 is water, 1 is stone, then the koi gradient.
-      // Water is dim on purpose: the reference works because the field is
-      // nearly empty and only the fish are bright.
-      const koiStops = [koi1.rgb, koi2.rgb, koi3.rgb].map(
-        (c, i) => c ?? [[210, 69, 30], [240, 129, 58], [247, 239, 226]][i]!,
+      const palette = pondPalette(
+        (token) => styles.getPropertyValue(token).trim(),
+        POND_RAMP,
+        KOI_SHADES,
       )
-      const gradient: string[] = []
-      for (let i = 0; i < KOI_SHADES; i++) {
-        const t = i / (KOI_SHADES - 1)
-        const scaled = t * (koiStops.length - 1)
-        const lo = Math.min(koiStops.length - 1, Math.floor(scaled))
-        const hi = Math.min(koiStops.length - 1, lo + 1)
-        const f = scaled - lo
-        const mixChannel = (k: number) =>
-          Math.round(koiStops[lo]![k]! * (1 - f) + koiStops[hi]![k]! * f)
-        gradient.push(`rgb(${mixChannel(0)},${mixChannel(1)},${mixChannel(2)})`)
-      }
-
-      colors = [waterRead.css, stoneRead.css, ...gradient]
+      ground = palette.ground
+      photoHighlightCss = palette.photoHighlight
+      photoShadowCss = palette.photoShadow
+      ramp = palette.ramp
+      colors = palette.colors
     }
 
     function colorIndexFor(material: number, tint: number): number {

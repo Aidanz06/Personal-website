@@ -313,14 +313,26 @@ export function SlideshowViewer({ slides }: { slides: readonly Slide[] }) {
     }
   }, [transition, paint])
 
-  // Cached character layers are sized to the stage, so a resize invalidates
-  // every one of them.
+  // Cached character layers are sized to the stage and painted in the
+  // theme's ink, so a resize or a theme change invalidates every one of them.
   useEffect(() => {
     const stage = stageRef.current
     if (!stage) return
-    const observer = new ResizeObserver(() => bandsRef.current.clear())
-    observer.observe(stage)
-    return () => observer.disconnect()
+    const invalidate = () => bandsRef.current.clear()
+
+    const resize = new ResizeObserver(invalidate)
+    resize.observe(stage)
+
+    const themeChange = new MutationObserver(invalidate)
+    themeChange.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    })
+
+    return () => {
+      resize.disconnect()
+      themeChange.disconnect()
+    }
   }, [])
 
   function onKeyDown(event: React.KeyboardEvent) {

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Pond, type PhotoRect } from '@/components/Pond'
+import { ThemeMenu } from '@/components/ThemeMenu'
 import { HOME_STONES, POND_DEPTH_VH } from '@/lib/pond/stones'
 import { placePhotoStones, pondDepthVh } from '@/lib/pond/photoStones'
 import { isCaptionEmpty } from '@/lib/captions'
@@ -70,7 +71,10 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
       <main className="relative" style={{ minHeight: vh(depthVh) }}>
         {/* --- the surface --- */}
         <section className="column pt-[22vh]">
-          <h1 className="font-display text-name font-normal">{site.name}</h1>
+          <div className="flex items-baseline gap-1.5">
+            <h1 className="font-display text-name font-normal">{site.name}</h1>
+            <ThemeMenu />
+          </div>
           <p className="mt-1 text-muted">{site.identity}</p>
         </section>
 

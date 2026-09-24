@@ -1,5 +1,5 @@
 import { BackLink } from '@/components/BackLink'
-import { ThemeSwitcher } from '@/components/ThemeSwitcher'
+import { ThemeMenu } from '@/components/ThemeMenu'
 
 /**
  * Shared chrome for the inner pages: /tailor-studio and /about.
@@ -16,11 +16,11 @@ export default function PageLayout({
 }) {
   return (
     <main className="column py-3">
-      <BackLink />
+      <div className="flex items-baseline gap-1">
+        <BackLink />
+        <ThemeMenu />
+      </div>
       <article className="mt-4">{children}</article>
-      <footer className="mt-6 border-t border-rule pt-2">
-        <ThemeSwitcher />
-      </footer>
     </main>
   )
 }

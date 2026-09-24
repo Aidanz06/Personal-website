@@ -1698,3 +1698,108 @@ three places, and thirteen descriptions. `npm run photos:sync` prints the
 list.
 
 312 tests.
+
+## step 4 — one theme control, beside the name
+
+### what changed
+
+The theme picker was a row of three underlined words in the footer of every
+page. It is now a single muted glyph — `◐` — sitting beside Aidan's name at
+the top of the homepage and beside the back link at the top of the inner
+pages. The footer version is gone, and so is `ThemeSwitcher.tsx`. One
+switcher, one place.
+
+Collapsed it is one character in muted mono. No border, no background, no
+box. The site's whole argument is that it has no furniture, and a theme
+picker is not the thing to introduce some with.
+
+### how it opens
+
+| input | behaviour |
+|---|---|
+| hover | opens; closes 220ms after the pointer leaves |
+| click or tap | toggles — a phone has no hover, so this is the whole touch story |
+| focus, then Enter or Space | opens (it is a real `<button>`) |
+| focus, then ↓ | opens and moves focus to the first option |
+| ↑ ↓ Home End | move between options, wrapping |
+| Esc | closes and returns focus to the glyph |
+| Tab out of the last option | closes, same as moving the pointer away |
+
+The 220ms close delay is not a flourish. The options sit *below* the trigger,
+so there is a real gap between the glyph and the first of them, and with no
+delay the menu flickers shut halfway across it.
+
+For a screen reader: `aria-haspopup="menu"` and `aria-expanded` on the
+trigger, `role="menuitemradio"` with `aria-checked` on each option — which is
+what announces the current theme — and a polite live region that says
+"theme: phosphor" after the menu has closed behind the choice.
+
+Without JavaScript the glyph is a control that cannot do anything, so it is
+not rendered at all: a `<noscript>` stylesheet hides it, which means the rule
+only exists in the situation where it is true.
+
+### the swatch, and the bug in the obvious version
+
+Each option shows a two-square swatch: that theme's ground beside that
+theme's accent. The colours are not written down anywhere in the component —
+the swatch sets `data-theme` on *itself*, which redefines the `--t-*` slots
+for that subtree, so it paints in the target theme's real values and can
+never drift from `globals.css`.
+
+The obvious version of that used `bg-ground` and `bg-accent` inside the
+scoped element, and **every swatch came out in the colours of the theme
+already showing.** Those utilities resolve `--color-ground`, which is
+declared once on `:root` as `var(--t-ground)` — and a custom property
+inherits its *already-substituted* value. By the time it reaches the swatch
+it is a literal colour, and redefining `--t-ground` underneath it changes
+nothing. Reading `var(--t-ground)` directly at the swatch works, because that
+slot genuinely is redefined on that element.
+
+The frame around the swatch deliberately stays *outside* the scope, in the
+current theme's rule colour. Inside it, a dark theme's swatch on a dark page
+would have an invisible border and read as a floating orange square.
+
+### does the pond repaint?
+
+Yes, and the mechanism was already there: `Pond` watches `<html>` for
+`data-theme` with a MutationObserver and calls `refresh()`, which re-reads
+the tokens, rebuilds the glyph atlas in the new colours, refills the
+dirty-cell cache with -1 so every cell repaints, and re-runs the duotone
+filter over every decoded photograph because its tints come from the theme.
+`AsciiImage` does the same for its cached layers.
+
+Two things did need fixing:
+
+**The slideshow cached its character layers with the ink colour baked in.**
+They were invalidated on resize but not on a theme change, so a dissolve
+started after switching themes would have drawn its characters in the old
+theme's ink. It now watches `data-theme` too.
+
+**The colour derivation was untestable.** It lived inside the component's
+effect, where there is no way to assert anything about it from Node. It is
+now `lib/pond/theme.ts` — a pure function from a token reader to a palette —
+and the component is four lines of assignment.
+
+The test for it **parses `app/globals.css`** rather than restating the hex
+values. Copying them here would mean the test passes forever while the
+stylesheet drifts away from it; parsing the real blocks means a new theme is
+covered the moment it exists. It asserts:
+
+- every theme in `lib/themes.ts` has a block in `globals.css` — a theme
+  without one silently paints the pond in koi's colours while the page around
+  it changes, which is a horrible bug to chase in a browser;
+- all three themes produce different grounds, different water and different
+  koi, which is the property a live theme switch depends on and the one a
+  cached palette would break;
+- the ramp turns round for the light theme, because on a light ground a dense
+  glyph reads dark and the photographs would otherwise come out as negatives;
+- missing or unparseable tokens fall back instead of painting `NaN`.
+
+### one thing to flag
+
+As with step 2: none of this has been driven in a real browser — there is no
+headless browser in this environment. The hover delay, the arrow keys and the
+live repaint are correct by construction and the colour derivation is tested,
+but they have not been watched.
+
+320 tests.
