@@ -2110,3 +2110,183 @@ layout bug, the second stops any future transient from permanently ruining the
 rendering.
 
 364 tests.
+
+---
+
+# listening: a third stone, and a pond of album rocks
+
+A "listening" stone on the homepage leads to `/listening`, a small pond where
+albums are rocks. Going deeper goes back in time: pebbles near the surface are
+what is on repeat this month, boulders at the bottom are the records that never
+leave.
+
+It is not a new system. It is the photo rocks from milestone 6c, the captions
+from step 3, the themes from step 4 and the page wave from step 7, pointed at a
+different kind of picture.
+
+## listening step 1 — data
+
+### what got built
+
+Two sources, and they are deliberately unalike.
+
+**Pebbles** come from last.fm's `user.getTopAlbums` over a one-month window.
+They are a fact about the last thirty days, with a playcount and a rank and no
+opinion attached. They change on their own.
+
+**Boulders** come from `content/listening.json`, which Aidan writes. They are
+choices, with a line from him and no playcount at all. They change when he
+changes them, and never otherwise.
+
+| file | what it does |
+|---|---|
+| `lib/listening/constants.ts` | Every number: the period, the playcount floor, how many pebbles. |
+| `lib/listening/types.ts` | Pebble, boulder, hide rule, the shape of the file. |
+| `lib/listening/albums.ts` | Pure: parsing last.fm, the hide list, cover detection, sizing. |
+| `lib/listening/boulders.ts` | Pure: reading Aidan's file into boulders. |
+| `lib/listening/lastfm.ts` | Server-only: the request, and the whole fallback chain. |
+| `lib/listening/file.ts` | Server-only: reading and writing `content/listening.json`. |
+| `lib/listening/data.ts` | The one call the page makes. |
+| `lib/listening/fixture.ts` | A committed response to design against. |
+| `lib/listening/covers.ts` | The merge behind `npm run listening:covers`. |
+| `scripts/listening-covers.ts` | Fetching the boulders' covers, once. |
+
+### the key never reaches the browser, and there is a test that says so
+
+`LASTFM_API_KEY` and `LASTFM_USER` are read from `process.env` with no
+`NEXT_PUBLIC_` prefix, which means Next will not inline them into any
+JavaScript sent to a visitor. That is true by construction — and the way it
+stops being true is somebody importing the wrong module into a client component
+a month from now, at which point the key is compiled into a file served to
+everybody, silently.
+
+So `lib/listening/secrets.test.ts` walks the **real import graph** from every
+client entry point on the site and asserts that no file reachable from it names
+either variable, reads `process.env` at all, or is one of the three server-only
+listening modules. It was checked by injecting `process.env.LASTFM_API_KEY`
+into `lib/pond/stones.ts`, which is four imports deep from the homepage: the
+test named the file and failed.
+
+It also strips comments before searching, which is the same trap the
+`suppressHydrationWarning` test fell into — the first version failed on the
+comment in `boulders.ts` explaining why a `node:fs` import must not appear
+there. A test that fails on its own documentation teaches everyone to weaken
+the test.
+
+### the fallback chain
+
+Four states, in order, and none of them puts an error on the page:
+
+1. **No key configured.** The committed fixture, plus one console line in dev
+   saying exactly that. This is the state before Aidan makes a key, and a blank
+   page would tell him nothing about whether the design works.
+2. **last.fm answered.** Use it, and remember it.
+3. **last.fm failed, and there is a remembered answer.** Use that. A dead API
+   should cost freshness, not content — and the page keeps the *original* "as
+   of" date, because claiming a stale list is today's is the one lie that line
+   exists to prevent.
+4. **last.fm failed and nothing was ever remembered.** No pebbles. The boulders
+   still render, and the page says nothing about last.fm's uptime, because
+   nobody came here to read about it.
+
+Once a key exists the fixture is never used again. Fixture data on a live site
+would be a lie; an empty pebble layer is merely quiet.
+
+**What "remembered" means.** A module-level value, so it survives revalidations
+inside one server process. Deliberately not a file on disk — a serverless
+filesystem is read-only at runtime, and a snapshot committed to the repo would
+be data pretending to be source. A cold process has no memory of it, which is
+covered by the other half: a failed revalidation leaves Next serving the page
+it last rendered successfully.
+
+**The cache holds albums, not pebbles**, and that distinction is load-bearing.
+The hide list is applied on the way *out* of the cache, so a record Aidan adds
+to it disappears from the remembered answer too. Caching already-filtered
+pebbles would have kept serving a record he had just asked never to see again —
+which is how the bug was found, by a test that expected an empty list and got
+the previous one.
+
+### two things about last.fm worth knowing
+
+**Every number is a string, and an error is an HTTP 200.** `{"error": 6}`
+arrives with a perfectly good status code, so the response is checked for an
+`error` field as well as for `response.ok`. A single album comes back as an
+object rather than an array of one.
+
+**It does not return "no cover art" — it returns a picture of no cover art.**
+A grey star at a known image hash, which loads fine and tells the reader
+nothing. `isPlaceholderCover` catches it and the album is marked coverless, so
+it can open as its name drawn in characters instead. Without that check the
+pond would proudly display a picture of a missing cover.
+
+### the sizing rule
+
+A pebble's size is the **square root** of its share of the top album's
+playcount, not the share itself. A rock's presence on the page is its *area*,
+and area goes as the square of the radius — so scaling the radius linearly with
+playcount makes an album played twice as often look four times as important.
+There is a floor at 0.52, which is what stops the eighth album becoming a speck
+too small to tap on a phone.
+
+### the fixture's covers are the test pattern
+
+The fixture is a real `user.getTopAlbums` response in shape — strings for
+numbers, the image size array, a placeholder cover, and one album under the
+playcount floor that is supposed to vanish. It goes through the same parser and
+the same filters the live data does. A fixture that skipped the parsing would
+test the layout and nothing else.
+
+But its image URLs are faithful in shape, which means no file is behind them,
+and **a cover that 404s never opens** — hiding the exact thing the fixture
+exists to let Aidan look at. So in fixture mode the cover is the repo's own
+synthetic test pattern, the same one the ASCII header uses. It is visibly a
+test pattern and could never be mistaken for album art. One fixture album stays
+coverless on purpose, so that path is visible too.
+
+### the covers script cannot overwrite anything
+
+`npm run listening:covers` fetches each boulder's cover once from
+`album.getInfo`, writes it into `public/listening/covers/`, and fills in the
+`cover` field in `content/listening.json` **only where that field is blank**.
+
+The contract, in full, and every clause of it is tested:
+
+- a `cover` value that is already filled in is never touched;
+- a file that already exists on disk is never downloaded over — if the file is
+  there but the JSON did not point at it, the script records the name and
+  downloads nothing;
+- it writes only inside `public/listening/covers`, and refuses by name to write
+  over `content/listening.json`;
+- so a second run does nothing at all.
+
+That last one is a test — `applyCovers` is handed the same fills twice, and
+then a *different* filename for an already-filled slot, and the file comes back
+unchanged both times. This is the mistake that destroyed 27MB of source footage
+in step 7, and it is worth a guard rather than a promise.
+
+The script runs manually, never on build. A build that edits its own source is
+a build nobody can reason about.
+
+### one convention worth knowing
+
+Every relative import under `lib/listening/` carries its `.ts` extension. Node
+runs `scripts/listening-covers.ts` directly and its ESM resolver does not guess
+extensions, so anything the script reaches has to spell them out —
+`ERR_MODULE_NOT_FOUND` on `./constants` is the failure. One rule that always
+holds is easier to keep than a rule about which files the script happens to
+reach today. `allowImportingTsExtensions` in tsconfig is what lets the compiler
+agree, and the bundler resolves either spelling to the same module.
+
+### what Aidan has to fill in
+
+`content/listening.json` ships with three empty boulder slots and one empty
+hide rule, so the shape is visible. An empty slot renders **nothing** — not a
+rock with no name on it. A boulder with no line does render, as
+`[why this one never leaves — aidan to write]`, because an unfinished page
+should be visibly unfinished.
+
+An empty hide rule hides nothing, which sounds obvious and is not: a rule that
+matched everything because both its fields were blank would empty the pond, and
+the file ships with exactly that rule in it.
+
+94 new tests, 458 in total.

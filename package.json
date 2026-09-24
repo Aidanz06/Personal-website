@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "photos:sync": "node scripts/photos-sync.ts"
+    "photos:sync": "node scripts/photos-sync.ts",
+    "listening:covers": "node scripts/listening-covers.ts"
   },
   "type": "module",
   "dependencies": {

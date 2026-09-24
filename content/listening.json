@@ -1,0 +1,10 @@
+{
+  "neverLeave": [
+    { "album": "", "artist": "", "line": "", "cover": "" },
+    { "album": "", "artist": "", "line": "", "cover": "" },
+    { "album": "", "artist": "", "line": "", "cover": "" }
+  ],
+  "hide": [
+    { "artist": "", "album": "" }
+  ]
+}
