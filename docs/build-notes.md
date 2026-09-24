@@ -3269,3 +3269,18 @@ under a right-hand rock made the phone page 402px wide. It's `w-[9rem]` now,
 and 40 samples over 10 seconds showed no horizontal scroll.
 
 591 tests.
+
+### a square focus ring
+
+The orange focus outline had a 1px radius, the one rounded corner on a site
+whose rule is "no radius, anywhere". Both halves of the critique flagged it.
+Aidan chose to square it rather than keep it as a documented exception.
+
+`lib/noRadius.test.ts` now enforces the rule. The stylesheet may declare no
+non-zero `border-radius`, and no component or page may use a `rounded-*`
+class. Its first run caught a false positive of its own: the word "rounded"
+in a comment about phone corners. Comments are now stripped before
+searching, the same lesson the `suppressHydrationWarning` and secrets tests
+learned.
+
+593 tests.

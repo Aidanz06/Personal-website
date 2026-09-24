@@ -344,7 +344,7 @@ wants, and a finger can still hit them.
 
 ### Links
 Koi orange, with a 1px underline offset 0.2em, thickening to 2px on hover
-(120ms). Focus is a 2px accent outline, offset 3px.
+(120ms). Focus is a square 2px accent outline, offset 3px, on everything that can take focus.
 
 ### Gallery Text
 The gallery's words, its heading, the year markers, and the name under each
