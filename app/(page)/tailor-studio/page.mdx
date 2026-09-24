@@ -28,16 +28,11 @@ it never calls something authentic, only a probable brand.
 
 ## testing the ai
 
-an llm doesn't give the same answer twice, so trying a few examples tells
-you almost nothing. the ai steps are scored against fixtures instead: photos
-i've already labelled by hand, the same set every run, so scores compare
-across runs and across models.
-
-grouping has a regression gate: if clustering accuracy drops below its
-threshold, the tests fail and the change doesn't go in. and a resumable sweep
-tried combinations of models and strategies, like all the photos in one
-batch versus one at a time, measuring accuracy and api cost for each. tailor
-runs on the cheapest setup that still hits the accuracy target.
+llm output is nondeterministic, so the vision and drafting steps are scored
+against fixed fixtures of hand-labelled photos. a regression gate fails the
+build if clustering accuracy drops below threshold, and a resumable
+cost-versus-accuracy sweep over models and batching strategies picked the
+cheapest configuration that meets the target.
 
 ## where it's at
 
