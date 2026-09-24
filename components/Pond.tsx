@@ -32,6 +32,14 @@ import { RING_STRENGTH, ringDue } from '@/lib/pond/rings'
 import { placeStones, type StoneSpec } from '@/lib/pond/stones'
 import { pondPalette } from '@/lib/pond/theme'
 import {
+  ART_CANDIDATES,
+  ART_RAMP_LEVELS,
+  artGrid,
+  buildRamp,
+  edgeFeather,
+  type MeasuredGlyph,
+} from '@/lib/pond/asciiArt'
+import {
   fitWithin,
   photoMaxWidth,
   photoOpacity,
@@ -80,12 +88,13 @@ export type PondSettings = {
   /**
    * Keep an opened picture as ASCII art for good.
    *
-   * Every picture passes through characters on its way open; a photograph
-   * then hands over to the real image, because a photograph has to be
-   * seeable. With this on, the characters are the picture: no hand-over,
-   * drawn in the page's ink rather than the koi's colours (which would make
-   * it read as part of the fish), and feathered into the water at the edges,
-   * since there is no vignetted image painted over them to hide a hard one.
+   * Every picture passes through the pond's characters on its way open; a
+   * photograph then hands over to the real image. With this on it hands over
+   * to its own ASCII art instead — a finer grid and a longer, measured ramp,
+   * see lib/pond/asciiArt.ts — so the picture is characters from start to
+   * finish, just more of them at the end. Drawn in the page's ink rather than
+   * the koi's colours (which would make it read as part of the fish), with
+   * its tones stretched, and feathered into the water at the edges.
    */
   photoAscii: boolean
   /**
@@ -302,6 +311,12 @@ export function Pond({
        * picture that stays as characters. See stretchContrast().
        */
       asciiGrid: PhotoGrid
+      /**
+       * The picture as fine-grained ASCII art, for `photoAscii`. Rendered the
+       * first time it opens, at the size it opens to, and thrown away when
+       * the theme or that size changes.
+       */
+      art: { canvas: HTMLCanvasElement; key: string } | null
       aspect: number
       /**
        * A clip, if this rock holds one.
@@ -447,6 +462,7 @@ export function Pond({
           styled: stylise(image),
           grid,
           asciiGrid: stretchContrast(grid),
+          art: null,
           aspect: image.naturalWidth / image.naturalHeight,
           video,
           scratch: null,
@@ -543,6 +559,119 @@ export function Pond({
       return out
     }
 
+    // ---- fine ASCII art --------------------------------------------------
+
+    /** The measured ramp, sparse to dense. Measured once, on first use. */
+    let artRamp: string | null = null
+
+    function fontFamily(): string {
+      return (
+        getComputedStyle(container!).getPropertyValue('--font-mono').trim() ||
+        'ui-monospace, monospace'
+      )
+    }
+
+    /**
+     * How much ink each candidate glyph puts down, in the font actually in
+     * use. See buildRamp() for why this is measured rather than typed out.
+     * Measured on first use rather than at mount, by which point the web
+     * font has long since arrived.
+     */
+    function measureArtRamp(): string {
+      const w = 24
+      const h = 40
+      const probe = document.createElement('canvas')
+      probe.width = w
+      probe.height = h
+      const g = probe.getContext('2d', { willReadFrequently: true })
+      if (!g) return buildRamp([], ART_RAMP_LEVELS)
+      g.font = `32px ${fontFamily()}`
+      g.textAlign = 'center'
+      g.textBaseline = 'middle'
+      g.fillStyle = '#ffffff'
+      const measured: MeasuredGlyph[] = []
+      for (const char of ART_CANDIDATES) {
+        g.clearRect(0, 0, w, h)
+        g.fillText(char, w / 2, h / 2)
+        const data = g.getImageData(0, 0, w, h).data
+        let ink = 0
+        for (let i = 3; i < data.length; i += 4) ink += data[i]!
+        measured.push({ char, coverage: ink / (255 * w * h) })
+      }
+      return buildRamp(measured, ART_RAMP_LEVELS)
+    }
+
+    /**
+     * The picture as ASCII art on a fine grid, at the size it opens to.
+     *
+     * An opaque ground behind every character, so that when it is fully
+     * handed over it hides the coarse pond characters beneath — and both
+     * the ground and the characters fade at the edges by the same curve as
+     * the coarse stage, so the two dissolve into the water along one line.
+     * Cell edges are snapped to device pixels, or the ground of each cell
+     * overlaps its neighbour's at fractional sizes and draws a faint lattice.
+     */
+    function renderArt(photo: LoadedPhoto, width: number, height: number): HTMLCanvasElement | null {
+      artRamp ??= measureArtRamp()
+      // The measured ramp runs sparse to dense; point it the way this theme
+      // needs, exactly as the pond's own ramp was pointed in readTheme().
+      const oriented = ramp === POND_RAMP ? artRamp : [...artRamp].reverse().join('')
+
+      const grid = artGrid(width, height, settingsRef.current.cellAspect)
+      const sampler = document.createElement('canvas')
+      sampler.width = grid.cols
+      sampler.height = grid.rows
+      const sc = sampler.getContext('2d', { willReadFrequently: true })
+      if (!sc) return null
+      sc.imageSmoothingEnabled = true
+      sc.imageSmoothingQuality = 'high'
+      sc.drawImage(photo.image, 0, 0, grid.cols, grid.rows)
+      let tones: Float32Array
+      try {
+        const pixels = sc.getImageData(0, 0, grid.cols, grid.rows).data
+        tones = stretchContrast({
+          cols: grid.cols,
+          rows: grid.rows,
+          luminance: luminanceGrid(pixels, grid.cols, grid.rows),
+        }).luminance
+      } catch {
+        return null
+      }
+
+      const out = document.createElement('canvas')
+      out.width = Math.max(1, Math.round(width * dpr))
+      out.height = Math.max(1, Math.round(height * dpr))
+      const c = out.getContext('2d')
+      if (!c) return null
+      c.textAlign = 'center'
+      c.textBaseline = 'middle'
+      c.font = `${(grid.cellHeight * dpr * 0.82).toFixed(2)}px ${fontFamily()}`
+
+      const bounds = { x: 0, y: 0, width, height }
+      const featherPx = PHOTO_FEATHER * Math.min(width, height)
+      for (let row = 0; row < grid.rows; row++) {
+        const y0 = Math.round(row * grid.cellHeight * dpr)
+        const y1 = Math.round((row + 1) * grid.cellHeight * dpr)
+        const cy = (row + 0.5) * grid.cellHeight
+        for (let col = 0; col < grid.cols; col++) {
+          const cx = (col + 0.5) * grid.cellWidth
+          const fade = edgeFeather(cx, cy, bounds, featherPx)
+          if (fade <= 0) continue
+          const x0 = Math.round(col * grid.cellWidth * dpr)
+          const x1 = Math.round((col + 1) * grid.cellWidth * dpr)
+          c.globalAlpha = fade
+          c.fillStyle = ground
+          c.fillRect(x0, y0, x1 - x0, y1 - y0)
+          const char = oriented[rampIndex(tones[row * grid.cols + col] ?? 0, oriented.length)]
+          if (!char || char === ' ') continue
+          c.fillStyle = ink
+          c.fillText(char, (x0 + x1) / 2, (y0 + y1) / 2)
+        }
+      }
+      c.globalAlpha = 1
+      return out
+    }
+
     // ---- sizing ----------------------------------------------------------
 
     function rebuild(): void {
@@ -587,7 +716,10 @@ export function Pond({
       // The filter's tints come from the theme, so a theme change invalidates
       // every stylised photograph.
       for (const photo of loadedPhotos) {
-        if (photo) photo.styled = stylise(photo.image)
+        if (!photo) continue
+        photo.styled = stylise(photo.image)
+        // Drawn in the theme's ink on the theme's ground, so it is stale too.
+        photo.art = null
       }
 
       // Repaint everything on the next frame.
@@ -909,10 +1041,39 @@ export function Pond({
               height: settled.height,
             })
           }
-          stampPhoto(field, s.photoAscii ? photo.asciiGrid : photo.grid, rect, photoReveal, cw, ch, s.photoAscii ? PHOTO_FEATHER : 0)
+          // The coarse stage stays where the picture will settle. Stepping a
+          // grid of 7px characters back and forth to follow the drift would
+          // read as jitter; the fine art above it drifts smoothly instead.
+          //
+          // For a picture kept as characters, the coarse stage also steps
+          // aside as its fine art arrives. The art fades out at its edges on
+          // purpose, and anything left underneath shows through there as a
+          // second, coarser border around it — so what is under the fade has
+          // to be plain water.
+          const handover = s.photoAscii && photo.art ? photoOpacity(photoReveal) : 0
+          stampPhoto(
+            field,
+            s.photoAscii ? photo.asciiGrid : photo.grid,
+            settled,
+            photoReveal * (1 - handover),
+            cw,
+            ch,
+            s.photoAscii ? PHOTO_FEATHER : 0,
+          )
 
-          const opacity = s.photoAscii ? 0 : photoOpacity(photoReveal)
-          if (opacity > 0.01) photoDraw = { photo, rect, opacity }
+          if (s.photoAscii) {
+            const key = `${Math.round(target.width)}x${Math.round(target.height)}@${dpr}`
+            if (photo.art?.key !== key) {
+              const canvas = renderArt(photo, target.width, target.height)
+              photo.art = canvas ? { canvas, key } : null
+            }
+          }
+          const opacity = photoOpacity(photoReveal)
+          // With no art (a canvas that could not be read), a picture kept as
+          // characters simply stays on the coarse stage.
+          if (opacity > 0.01 && (!s.photoAscii || photo.art)) {
+            photoDraw = { photo, rect, opacity }
+          }
         }
       }
 
@@ -951,7 +1112,10 @@ export function Pond({
       // to be able to actually see the photograph.
       if (photoDraw) {
         const { photo, rect, opacity } = photoDraw
-        let source: CanvasImageSource = photo.styled ?? photo.image
+        // A picture kept as characters hands over to its own fine-grained
+        // ASCII art, where a photograph hands over to the real image.
+        const art = settingsRef.current.photoAscii ? photo.art?.canvas : null
+        let source: CanvasImageSource = art ?? photo.styled ?? photo.image
 
         // A clip is filtered frame by frame, into the one scratch canvas it
         // keeps. The ASCII stage behind it stays built from the poster: the
@@ -968,13 +1132,25 @@ export function Pond({
         }
         context!.save()
         context!.globalAlpha = opacity
-        context!.drawImage(
-          source,
-          rect.x * dpr,
-          rect.y * dpr,
-          rect.width * dpr,
-          rect.height * dpr,
-        )
+        if (art) {
+          // Whole device pixels, at the size it was rendered: characters
+          // drawn at a fractional offset are resampled and go soft. On a 2x
+          // screen that is still half-pixel steps, which reads as a glide.
+          // Centred on the rect, not pinned to its corner: the hand-over
+          // starts while the rect is still growing, at about 95% of the size
+          // the art was rendered for.
+          const cx = (rect.x + rect.width / 2) * dpr
+          const cy = (rect.y + rect.height / 2) * dpr
+          context!.drawImage(art, Math.round(cx - art.width / 2), Math.round(cy - art.height / 2))
+        } else {
+          context!.drawImage(
+            source,
+            rect.x * dpr,
+            rect.y * dpr,
+            rect.width * dpr,
+            rect.height * dpr,
+          )
+        }
         context!.restore()
 
         // Those cells now have a photograph painted over them, so the

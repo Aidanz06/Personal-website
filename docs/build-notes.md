@@ -2692,3 +2692,59 @@ the drift.
   shows under the rock.
 
 539 tests.
+
+### more detail: the covers get their own, finer characters
+
+Asked for straight after: can the ASCII covers be more detailed?
+
+The limit wasn't the cover, it was the pond. Everything was drawn on the
+pond's one grid of 7px characters with a ten-step ramp. At 300px that's
+about 43 characters across, which the kite and most of the Worship
+Initiative figure couldn't survive. A bigger cover would have added detail
+and undone "smaller".
+
+So a cover now hands over, at the end of its reveal, to **its own ASCII art
+on a finer grid**. That's the same moment a photograph hands over to the real
+image, with a different target. The coarse pond characters are still what it
+rises out of. `lib/pond/asciiArt.ts` holds the pure parts:
+
+| | pond grid | a cover's own art |
+|---|---|---|
+| character width | 7px | **4px** |
+| characters across, 300px cover | ~43 | **~75** |
+| tones | 10 | **16** |
+
+- **4px, not smaller.** Much below that, a glyph stops reading as a
+  character at 1x and becomes a smudge of tone: a blurry photograph, not
+  ASCII art.
+- **The ramp is measured, not typed.** Each candidate glyph is drawn in the
+  site's own monospace font and its ink counted. Sixteen are then picked,
+  spaced evenly by coverage. Glyph density is a property of the font, so an
+  order written for one face has steps out of order in another, and every
+  out-of-order step is a speck of noise in every cover. It's spaced rather
+  than taken in order because most glyphs are light: the first sixteen would
+  spend the ramp on shades of nearly-empty. The candidates are mostly
+  punctuation, because a cover made of letters reads as a paragraph you try
+  to read.
+- **Same proportions and same edge fade.** The fine cells keep the pond's
+  1.7 aspect, so the two read as one kind of character. `edgeFeather` is
+  shared by the coarse stage and the fine art, so both dissolve along the
+  same curve.
+- **The coarse stage steps aside as the art arrives.** The first version left
+  it underneath, and it showed through the art's soft edges as a second,
+  coarser border. Now what's under the fade is plain water.
+- **The drift is smooth now.** The art is a finished image drawn on whole
+  device pixels, which is half-pixel steps on a 2x screen, rather than a
+  field quantised to 7px cells. The coarse stage underneath holds still at
+  the settled position during the rise.
+- **Rendered once per cover, at the size it opens to.** It's re-rendered when
+  the theme or that size changes, and it goes through `orientRamp` like the
+  pond's own ramp. Checked in the paper theme: dark ink on a pale ground,
+  not a negative.
+
+Watched in Chrome: the Worship Initiative emblem is clear at laptop size and
+still legible on a phone at about 40 characters across. The kite cover shows
+its diagonal sky with the kite as a dark speck. It's there now, but a kite
+thinner than a 4px character is still a speck.
+
+551 tests.

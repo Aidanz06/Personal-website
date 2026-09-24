@@ -14,6 +14,7 @@
 
 import type { Koi } from './koi'
 import { koiSilhouette } from './koi'
+import { edgeFeather } from './asciiArt'
 import { samplePhoto, type PhotoGrid, type Rect } from './photo'
 
 /** What a cell is showing, so the draw step knows which colour to use. */
@@ -219,19 +220,8 @@ export function stampPhoto(
       const value = samplePhoto(photo, u, v)
       const existing = field.luminance[index] ?? 0
 
-      let cellStrength = strength
-      let edgeFactor = 1
-      if (featherPx > 0) {
-        const edge = Math.min(
-          centreX - rect.x,
-          rect.x + rect.width - centreX,
-          centreY - rect.y,
-          rect.y + rect.height - centreY,
-        )
-        const t = Math.min(1, Math.max(0, edge / featherPx))
-        edgeFactor = t * t * (3 - 2 * t)
-        cellStrength *= edgeFactor
-      }
+      const edgeFactor = edgeFeather(centreX, centreY, rect, featherPx)
+      const cellStrength = strength * edgeFactor
 
       field.luminance[index] = existing + (value - existing) * cellStrength
       // The cell only calls itself a photograph once the picture is actually
