@@ -23,7 +23,7 @@
  */
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { isPlaceholderCover } from '../lib/listening/albums.ts'
+import { isPlaceholderCover } from '../lib/listening/pebbles.ts'
 import { COVERS_DIR, LISTENING_FILE } from '../lib/listening/constants.ts'
 import {
   albumInfoUrl,

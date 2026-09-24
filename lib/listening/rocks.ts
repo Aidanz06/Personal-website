@@ -2,8 +2,11 @@
  * Laying the albums out down the pond.
  *
  * The same idiom as the photo rocks in lib/pond/photoStones.ts — rocks placed
- * in viewport heights, two to a row, drifting slightly so they do not read as
- * a grid — with two differences that come straight from what the page means.
+ * in viewport heights — with two differences that come straight from what the
+ * page means.
+ *
+ * The pebbles are the month's top five tracks, in a tight cluster; the
+ * boulders are albums, one to a row below them.
  *
  * **A pebble's size is information.** Photo rocks are all one size because one
  * photograph is not more of a photograph than another. An album played sixty
@@ -31,12 +34,28 @@ import type { Boulder, Pebble } from './types.ts'
  * the fold does not look like a pond, it looks like an empty page.
  */
 export const PEBBLES_START_VH = 0.8
-/** Depth between consecutive ROWS of pebbles. */
-export const PEBBLE_STEP_VH = 0.52
-/** How much lower the right-hand pebble of a pair sits than the left. */
-export const PEBBLE_PAIR_OFFSET_VH = 0.13
-/** Pebbles per row. */
-export const PEBBLES_PER_ROW = 2
+/**
+ * Where each pebble sits, by rank, relative to PEBBLES_START_VH.
+ *
+ * A cluster, not columns. The top five are one thing — this month — and
+ * two columns a screen deep read as a list you scroll past; five stones
+ * close together read as a group you take in at once. Placed by hand rather
+ * than by formula because five is few enough to arrange: the most played
+ * sits top left, and the rest fall away down and to the right, with no
+ * two at the same height so it never reads as a grid.
+ *
+ * `dy` is in viewport heights, `x` a fraction of the width. Rank 6 and
+ * beyond (if MAX_PEBBLES ever grows past the slots) continue in pairs below.
+ */
+export const PEBBLE_SLOTS: readonly { x: number; dy: number }[] = [
+  { x: 0.34, dy: 0 },
+  { x: 0.64, dy: 0.1 },
+  { x: 0.26, dy: 0.3 },
+  { x: 0.54, dy: 0.4 },
+  { x: 0.78, dy: 0.3 },
+]
+/** Depth between consecutive rows, for pebbles past the cluster's slots. */
+export const PEBBLE_STEP_VH = 0.3
 /**
  * Water between the last pebble and the first boulder.
  *
@@ -82,7 +101,8 @@ export type AlbumRock = {
   kind: 'pebble' | 'boulder'
   /** Index into the pebble or boulder list it came from. */
   dataIndex: number
-  album: string
+  /** A pebble's track, or a boulder's album. */
+  title: string
   artist: string
   /** A boulder's line from Aidan. Empty for a pebble. */
   line: string
@@ -113,19 +133,23 @@ export type ListeningLayout = {
  * Never a broken image: a cover last.fm could not give us becomes an image of
  * the album's name, which the pond opens exactly as it would open a cover.
  */
-function coverFor(cover: string, album: string, artist: string): string {
-  return cover || coverlessCover(album, artist)
+function coverFor(cover: string, title: string, artist: string): string {
+  return cover || coverlessCover(title, artist)
 }
 
 /** The comma form, for a screen reader: "·" is read out as "middle dot". */
-function spoken(album: string, artist: string): string {
-  return `${album}, ${artist}`
+function spoken(title: string, artist: string): string {
+  return `${title}, ${artist}`
 }
 
-function pebbleX(row: number, isRight: boolean): number {
-  // Drift per row, so neither column is a perfectly straight line.
-  const drift = ((row * 7) % 5) / 5
-  return isRight ? 0.66 + drift * 0.1 : 0.24 + drift * 0.1
+/** Where the pebble of a given rank goes: its slot, or a pair row below. */
+function pebbleSpot(index: number): { x: number; dy: number } {
+  const slot = PEBBLE_SLOTS[index]
+  if (slot) return slot
+  const extra = index - PEBBLE_SLOTS.length
+  const deepest = Math.max(...PEBBLE_SLOTS.map((s) => s.dy))
+  const row = Math.floor(extra / 2)
+  return { x: extra % 2 === 0 ? 0.3 : 0.66, dy: deepest + PEBBLE_STEP_VH * (row + 1) }
 }
 
 /**
@@ -142,20 +166,18 @@ export function listeningLayout(
   const rocks: AlbumRock[] = []
 
   pebbles.forEach((pebble, index) => {
-    const row = Math.floor(index / PEBBLES_PER_ROW)
-    const isRight = index % PEBBLES_PER_ROW === 1
+    const spot = pebbleSpot(index)
     rocks.push({
       kind: 'pebble',
       dataIndex: index,
-      album: pebble.album,
+      title: pebble.title,
       artist: pebble.artist,
       line: '',
       rank: pebble.rank,
-      src: coverFor(pebble.cover, pebble.album, pebble.artist),
-      alt: spoken(pebble.album, pebble.artist),
-      xFraction: pebbleX(row, isRight),
-      depthVh:
-        PEBBLES_START_VH + row * PEBBLE_STEP_VH + (isRight ? PEBBLE_PAIR_OFFSET_VH : 0),
+      src: coverFor(pebble.cover, pebble.title, pebble.artist),
+      alt: spoken(pebble.title, pebble.artist),
+      xFraction: spot.x,
+      depthVh: PEBBLES_START_VH + spot.dy,
       // The size IS the playcount, scaled by area. See pebbleSize().
       radiusFraction: PEBBLE_RADIUS_FRACTION * pebble.size,
       minRadius: PEBBLE_MIN_RADIUS,
@@ -175,7 +197,7 @@ export function listeningLayout(
     rocks.push({
       kind: 'boulder',
       dataIndex: index,
-      album: boulder.album,
+      title: boulder.album,
       artist: boulder.artist,
       line: boulder.line,
       rank: 0,

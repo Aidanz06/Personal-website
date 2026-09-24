@@ -1,5 +1,5 @@
 /**
- * Turning last.fm's answer into pebbles.
+ * Turning last.fm's answer into pebbles: the top tracks of the month.
  *
  * Pure: no filesystem, no network, no environment. This module is imported by
  * the page that runs in the browser, so anything server-only here would drag
@@ -17,7 +17,7 @@ import {
   MAX_PEBBLES,
   MIN_PLAYCOUNT,
 } from './constants.ts'
-import type { HideRule, Pebble, RawAlbum } from './types.ts'
+import type { HideRule, Pebble, RawTrack } from './types.ts'
 
 /**
  * last.fm's own "no cover art" images.
@@ -89,20 +89,24 @@ export function pickCover(images: unknown): string {
 }
 
 /**
- * Read a user.getTopAlbums response.
+ * Read a user.getTopTracks response.
+ *
+ * No covers here, on purpose: last.fm answers every track image with its grey
+ * placeholder star. A track's cover is its album's, and that comes from
+ * track.getInfo — see parseTrackInfoCover.
  *
  * Anything unrecognisable comes back as an empty list rather than throwing:
  * last.fm answering strangely should cost the pebble layer, not the page.
  */
-export function parseTopAlbums(payload: unknown): RawAlbum[] {
+export function parseTopTracks(payload: unknown): RawTrack[] {
   if (!payload || typeof payload !== 'object') return []
-  const top = (payload as Record<string, unknown>).topalbums
+  const top = (payload as Record<string, unknown>).toptracks
   if (!top || typeof top !== 'object') return []
-  const list = (top as Record<string, unknown>).album
-  // One album comes back as an object rather than an array of one.
+  const list = (top as Record<string, unknown>).track
+  // One track comes back as an object rather than an array of one.
   const entries = Array.isArray(list) ? list : list ? [list] : []
 
-  const albums: RawAlbum[] = []
+  const tracks: RawTrack[] = []
   for (const entry of entries) {
     if (!entry || typeof entry !== 'object') continue
     const record = entry as Record<string, unknown>
@@ -111,16 +115,33 @@ export function parseTopAlbums(payload: unknown): RawAlbum[] {
       artistField && typeof artistField === 'object'
         ? text((artistField as Record<string, unknown>).name)
         : text(artistField)
-    const album = text(record.name)
-    if (!album || !artist) continue
-    albums.push({
-      album,
-      artist,
-      playcount: count(record.playcount),
-      coverUrl: pickCover(record.image),
-    })
+    const title = text(record.name)
+    if (!title || !artist) continue
+    tracks.push({ title, artist, playcount: count(record.playcount) })
   }
-  return albums
+  return tracks
+}
+
+/**
+ * The album cover out of a track.getInfo response, or '' when there is none.
+ *
+ * Plenty of tracks have none — a single last.fm never linked to an album, or
+ * an album with no artwork — and those open as their own title drawn in
+ * characters. Deliberately no guessing from the artist's other albums: a
+ * wrong cover is worse than no cover.
+ */
+export function parseTrackInfoCover(payload: unknown): string {
+  if (!payload || typeof payload !== 'object') return ''
+  const track = (payload as Record<string, unknown>).track
+  if (!track || typeof track !== 'object') return ''
+  const album = (track as Record<string, unknown>).album
+  if (!album || typeof album !== 'object') return ''
+  return pickCover((album as Record<string, unknown>).image)
+}
+
+/** The key a track's cover is remembered under. */
+export function trackKey(artist: string, title: string): string {
+  return `${key(artist)}\u0000${key(title)}`
 }
 
 /** Fold case and whitespace, so "Björk " and "björk" are the same artist. */
@@ -129,29 +150,29 @@ function key(value: string): string {
 }
 
 /**
- * Should this album be kept out of the pond?
+ * Should this track be kept out of the pond?
  *
- * A rule with an album hides that one record; a rule with only an artist
- * hides everything by them. A rule with a blank artist hides **nothing** —
+ * A rule with a track hides that one song; a rule with only an artist hides
+ * everything by them. A rule with a blank artist and track hides **nothing** —
  * the scaffolded file ships with an empty slot in it so the shape is visible,
  * and an empty slot that hid the entire pond would be a memorable bug.
  */
 export function isHidden(
-  album: string,
+  title: string,
   artist: string,
   hide: readonly HideRule[] | undefined,
 ): boolean {
   if (!hide || hide.length === 0) return false
-  const albumKey = key(album)
+  const titleKey = key(title)
   const artistKey = key(artist)
   return hide.some((rule) => {
     const ruleArtist = key(rule.artist ?? '')
-    const ruleAlbum = key(rule.album ?? '')
-    if (!ruleArtist && !ruleAlbum) return false
-    // An album on its own is allowed: "hide this record, whoever made it".
-    if (!ruleArtist) return ruleAlbum === albumKey
+    const ruleTrack = key(rule.track ?? '')
+    if (!ruleArtist && !ruleTrack) return false
+    // A track on its own is allowed: "hide this song, whoever sings it".
+    if (!ruleArtist) return ruleTrack === titleKey
     if (ruleArtist !== artistKey) return false
-    return ruleAlbum === '' || ruleAlbum === albumKey
+    return ruleTrack === '' || ruleTrack === titleKey
   })
 }
 
@@ -159,12 +180,12 @@ export function isHidden(
 export const MIN_PEBBLE_SIZE = 0.52
 
 /**
- * How big a pebble is, relative to the most played album.
+ * How big a pebble is, relative to the most played track.
  *
  * The square root, not the ratio. A rock's presence on the page is its AREA,
  * and area goes as the square of the radius — so scaling the radius linearly
- * with playcount makes an album played twice as often look four times as
- * important. The floor is what stops the eighth album becoming a speck: it
+ * with playcount makes a track played twice as often look four times as
+ * important. The floor is what stops the fifth track becoming a speck: it
  * still has to be a comfortable tap target on a phone.
  */
 export function pebbleSize(playcount: number, topPlaycount: number): number {
@@ -192,35 +213,48 @@ export type SelectOptions = {
   hide?: readonly HideRule[]
   minPlaycount?: number
   max?: number
+  /**
+   * Album covers, by trackKey(), as last.fm gave them. A track with no entry,
+   * or a placeholder, is coverless.
+   */
+  covers?: ReadonlyMap<string, string>
 }
 
 /**
- * The albums, filtered and ranked, ready to be laid out as rocks.
+ * The tracks, filtered and ranked, ready to be laid out as rocks.
  *
  * Order is last.fm's order, which is by playcount — we do not re-sort, so a
  * tie breaks the way last.fm broke it rather than the way `Array.sort`
  * happens to.
  */
-export function selectPebbles(
-  albums: readonly RawAlbum[],
-  options: SelectOptions = {},
-): Pebble[] {
+export function selectTracks(
+  tracks: readonly RawTrack[],
+  options: Omit<SelectOptions, 'covers'> = {},
+): RawTrack[] {
   const minPlaycount = options.minPlaycount ?? MIN_PLAYCOUNT
   const max = options.max ?? MAX_PEBBLES
-
-  const kept = albums
+  return tracks
     .filter((entry) => entry.playcount >= minPlaycount)
-    .filter((entry) => !isHidden(entry.album, entry.artist, options.hide))
+    .filter((entry) => !isHidden(entry.title, entry.artist, options.hide))
     .slice(0, max)
+}
 
+/** The chosen tracks as pebbles: ranked, sized, and given their covers. */
+export function selectPebbles(
+  tracks: readonly RawTrack[],
+  options: SelectOptions = {},
+): Pebble[] {
+  const kept = selectTracks(tracks, options)
   const top = kept[0]?.playcount ?? 0
-
-  return kept.map((entry, index) => ({
-    album: entry.album,
-    artist: entry.artist,
-    playcount: entry.playcount,
-    rank: index + 1,
-    size: pebbleSize(entry.playcount, top),
-    cover: isPlaceholderCover(entry.coverUrl) ? '' : optimisedCover(entry.coverUrl),
-  }))
+  return kept.map((entry, index) => {
+    const coverUrl = options.covers?.get(trackKey(entry.artist, entry.title)) ?? ''
+    return {
+      title: entry.title,
+      artist: entry.artist,
+      playcount: entry.playcount,
+      rank: index + 1,
+      size: pebbleSize(entry.playcount, top),
+      cover: isPlaceholderCover(coverUrl) ? '' : optimisedCover(coverUrl),
+    }
+  })
 }

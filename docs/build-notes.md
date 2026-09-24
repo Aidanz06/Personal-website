@@ -2748,3 +2748,85 @@ its diagonal sky with the kite as a dark speck. It's there now, but a kite
 thinner than a 4px character is still a speck.
 
 551 tests.
+
+## listening step 5 — the top five tracks, grouped
+
+Asked for: five rocks for the top five, tracks instead of albums, and the
+rocks grouped closer together. The boulders stay albums, because they're
+records Aidan picks by hand.
+
+### tracks, and where their covers come from
+
+Pebbles now come from `user.getTopTracks`. Tracks are closer to what "on
+repeat" means than albums: an album's playcount is the sum of its tracks, so
+a record with one song played to death and eleven skipped looks the same as
+one played through.
+
+**last.fm has no art for tracks.** Every track image in Aidan's real month
+was the grey placeholder star. A track's cover is its album's, so after
+choosing the five, `track.getInfo` is asked for each one, in parallel, and
+returns the album and its artwork. That's five small requests every six
+hours, and only for the five being shown, not all fifty. A lookup that fails
+costs that one cover, never the pebble.
+
+Some tracks genuinely have no cover. Measured on the real account:
+
+| track | what last.fm has |
+|---|---|
+| Touch the Sky, On and On, Purple Rain | album art |
+| Majesty | no album linked at all |
+| two CHRIS STASSY singles | an album, with no image, even via `album.getInfo` |
+
+Those open as their title drawn in characters. That's the fallback built in
+step 2. There is deliberately no guessing from the artist's other albums: a
+wrong cover is worse than none.
+
+`autocorrect` is off on the lookup. It's last.fm renaming a track to what it
+thinks you meant, and the page should show the name that was played.
+
+### the numbers that changed
+
+| | albums | tracks |
+|---|---|---|
+| `MAX_PEBBLES` | 8 | **5** |
+| `MIN_PLAYCOUNT` | 4 | **2** |
+
+Two plays because a track's count is a fraction of its album's. At four, a
+real month produced three tracks where the page asks for five. Once is
+passing through; twice is a choice.
+
+### the hide list takes a track now
+
+A top-tracks response doesn't say which album a track is on, so a rule
+naming an album couldn't be matched until after the five were already
+chosen. A rule is now `{ artist }` for everything by someone,
+`{ artist, track }` for one song, or `{ track }` for that title by anyone.
+The empty scaffold slot in `content/listening.json` changed from `album` to
+`track` to show the shape. It held none of Aidan's words. A hidden track is
+backfilled from further down the list, so five still show.
+
+### grouped
+
+Two columns a screen deep read as a list you scroll past. The top five are
+one thing, this month, so they're now a cluster you take in at once:
+`PEBBLE_SLOTS`, five spots placed by hand, within 0.4 of a screen. The most
+played sits top left and the rest fall away down and to the right, with no
+two at the same height so it never reads as a grid. The existing no-overlap
+test holds at 375, 768, 1280 and 1440 wide, and in Chrome at 375 there are
+no overlaps across 14 boxes.
+
+| | before | now |
+|---|---|---|
+| pebbles span | ~1.2 screens | **0.4 screens** |
+| whole page, no boulders | 2.96 screens | **1.8 screens** |
+
+### renames
+
+`lib/listening/albums.ts` is now `pebbles.ts`, since it no longer parses
+albums. On a pebble and a rock, `album` is now `title`: the track's name on a
+pebble, the album's name on a boulder.
+
+Watched in Chrome with the real account: *Majesty* opens as its title in
+characters; *Touch the Sky* opens as *Empires* in fine ASCII.
+
+570 tests.

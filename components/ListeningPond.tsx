@@ -10,7 +10,7 @@ import { listeningLayout } from '@/lib/listening/rocks'
 import type { ListeningData } from '@/lib/listening/types'
 
 /**
- * /listening: a pond you descend, where albums are rocks.
+ * /listening: a pond you descend, where songs and albums are rocks.
  *
  * Structurally this is the homepage's pond with different rocks in it. The
  * canvas is fixed to the viewport and reads the scroll position itself; the
@@ -118,7 +118,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
     return (
       <>
         <p className="font-mono text-small text-muted">
-          {rock.album} · {rock.artist}
+          {rock.title} · {rock.artist}
         </p>
         {rock.line && <p className="text-small text-ink">{rock.line}</p>}
       </>

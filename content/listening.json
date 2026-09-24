@@ -5,6 +5,6 @@
     { "album": "", "artist": "", "line": "", "cover": "" }
   ],
   "hide": [
-    { "artist": "", "album": "" }
+    { "artist": "", "track": "" }
   ]
 }

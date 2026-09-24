@@ -4,21 +4,20 @@ import {
   BOULDER_MIN_RADIUS,
   BOULDER_RADIUS_FRACTION,
   LABEL_LIFT_VH,
-  PEBBLES_PER_ROW,
   PEBBLES_START_VH,
   PEBBLE_MIN_RADIUS,
-  PEBBLE_PAIR_OFFSET_VH,
-  PEBBLE_STEP_VH,
+  PEBBLE_SLOTS,
   MIN_POND_DEPTH_VH,
   listeningLayout,
 } from './rocks.ts'
 import { HOME_STONES, placeStones } from '../pond/stones.ts'
-import { MIN_PEBBLE_SIZE, selectPebbles } from './albums.ts'
+import { MIN_PEBBLE_SIZE, selectPebbles, trackKey } from './pebbles.ts'
+import { MAX_PEBBLES } from './constants.ts'
 import type { Boulder, Pebble } from './types.ts'
 
 function pebble(n: number, size = 1): Pebble {
   return {
-    album: `Album ${n}`,
+    title: `Track ${n}`,
     artist: `Artist ${n}`,
     playcount: 100 - n,
     rank: n,
@@ -37,7 +36,7 @@ function boulder(n: number): Boulder {
   }
 }
 
-const pebbles = Array.from({ length: 7 }, (_, i) => pebble(i + 1, 1 - i * 0.07))
+const pebbles = Array.from({ length: 5 }, (_, i) => pebble(i + 1, 1 - i * 0.1))
 const boulders = Array.from({ length: 3 }, (_, i) => boulder(i + 1))
 
 const VIEWPORTS = [
@@ -48,11 +47,11 @@ const VIEWPORTS = [
 ] as const
 
 describe('listeningLayout', () => {
-  it('makes one rock per album, pebbles first', () => {
+  it('makes one rock per track and per album, pebbles first', () => {
     const { rocks } = listeningLayout(pebbles, boulders)
-    expect(rocks).toHaveLength(10)
-    expect(rocks.slice(0, 7).every((r) => r.kind === 'pebble')).toBe(true)
-    expect(rocks.slice(7).every((r) => r.kind === 'boulder')).toBe(true)
+    expect(rocks).toHaveLength(8)
+    expect(rocks.slice(0, 5).every((r) => r.kind === 'pebble')).toBe(true)
+    expect(rocks.slice(5).every((r) => r.kind === 'boulder')).toBe(true)
   })
 
   it('puts every boulder below every pebble', () => {
@@ -78,7 +77,7 @@ describe('listeningLayout', () => {
     const reordered = [pebbles[1]!, pebbles[0]!, ...pebbles.slice(2)]
     const a = listeningLayout(pebbles, boulders).rocks
     const b = listeningLayout(reordered, boulders).rocks
-    expect(a[0]!.album).not.toBe(b[0]!.album)
+    expect(a[0]!.title).not.toBe(b[0]!.title)
     expect(a[0]!.xFraction).toBe(b[0]!.xFraction)
     expect(a[0]!.depthVh).toBe(b[0]!.depthVh)
   })
@@ -100,17 +99,39 @@ describe('pebbles', () => {
     expect(PEBBLE_MIN_RADIUS * 2).toBeGreaterThanOrEqual(56)
   })
 
-  it('puts two in a row, offset so they are not a grid', () => {
-    const { rocks } = listeningLayout(pebbles, [])
-    expect(rocks[1]!.depthVh - rocks[0]!.depthVh).toBeCloseTo(PEBBLE_PAIR_OFFSET_VH, 6)
-    expect(rocks[2]!.depthVh - rocks[0]!.depthVh).toBeCloseTo(PEBBLE_STEP_VH, 6)
-    expect(PEBBLES_PER_ROW).toBe(2)
+  it('has a place in the cluster for every one of the top five', () => {
+    expect(PEBBLE_SLOTS.length).toBeGreaterThanOrEqual(MAX_PEBBLES)
   })
 
-  it('puts a pair on opposite sides, so one cover cannot hide its partner', () => {
+  it('groups them close together, within half a screen', () => {
+    // Two columns a screen deep read as a list you scroll past. The top five
+    // are one thing, and should be taken in at once.
     const { rocks } = listeningLayout(pebbles, [])
-    for (let i = 0; i + 1 < 7; i += PEBBLES_PER_ROW) {
-      expect(Math.abs(rocks[i + 1]!.xFraction - rocks[i]!.xFraction)).toBeGreaterThan(0.3)
+    const depths = rocks.map((r) => r.depthVh)
+    expect(Math.max(...depths) - Math.min(...depths)).toBeLessThanOrEqual(0.5)
+  })
+
+  it('puts no two at the same height, so it never reads as a grid', () => {
+    const { rocks } = listeningLayout(pebbles, [])
+    const rows = new Set(rocks.map((r) => r.depthVh.toFixed(4)))
+    // Two may share a height if they are far apart across the page.
+    expect(rows.size).toBeGreaterThanOrEqual(4)
+  })
+
+  it('leads with the most played, top left', () => {
+    const { rocks } = listeningLayout(pebbles, [])
+    expect(rocks[0]!.depthVh).toBe(Math.min(...rocks.map((r) => r.depthVh)))
+    expect(rocks[0]!.xFraction).toBeLessThan(0.5)
+  })
+
+  it('carries on below the cluster if there are ever more than five', () => {
+    const { rocks } = listeningLayout(
+      Array.from({ length: 8 }, (_, i) => pebble(i + 1)),
+      [],
+    )
+    const clusterBottom = PEBBLES_START_VH + Math.max(...PEBBLE_SLOTS.map((s) => s.dy))
+    for (const rock of rocks.slice(PEBBLE_SLOTS.length)) {
+      expect(rock.depthVh).toBeGreaterThan(clusterBottom)
     }
   })
 
@@ -178,9 +199,9 @@ describe('boulders', () => {
 
 describe('spacing', () => {
   it('never overlaps two rocks, at any viewport', () => {
-    // Eight pebbles and six boulders is the most this page can hold.
+    // Five pebbles and six boulders is the most this page holds.
     const many = listeningLayout(
-      Array.from({ length: 8 }, (_, i) => pebble(i + 1, 1 - i * 0.06)),
+      Array.from({ length: 5 }, (_, i) => pebble(i + 1, 1 - i * 0.1)),
       Array.from({ length: 6 }, (_, i) => boulder(i + 1)),
     )
     for (const [width, height] of VIEWPORTS) {
@@ -198,7 +219,7 @@ describe('spacing', () => {
 
   it('keeps every rock inside the pond, horizontally', () => {
     const many = listeningLayout(
-      Array.from({ length: 8 }, (_, i) => pebble(i + 1)),
+      Array.from({ length: 5 }, (_, i) => pebble(i + 1)),
       Array.from({ length: 6 }, (_, i) => boulder(i + 1)),
     )
     for (const [width, height] of VIEWPORTS) {
@@ -217,19 +238,6 @@ describe('pond depth', () => {
     expect(few).toBeLessThan(many)
   })
 
-  it('grows by a row, not by a pebble', () => {
-    // Counted from three, because one and two pebbles both land on the
-    // minimum depth — a pond has to be a pond even when there is nothing in
-    // it.
-    const three = listeningLayout(pebbles.slice(0, 3), []).depthVh
-    const four = listeningLayout(pebbles.slice(0, 4), []).depthVh
-    const five = listeningLayout(pebbles.slice(0, 5), []).depthVh
-    // Adding the second rock of a row costs only the pair offset.
-    expect(four - three).toBeCloseTo(PEBBLE_PAIR_OFFSET_VH, 6)
-    // Opening a new row costs a step.
-    expect(five - four).toBeGreaterThan(PEBBLE_PAIR_OFFSET_VH)
-  })
-
   it('has a floor, so one pebble is still a pond', () => {
     expect(listeningLayout(pebbles.slice(0, 1), []).depthVh).toBe(MIN_POND_DEPTH_VH)
   })
@@ -239,14 +247,14 @@ describe('pond depth', () => {
     // empty water where it would have been.
     const withPebbles = listeningLayout(pebbles, boulders)
     const without = listeningLayout([], boulders)
-    expect(without.rocks[0]!.depthVh).toBeLessThan(withPebbles.rocks[7]!.depthVh)
+    expect(without.rocks[0]!.depthVh).toBeLessThan(withPebbles.rocks[5]!.depthVh)
     expect(without.rocks[0]!.depthVh).toBeCloseTo(PEBBLES_START_VH, 6)
     expect(without.depthVh).toBeLessThan(withPebbles.depthVh)
   })
 
   it('keeps a full pond to a sensible length', () => {
     const full = listeningLayout(
-      Array.from({ length: 8 }, (_, i) => pebble(i + 1)),
+      Array.from({ length: 5 }, (_, i) => pebble(i + 1)),
       Array.from({ length: 6 }, (_, i) => boulder(i + 1)),
     )
     expect(full.depthVh).toBeLessThan(8)
@@ -269,22 +277,25 @@ describe('covers', () => {
     // Never a broken image: the rock opens onto the name instead.
     const { rocks } = listeningLayout([{ ...pebble(1), cover: '' }], [])
     expect(rocks[0]!.src.startsWith('data:image/svg+xml')).toBe(true)
-    expect(decodeURIComponent(rocks[0]!.src)).toContain('Album 1')
+    expect(decodeURIComponent(rocks[0]!.src)).toContain('Track 1')
   })
 
   it('describes a rock with a comma, not a middle dot', () => {
     // "·" is announced as "middle dot", which nobody wants read aloud.
     const { rocks } = listeningLayout([pebble(1)], [])
-    expect(rocks[0]!.alt).toBe('Album 1, Artist 1')
+    expect(rocks[0]!.alt).toBe('Track 1, Artist 1')
   })
 })
 
 describe('the real pipeline', () => {
   it('lays out what selectPebbles produces', () => {
-    const selected = selectPebbles([
-      { album: 'A', artist: 'One', playcount: 60, coverUrl: 'https://img/a.jpg' },
-      { album: 'B', artist: 'Two', playcount: 12, coverUrl: '' },
-    ])
+    const selected = selectPebbles(
+      [
+        { title: 'A', artist: 'One', playcount: 60 },
+        { title: 'B', artist: 'Two', playcount: 12 },
+      ],
+      { covers: new Map([[trackKey('One', 'A'), 'https://img/a.jpg']]) },
+    )
     const { rocks } = listeningLayout(selected, [])
     expect(rocks).toHaveLength(2)
     expect(rocks[0]!.radiusFraction).toBeGreaterThan(rocks[1]!.radiusFraction)

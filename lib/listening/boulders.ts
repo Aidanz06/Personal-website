@@ -12,7 +12,7 @@
  */
 
 import { BOULDER_LINE_PLACEHOLDER, COVERS_URL } from './constants.ts'
-import { optimisedCover } from './albums.ts'
+import { optimisedCover } from './pebbles.ts'
 import type { Boulder, ListeningFile } from './types.ts'
 
 function text(value: unknown): string {
@@ -67,6 +67,6 @@ export function resolveBoulders(file: ListeningFile | undefined): Boulder[] {
 /** The hide list, with the empty scaffold slots dropped. */
 export function resolveHideList(file: ListeningFile | undefined) {
   return (file?.hide ?? []).filter(
-    (rule) => text(rule?.artist) !== '' || text(rule?.album) !== '',
+    (rule) => text(rule?.artist) !== '' || text(rule?.track) !== '',
   )
 }

@@ -30,21 +30,23 @@ export const PERIOD_LABELS: Record<Period, string> = {
 }
 
 /**
- * How many pebbles at most.
+ * How many pebbles: the top five tracks.
  *
- * Six to eight. Fewer reads as a top-five list; more turns the surface of the
- * pond into gravel and the sizes stop being distinguishable.
+ * Tracks rather than albums because that is what is actually on repeat — an
+ * album's playcount is the sum of every track on it, so a record with one
+ * song played to death and eleven skipped looks the same as one played
+ * through. Five, because a top five is a thing people say.
  */
-export const MAX_PEBBLES = 8
+export const MAX_PEBBLES = 5
 
 /**
- * Fewest plays an album needs before it counts.
+ * Fewest plays a track needs before it counts.
  *
- * Below this it is something that was on once, not something on repeat — and
- * a one-play album rendered at the smallest size is a speck the reader cannot
- * open on a phone.
+ * Two: once is passing through, twice is a choice. It was four when pebbles
+ * were albums, but a track's count is a fraction of its album's, and at four
+ * a real month produced three tracks where the page asks for five.
  */
-export const MIN_PLAYCOUNT = 4
+export const MIN_PLAYCOUNT = 2
 
 /**
  * Cover width requested from Next's image optimiser.

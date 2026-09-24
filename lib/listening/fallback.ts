@@ -4,7 +4,7 @@
  * The rocks are real buttons over a canvas, so with no script they are
  * focusable controls scattered over an empty pond that will never draw — a
  * worse page than a plain list, not a better one. So the whole rock layer is
- * hidden and a list takes its place: the same albums, in the same order, with
+ * hidden and a list takes its place: the same tracks and albums, in the same order, with
  * the same words.
  *
  * Built as a string and set directly, the same way the slideshow's fallback
@@ -27,11 +27,11 @@ export function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;')
 }
 
-function albumLine(album: string, artist: string, rank?: number): string {
+function titleLine(title: string, artist: string, rank?: number): string {
   const number =
     rank === undefined ? '' : `<span class="lf-n">${String(rank).padStart(2, '0')}</span>`
   return (
-    `${number}<span class="lf-t">${escapeHtml(album)}</span>` +
+    `${number}<span class="lf-t">${escapeHtml(title)}</span>` +
     `<span class="lf-a">${escapeHtml(artist)}</span>`
   )
 }
@@ -58,7 +58,7 @@ export function listeningFallbackMarkup(content: FallbackContent): string {
 
   const pebbles = content.pebbles.length
     ? `<ol class="lf">${content.pebbles
-        .map((pebble) => `<li>${albumLine(pebble.album, pebble.artist, pebble.rank)}</li>`)
+        .map((pebble) => `<li>${titleLine(pebble.title, pebble.artist, pebble.rank)}</li>`)
         .join('')}</ol>`
     : ''
 
@@ -67,7 +67,7 @@ export function listeningFallbackMarkup(content: FallbackContent): string {
       `<ul class="lf">${content.boulders
         .map(
           (boulder) =>
-            `<li>${albumLine(boulder.album, boulder.artist)}` +
+            `<li>${titleLine(boulder.album, boulder.artist)}` +
             `<span class="lf-l">${escapeHtml(boulder.line)}</span></li>`,
         )
         .join('')}</ul>`

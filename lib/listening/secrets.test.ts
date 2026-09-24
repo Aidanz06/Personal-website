@@ -146,7 +146,7 @@ describe('the last.fm key', () => {
 
 describe('the modules the page shares with the browser', () => {
   const shared = [
-    'lib/listening/albums.ts',
+    'lib/listening/pebbles.ts',
     'lib/listening/boulders.ts',
     'lib/listening/constants.ts',
     'lib/listening/types.ts',

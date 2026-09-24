@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { FIXTURE_TOP_ALBUMS } from './fixture.ts'
+import { FIXTURE_TOP_TRACKS } from './fixture.ts'
 
 /**
  * The optimiser only fetches from hosts listed in next.config.ts, and
@@ -29,8 +29,8 @@ describe('images.remotePatterns', () => {
 
   it('covers every host the fixture uses, so the fixture is faithful', () => {
     const hosts = new Set(
-      FIXTURE_TOP_ALBUMS.topalbums.album.flatMap((album) =>
-        album.image.map((image) => new URL(image['#text']).hostname),
+      FIXTURE_TOP_TRACKS.toptracks.track.flatMap((track) =>
+        track.image.map((image) => new URL(image['#text']).hostname),
       ),
     )
     for (const host of hosts) expect(allowed, host).toContain(host)

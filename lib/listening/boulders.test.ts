@@ -77,12 +77,12 @@ describe('boulderCoverUrl', () => {
 
 describe('resolveHideList', () => {
   it('drops the empty scaffold slot', () => {
-    expect(resolveHideList({ hide: [{ artist: '', album: '' }] })).toEqual([])
+    expect(resolveHideList({ hide: [{ artist: '', track: '' }] })).toEqual([])
   })
 
   it('keeps a rule with either half filled in', () => {
     expect(resolveHideList({ hide: [{ artist: 'Sleep Sounds' }] })).toHaveLength(1)
-    expect(resolveHideList({ hide: [{ artist: '', album: 'Rain' }] })).toHaveLength(1)
+    expect(resolveHideList({ hide: [{ artist: '', track: 'Rain' }] })).toHaveLength(1)
   })
 })
 

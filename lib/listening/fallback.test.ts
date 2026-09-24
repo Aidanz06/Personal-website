@@ -3,8 +3,8 @@ import { escapeHtml, listeningFallbackMarkup } from './fallback.ts'
 import type { Boulder, Pebble } from './types.ts'
 
 const pebbles: Pebble[] = [
-  { album: 'Kid A', artist: 'Radiohead', playcount: 40, rank: 1, size: 1, cover: '' },
-  { album: 'Vespertine', artist: 'Björk', playcount: 20, rank: 2, size: 0.7, cover: '' },
+  { title: 'Idioteque', artist: 'Radiohead', playcount: 40, rank: 1, size: 1, cover: '' },
+  { title: 'Hidden Place', artist: 'Björk', playcount: 20, rank: 2, size: 0.7, cover: '' },
 ]
 
 const boulders: Boulder[] = [
@@ -28,8 +28,8 @@ describe('escapeHtml', () => {
 describe('listeningFallbackMarkup', () => {
   const markup = listeningFallbackMarkup(content)
 
-  it('lists every album, with the artist', () => {
-    for (const album of ['Kid A', 'Vespertine', 'Blue']) expect(markup).toContain(album)
+  it('lists every track and album, with the artist', () => {
+    for (const title of ['Idioteque', 'Hidden Place', 'Blue']) expect(markup).toContain(title)
     for (const artist of ['Radiohead', 'Björk', 'Joni Mitchell']) {
       expect(markup).toContain(artist)
     }
@@ -52,10 +52,10 @@ describe('listeningFallbackMarkup', () => {
     expect(markup).toContain('.listening-pond{min-height:0!important}')
   })
 
-  it('escapes an album title that would otherwise become markup', () => {
+  it('escapes a title that would otherwise become markup', () => {
     const nasty = listeningFallbackMarkup({
       ...content,
-      pebbles: [{ ...pebbles[0]!, album: '<script>alert(1)</script>' }],
+      pebbles: [{ ...pebbles[0]!, title: '<script>alert(1)</script>' }],
     })
     expect(nasty).not.toContain('<script>alert(1)')
     expect(nasty).toContain('&lt;script&gt;')

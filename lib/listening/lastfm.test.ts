@@ -4,19 +4,58 @@ import {
   loadPebbles,
   readCredentials,
   setLastGood,
-  topAlbumsUrl,
+  topTracksUrl,
+  trackInfoUrl,
 } from './lastfm.ts'
-import { LISTENING_PERIOD, MIN_PLAYCOUNT } from './constants.ts'
-import { FIXTURE_TOP_ALBUMS } from './fixture.ts'
+import { LISTENING_PERIOD, MAX_PEBBLES, MIN_PLAYCOUNT } from './constants.ts'
+import { FIXTURE_TOP_TRACKS } from './fixture.ts'
 
 const CREDENTIALS = { LASTFM_API_KEY: 'secret-key', LASTFM_USER: 'aidan' }
 const NOW = () => new Date('2026-09-23T11:00:00Z')
+const PLACEHOLDER =
+  'https://lastfm-img.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'
 
-/** A fetch that answers with one payload, or fails. */
-function stubFetch(payload: unknown, ok = true) {
-  return vi.fn(async () =>
-    ({ ok, json: async () => payload }) as unknown as Response,
-  ) as unknown as typeof fetch
+function track(name: string, artist: string, playcount: number) {
+  return {
+    name,
+    playcount: String(playcount),
+    artist: { name: artist },
+    image: [{ '#text': PLACEHOLDER, size: 'extralarge' }],
+  }
+}
+
+const topTracks = {
+  toptracks: {
+    track: [track('Touch the Sky', 'Hillsong United', 4), track('Majesty', 'The Worship Initiative', 5)],
+  },
+}
+
+/** Album art per track title, as track.getInfo would give it. */
+const ALBUM_ART: Record<string, string> = {
+  'Touch the Sky': 'https://lastfm-img.freetls.fastly.net/i/u/300x300/empires.jpg',
+}
+
+function respond(payload: unknown, ok = true) {
+  return { ok, json: async () => payload } as unknown as Response
+}
+
+/**
+ * A fetch that answers like last.fm: top tracks for user.gettoptracks, and
+ * an album (or none) for track.getinfo.
+ */
+function lastfm(top: unknown = topTracks, options: { infoFails?: boolean } = {}) {
+  return vi.fn(async (address: string) => {
+    const params = new URL(address).searchParams
+    if (params.get('method') === 'user.gettoptracks') return respond(top)
+    if (params.get('method') === 'track.getinfo') {
+      if (options.infoFails) throw new Error('econnreset')
+      const art = ALBUM_ART[params.get('track') ?? '']
+      return respond({
+        track: art ? { album: { title: 'x', image: [{ '#text': art, size: 'extralarge' }] } } : {},
+      })
+    }
+    return respond({ error: 3 })
+  }) as unknown as typeof fetch
 }
 
 function failingFetch() {
@@ -25,17 +64,10 @@ function failingFetch() {
   }) as unknown as typeof fetch
 }
 
-const realAlbums = {
-  topalbums: {
-    album: [
-      {
-        name: 'Real Album',
-        playcount: '40',
-        artist: { name: 'Real Artist' },
-        image: [{ '#text': 'https://img/real.jpg', size: 'extralarge' }],
-      },
-    ],
-  },
+function calls(fetchImpl: typeof fetch): string[] {
+  return (fetchImpl as unknown as { mock: { calls: [string][] } }).mock.calls.map(
+    ([address]) => new URL(address).searchParams.get('method') ?? '',
+  )
 }
 
 function options(extra: Record<string, unknown> = {}) {
@@ -52,13 +84,20 @@ describe('readCredentials', () => {
   })
 })
 
-describe('topAlbumsUrl', () => {
-  it('asks for the period the constant names', () => {
-    const url = topAlbumsUrl({ apiKey: 'k', user: 'aidan' }, LISTENING_PERIOD)
-    expect(url).toContain('method=user.gettopalbums')
+describe('request urls', () => {
+  it('asks for top tracks over the period the constant names', () => {
+    const url = topTracksUrl({ apiKey: 'k', user: 'aidan' }, LISTENING_PERIOD)
+    expect(url).toContain('method=user.gettoptracks')
     expect(url).toContain(`period=${LISTENING_PERIOD}`)
     expect(url).toContain('user=aidan')
     expect(url).toContain('format=json')
+  })
+
+  it('asks track.getInfo for one track, without autocorrect renaming it', () => {
+    const url = trackInfoUrl('k', 'Prince', 'Purple Rain')
+    expect(url).toContain('method=track.getinfo')
+    expect(url).toContain('track=Purple+Rain')
+    expect(url).not.toContain('autocorrect=1')
   })
 })
 
@@ -73,13 +112,13 @@ describe('loadPebbles with no key', () => {
     setLastGood(null)
     const result = await loadPebbles(options({ env: {} }))
     expect(result.source).toBe('fixture')
-    // Eight in the fixture, one under the playcount floor.
-    expect(result.pebbles).toHaveLength(7)
+    // Seven in the fixture: one past the top five, one under the floor.
+    expect(result.pebbles).toHaveLength(5)
     expect(result.asOf).toBe('2026-09-23')
   })
 
   it('never touches the network', async () => {
-    const fetchImpl = stubFetch(realAlbums)
+    const fetchImpl = lastfm()
     await loadPebbles(options({ env: {}, fetchImpl }))
     expect(fetchImpl).not.toHaveBeenCalled()
   })
@@ -95,20 +134,14 @@ describe('loadPebbles with no key', () => {
     expect(quiet).not.toHaveBeenCalled()
   })
 
-  it('gives the fixture covers that actually exist', async () => {
-    // A fixture cover URL is faithful in shape but has no file behind it, and
-    // a cover that 404s never opens — hiding the thing the fixture exists to
-    // show.
+  it('gives the fixture covers that actually exist, and leaves one coverless', async () => {
+    // A made-up last.fm URL would 404, and a cover that 404s never opens.
     const { pebbles } = await loadPebbles(options({ env: {} }))
     const withCovers = pebbles.filter((p) => p.cover)
     expect(withCovers.length).toBeGreaterThan(0)
     for (const pebble of withCovers) {
       expect(decodeURIComponent(pebble.cover)).toContain('/lab/00-test-pattern.png')
     }
-  })
-
-  it('keeps the fixture’s coverless album coverless', async () => {
-    const { pebbles } = await loadPebbles(options({ env: {} }))
     expect(pebbles.some((p) => p.cover === '')).toBe(true)
   })
 })
@@ -116,54 +149,79 @@ describe('loadPebbles with no key', () => {
 describe('loadPebbles with a key', () => {
   it('never asks for an uncached request, which would make the page dynamic', async () => {
     // `cache: 'no-store'` on a fetch opts the whole route into rendering on
-    // every request — the build then prints the page as ƒ instead of static,
-    // and last.fm is asked once per visitor. The page's own revalidate is
-    // the only schedule this should run on.
+    // every request. The page's own revalidate is the only schedule this
+    // should run on.
     setLastGood(null)
-    const fetchImpl = stubFetch(realAlbums)
+    const fetchImpl = lastfm()
     await loadPebbles(options({ env: CREDENTIALS, fetchImpl }))
-    const init = (fetchImpl as unknown as { mock: { calls: [string, RequestInit?][] } }).mock
-      .calls[0]![1] as (RequestInit & { next?: { revalidate?: number } }) | undefined
-    expect(init?.cache).not.toBe('no-store')
-    expect(init?.next?.revalidate).not.toBe(0)
+    const mock = (fetchImpl as unknown as { mock: { calls: [string, RequestInit?][] } }).mock
+    for (const [, init] of mock.calls) {
+      const typed = init as (RequestInit & { next?: { revalidate?: number } }) | undefined
+      expect(typed?.cache).not.toBe('no-store')
+      expect(typed?.next?.revalidate).not.toBe(0)
+    }
   })
 
-  it('uses the answer, and applies the hide list to it', async () => {
+  it('uses the top tracks, in last.fm’s order', async () => {
+    setLastGood(null)
+    const result = await loadPebbles(options({ env: CREDENTIALS, fetchImpl: lastfm() }))
+    expect(result.source).toBe('lastfm')
+    expect(result.pebbles.map((p) => p.title)).toEqual(['Touch the Sky', 'Majesty'])
+  })
+
+  it('gives each track its album’s cover, and leaves the rest coverless', async () => {
+    // Majesty is real: last.fm links it to no album, so it has no art.
+    setLastGood(null)
+    const { pebbles } = await loadPebbles(options({ env: CREDENTIALS, fetchImpl: lastfm() }))
+    expect(decodeURIComponent(pebbles[0]!.cover)).toContain('empires.jpg')
+    expect(pebbles[1]!.cover).toBe('')
+  })
+
+  it('looks up covers only for the tracks it will show', async () => {
+    setLastGood(null)
+    const many = {
+      toptracks: { track: Array.from({ length: 20 }, (_, i) => track(`T${i}`, 'X', 30 - i)) },
+    }
+    const fetchImpl = lastfm(many)
+    await loadPebbles(options({ env: CREDENTIALS, fetchImpl }))
+    expect(calls(fetchImpl).filter((m) => m === 'track.getinfo')).toHaveLength(MAX_PEBBLES)
+  })
+
+  it('still shows the tracks when every cover lookup fails', async () => {
+    // A cover lookup that fails costs that cover, never the pebble.
     setLastGood(null)
     const result = await loadPebbles(
-      options({ env: CREDENTIALS, fetchImpl: stubFetch(realAlbums) }),
+      options({ env: CREDENTIALS, fetchImpl: lastfm(topTracks, { infoFails: true }) }),
     )
-    expect(result.source).toBe('lastfm')
-    expect(result.pebbles.map((p) => p.album)).toEqual(['Real Album'])
+    expect(result.pebbles).toHaveLength(2)
+    expect(result.pebbles.every((p) => p.cover === '')).toBe(true)
+  })
 
-    // The hide list applies on the way out of the cache too, so a record
-    // just added to it cannot come back from a stale answer.
+  it('applies the hide list, including to the remembered answer', async () => {
+    setLastGood(null)
     const hidden = await loadPebbles(
-      options({
-        env: CREDENTIALS,
-        fetchImpl: stubFetch(realAlbums),
-        hide: [{ artist: 'Real Artist' }],
-      }),
+      options({ env: CREDENTIALS, fetchImpl: lastfm(), hide: [{ artist: 'Hillsong United' }] }),
     )
-    expect(hidden.pebbles).toEqual([])
+    expect(hidden.pebbles.map((p) => p.title)).toEqual(['Majesty'])
+
+    // Then last.fm goes down, and a track is hidden after the fact.
+    const after = await loadPebbles(
+      options({ env: CREDENTIALS, fetchImpl: failingFetch(), hide: [{ artist: '', track: 'Majesty' }] }),
+    )
+    expect(after.pebbles.map((p) => p.title)).toEqual(['Touch the Sky'])
   })
 
   it('never falls back to the fixture once a key exists', async () => {
     // Fixture data on a live site would be a lie. No pebbles is honest.
     setLastGood(null)
-    const result = await loadPebbles(
-      options({ env: CREDENTIALS, fetchImpl: failingFetch() }),
-    )
+    const result = await loadPebbles(options({ env: CREDENTIALS, fetchImpl: failingFetch() }))
     expect(result.source).not.toBe('fixture')
     expect(result.pebbles).toEqual([])
-    expect(result.pebbles.map((p) => p.album)).not.toContain('Placeholder in Blue')
   })
 
-  it('keeps the last good data when the api fails', async () => {
+  it('keeps the last good data, covers included, when the api fails', async () => {
     setLastGood(null)
-    const good = await loadPebbles(
-      options({ env: CREDENTIALS, fetchImpl: stubFetch(realAlbums) }),
-    )
+    const good = await loadPebbles(options({ env: CREDENTIALS, fetchImpl: lastfm() }))
     const after = await loadPebbles(
       options({
         env: CREDENTIALS,
@@ -172,24 +230,21 @@ describe('loadPebbles with a key', () => {
       }),
     )
     expect(after.pebbles).toEqual(good.pebbles)
-    // The ORIGINAL date, not today's: claiming a stale list is today's is the
-    // one lie the "as of" line exists to prevent.
+    // The ORIGINAL date, not today's.
     expect(after.asOf).toBe(good.asOf)
   })
 
   it('has no pebbles at all when the api fails and nothing was ever good', async () => {
     setLastGood(null)
-    const result = await loadPebbles(
-      options({ env: CREDENTIALS, fetchImpl: failingFetch() }),
-    )
+    const result = await loadPebbles(options({ env: CREDENTIALS, fetchImpl: failingFetch() }))
     expect(result).toMatchObject({ pebbles: [], asOf: '', source: 'none' })
   })
 
   it('treats an http error, a last.fm error body and bad json the same way', async () => {
     setLastGood(null)
     const cases: (typeof fetch)[] = [
-      stubFetch(realAlbums, false),
-      stubFetch({ error: 6, message: 'User not found' }),
+      vi.fn(async () => respond(topTracks, false)) as unknown as typeof fetch,
+      vi.fn(async () => respond({ error: 6, message: 'User not found' })) as unknown as typeof fetch,
       vi.fn(async () => ({
         ok: true,
         json: async () => {
@@ -203,54 +258,26 @@ describe('loadPebbles with a key', () => {
     }
   })
 
-  it('hides an album that is already in the remembered answer', async () => {
-    setLastGood(null)
-    await loadPebbles(options({ env: CREDENTIALS, fetchImpl: stubFetch(realAlbums) }))
-    const after = await loadPebbles(
-      options({
-        env: CREDENTIALS,
-        fetchImpl: failingFetch(),
-        hide: [{ artist: 'Real Artist' }],
-      }),
-    )
-    expect(after.pebbles).toEqual([])
-  })
-
   it('does not remember an empty answer over a good one', async () => {
-    // A scrobbler that was off for a month should not wipe out the last good
-    // month.
     setLastGood(null)
-    const good = await loadPebbles(
-      options({ env: CREDENTIALS, fetchImpl: stubFetch(realAlbums) }),
-    )
+    const good = await loadPebbles(options({ env: CREDENTIALS, fetchImpl: lastfm() }))
     const empty = await loadPebbles(
-      options({ env: CREDENTIALS, fetchImpl: stubFetch({ topalbums: { album: [] } }) }),
+      options({ env: CREDENTIALS, fetchImpl: lastfm({ toptracks: { track: [] } }) }),
     )
     expect(empty.pebbles).toEqual(good.pebbles)
   })
 
   it('filters by playcount the same way the fixture path does', async () => {
     setLastGood(null)
-    const quiet = {
-      topalbums: {
-        album: [
-          {
-            name: 'Barely Played',
-            playcount: String(MIN_PLAYCOUNT - 1),
-            artist: { name: 'Someone' },
-            image: [],
-          },
-        ],
-      },
-    }
-    const result = await loadPebbles(options({ env: CREDENTIALS, fetchImpl: stubFetch(quiet) }))
+    const quiet = { toptracks: { track: [track('Once', 'Someone', MIN_PLAYCOUNT - 1)] } }
+    const result = await loadPebbles(options({ env: CREDENTIALS, fetchImpl: lastfm(quiet) }))
     expect(result.pebbles).toEqual([])
   })
 })
 
 describe('the fixture itself', () => {
-  it('is obviously not real data', async () => {
-    const names = FIXTURE_TOP_ALBUMS.topalbums.album.map((a) => `${a.name} ${a.artist.name}`)
+  it('is obviously not real data', () => {
+    const names = FIXTURE_TOP_TRACKS.toptracks.track.map((t) => `${t.name} ${t.artist.name}`)
     expect(names.join(' ').toLowerCase()).toMatch(/fixture|example|sample|dummy|testcard/)
   })
 })

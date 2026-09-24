@@ -4,8 +4,8 @@
  * Two kinds of rock, and they are genuinely different things rather than one
  * thing at two sizes:
  *
- * - a **pebble** is a fact about the last month, pulled from last.fm, with a
- *   playcount and a rank and no opinion attached;
+ * - a **pebble** is a track: a fact about the last month, pulled from
+ *   last.fm, with a playcount and a rank and no opinion attached;
  * - a **boulder** is a choice Aidan made, written down in a file, with a line
  *   from him and no playcount at all.
  *
@@ -14,36 +14,35 @@
 
 import type { Period } from './constants.ts'
 
-/** One album as last.fm reports it, once the noise is stripped out. */
-export type RawAlbum = {
-  album: string
+/** One track as last.fm reports it, once the noise is stripped out. */
+export type RawTrack = {
+  title: string
   artist: string
   playcount: number
-  /**
-   * The cover as last.fm gave it, or '' when there is none.
-   *
-   * Empty is the normal case, not an error: last.fm returns an empty string
-   * for plenty of albums and a grey placeholder star for plenty more. Both
-   * end up as '' here, and a coverless album opens as its own name.
-   */
-  coverUrl: string
 }
 
-/** An album near the surface: small, many, and moved by the current. */
+/** A track near the surface: small, few, and moved by the current. */
 export type Pebble = {
-  album: string
+  /** The track's name. */
+  title: string
   artist: string
   playcount: number
   /** 1 for the most played. Placement is derived from this. */
   rank: number
   /**
-   * How big this pebble is, 0..1, relative to the most played album.
+   * How big this pebble is, 0..1, relative to the most played track.
    *
    * A fraction rather than a radius: the page decides what a fraction is
    * worth in pixels, and it is not the same on a phone as on a laptop.
    */
   size: number
-  /** Cover URL through the image optimiser, or '' for a coverless album. */
+  /**
+   * Cover URL through the image optimiser, or '' for a coverless track.
+   *
+   * A track's cover is its ALBUM's cover. last.fm returns a grey placeholder
+   * for every track image, so the art comes from track.getInfo, which names
+   * the album and carries its artwork — when last.fm has any.
+   */
   cover: string
 }
 
@@ -59,10 +58,16 @@ export type Boulder = {
   cover: string
 }
 
-/** One entry in the hide list. A blank album hides the whole artist. */
+/**
+ * One entry in the hide list. A blank track hides the whole artist.
+ *
+ * A track, not an album: the top-tracks response does not say which album a
+ * track is on, so a rule naming an album could not be matched until after
+ * the five had already been chosen.
+ */
 export type HideRule = {
   artist: string
-  album?: string
+  track?: string
 }
 
 /** content/listening.json, as written. Every field is allowed to be blank. */
