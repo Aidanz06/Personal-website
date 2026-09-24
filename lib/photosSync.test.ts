@@ -1,0 +1,119 @@
+import { describe, expect, it } from 'vitest'
+import { mergeCaptions, type ScannedPhoto } from './photosSync'
+import type { CaptionsFile } from './captions'
+
+const scan: ScannedPhoto[] = [
+  { file: 'website-01.jpg', date: '2025-05-22', settings: 'f/8 · 1/160 · iso 320' },
+  { file: 'website-02.jpg', date: '2025-05-22', settings: 'f/2.8 · 1/1000 · iso 800' },
+  { file: 'website-11.jpg', date: '2025-05-25', settings: 'f/2.8 · 1/100 · iso 500' },
+]
+
+describe('mergeCaptions', () => {
+  it('scaffolds every photograph with blank alt and line', () => {
+    const { captions, added } = mergeCaptions({}, scan)
+    expect(added).toEqual(['website-01.jpg', 'website-02.jpg', 'website-11.jpg'])
+    expect(captions.photos!['website-01.jpg']).toEqual({
+      alt: '',
+      line: '',
+      date: '2025-05-22',
+      settings: 'f/8 · 1/160 · iso 320',
+    })
+  })
+
+  it('adds one place entry per shoot date, blank, ready to fill in', () => {
+    const { captions, newDates } = mergeCaptions({}, scan)
+    expect(newDates).toEqual(['2025-05-22', '2025-05-25'])
+    expect(captions.places).toEqual({ '2025-05-22': '', '2025-05-25': '' })
+  })
+
+  it('never overwrites text Aidan wrote, on a second run', () => {
+    // The one guarantee the script makes. Running it twice must be safe, or
+    // it is not a tool anybody will run.
+    const first = mergeCaptions({}, scan).captions
+    const edited: CaptionsFile = {
+      places: { ...first.places, '2025-05-22': 'kamakura' },
+      photos: {
+        ...first.photos,
+        'website-01.jpg': {
+          ...first.photos!['website-01.jpg'],
+          alt: 'a torii gate half in the sea.',
+          line: 'the tide was further out than the guidebook said.',
+        },
+      },
+    }
+
+    const second = mergeCaptions(edited, scan)
+    expect(second.captions.photos!['website-01.jpg']!.alt).toBe('a torii gate half in the sea.')
+    expect(second.captions.photos!['website-01.jpg']!.line)
+      .toBe('the tide was further out than the guidebook said.')
+    expect(second.captions.places!['2025-05-22']).toBe('kamakura')
+    expect(second.added).toEqual([])
+    expect(second.newDates).toEqual([])
+
+    // And a third run changes nothing at all.
+    const third = mergeCaptions(second.captions, scan)
+    expect(third.captions).toEqual(second.captions)
+  })
+
+  it('leaves a hand-corrected date alone rather than re-reading EXIF over it', () => {
+    // The camera clock is on the wrong timezone. A date fixed by hand has to
+    // survive the next sync or fixing it is pointless.
+    const existing: CaptionsFile = {
+      photos: { 'website-01.jpg': { alt: 'x', line: '', date: '2025-05-21', settings: '' } },
+    }
+    const { captions } = mergeCaptions(existing, scan)
+    expect(captions.photos!['website-01.jpg']!.date).toBe('2025-05-21')
+    // A blank settings field still gets filled.
+    expect(captions.photos!['website-01.jpg']!.settings).toBe('f/8 · 1/160 · iso 320')
+  })
+
+  it('adds only the new photograph when one arrives', () => {
+    const before = mergeCaptions({}, scan.slice(0, 2)).captions
+    const after = mergeCaptions(before, scan)
+    expect(after.added).toEqual(['website-11.jpg'])
+    expect(after.newDates).toEqual(['2025-05-25'])
+  })
+
+  it('reports what is still blank', () => {
+    const result = mergeCaptions({}, scan)
+    expect(result.missingAlt).toHaveLength(3)
+    expect(result.missingPlace).toEqual(['2025-05-22', '2025-05-25'])
+    expect(result.missingLine).toHaveLength(3)
+  })
+
+  it('stops reporting a field once it is filled in', () => {
+    const filled: CaptionsFile = {
+      places: { '2025-05-22': 'kamakura', '2025-05-25': 'tokyo' },
+      photos: Object.fromEntries(
+        scan.map((photo) => [photo.file, { alt: 'described.', line: 'said.', date: photo.date, settings: photo.settings }]),
+      ),
+    }
+    const result = mergeCaptions(filled, scan)
+    expect(result.missingAlt).toEqual([])
+    expect(result.missingPlace).toEqual([])
+    expect(result.missingLine).toEqual([])
+  })
+
+  it('keeps an entry whose file has gone, and says so', () => {
+    // Deleting it would throw away a description over what is probably a
+    // rename. Reporting it costs a line of output.
+    const existing = mergeCaptions({}, scan).captions
+    const result = mergeCaptions(existing, scan.slice(0, 2))
+    expect(result.orphans).toEqual(['website-11.jpg'])
+    expect(result.captions.photos!['website-11.jpg']).toBeDefined()
+  })
+
+  it('sorts both maps, so a sync is a readable diff', () => {
+    const shuffled = [...scan].reverse()
+    const { captions } = mergeCaptions({}, shuffled)
+    expect(Object.keys(captions.photos!)).toEqual([...Object.keys(captions.photos!)].sort())
+    expect(Object.keys(captions.places!)).toEqual([...Object.keys(captions.places!)].sort())
+  })
+
+  it('handles a photograph whose EXIF carried nothing', () => {
+    const { captions } = mergeCaptions({}, [{ file: 'scan.jpg', date: '', settings: '' }])
+    expect(captions.photos!['scan.jpg']).toEqual({ alt: '', line: '', date: '', settings: '' })
+    // No date means no place entry to create — a blank key would be nonsense.
+    expect(captions.places).toEqual({})
+  })
+})

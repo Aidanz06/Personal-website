@@ -55,7 +55,7 @@ export const PHOTOS_PER_ROW = 2
  * crowded as you descend past it.
  */
 export function placePhotoStones(
-  sources: readonly { src: string; original: string }[],
+  sources: readonly { src: string; original: string; alt?: string }[],
 ): PhotoStoneSpec[] {
   return sources.map((photo, index) => {
     const row = Math.floor(index / PHOTOS_PER_ROW)
@@ -67,7 +67,11 @@ export function placePhotoStones(
 
     return {
       src: photo.src,
-      alt: `[photograph — aidan to describe: ${photo.original.split('/').pop()}]`,
+      // The real description when captions.json has one; the same bracketed
+      // placeholder as before when it does not.
+      alt:
+        photo.alt?.trim() ||
+        `[photograph — aidan to describe: ${photo.original.split('/').pop()}]`,
       xFraction,
       depthVh:
         PHOTOS_START_VH + row * PHOTO_STEP_VH + (isRight ? PHOTO_PAIR_OFFSET_VH : 0),

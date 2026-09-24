@@ -119,6 +119,32 @@ const KOI_SHADES = 6
  */
 const POND_RAMP = ` ${DEFAULT_RAMP}`
 
+/** Where an open photograph has landed on screen, in viewport pixels. */
+export type PhotoRect = {
+  index: number
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/**
+ * Space kept clear beneath an open photograph, for its caption.
+ *
+ * Without it a rock near the bottom of the screen opens a picture flush
+ * against the bottom edge and the caption has nowhere to go but on top of it.
+ */
+const CAPTION_SPACE = 92
+
+/**
+ * How far open a photograph has to be before its caption appears.
+ *
+ * The reveal eases asymptotically, so it never literally reaches 1. At 0.85
+ * the eased rect is within a third of a percent of its final size, which is
+ * to say the caption is positioned where the photograph actually ends up.
+ */
+const CAPTION_THRESHOLD = 0.85
+
 /** A stone as the pond needs it: document coordinates, not viewport ones. */
 export type PondStone = {
   x: number
@@ -149,6 +175,16 @@ export type PondProps = {
   photoStones?: readonly PhotoStoneSpec[]
   /** Index of the photo rock currently hovered, focused or pinned open. */
   activePhoto?: number | null
+  /**
+   * Reports where an open photograph has settled, so the page can put a
+   * caption under it.
+   *
+   * Called twice per photograph, not once per frame: once when the picture is
+   * as good as fully open, and once with null when it closes. The rect is in
+   * viewport coordinates, which is what the canvas works in — it is fixed to
+   * the viewport — so the caption can be positioned straight from it.
+   */
+  onPhotoRect?: (rect: PhotoRect | null) => void
   /** Reports the measured frame rate, for the lab readout. */
   onStats?: (stats: { fps: number; cellsDrawn: number; cells: number }) => void
 }
@@ -162,6 +198,7 @@ export function Pond({
   highlight = null,
   photoStones,
   activePhoto = null,
+  onPhotoRect,
   onStats,
 }: PondProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -188,6 +225,9 @@ export function Pond({
 
   const activePhotoRef = useRef(activePhoto)
   activePhotoRef.current = activePhoto
+
+  const onPhotoRectRef = useRef(onPhotoRect)
+  onPhotoRectRef.current = onPhotoRect
 
   const onStatsRef = useRef(onStats)
   onStatsRef.current = onStats
@@ -236,6 +276,8 @@ export function Pond({
     /** Smoothed reveal per rock, so opening and closing are eased. */
     let photoReveal = 0
     let revealingIndex: number | null = null
+    /** Which photograph's rect was last handed to the page, if any. */
+    let reportedPhoto: number | null = null
 
     // Previous frame's glyph per cell, so only changed cells are redrawn.
     // -1 means "nothing drawn there yet".
@@ -667,6 +709,10 @@ export function Pond({
       // ASCII stage needs time to be seen before the photograph takes over.
       photoReveal += (targetReveal - photoReveal) * (1 - Math.exp(-1.45 * dt))
       if (!opening && photoReveal < 0.01) revealingIndex = null
+      if (revealingIndex === null && reportedPhoto !== null) {
+        reportedPhoto = null
+        onPhotoRectRef.current?.(null)
+      }
 
       placedRocks.forEach((rock, index) => {
         const screenY = rock.worldY - worldY
@@ -695,8 +741,20 @@ export function Pond({
             rock.radius * 2,
             target.width,
             target.height,
-            { width, height },
+            // Short of the full viewport, so the caption below it has room.
+            { width, height: Math.max(target.height, height - CAPTION_SPACE) },
           )
+
+          if (photoReveal > CAPTION_THRESHOLD && reportedPhoto !== revealingIndex) {
+            reportedPhoto = revealingIndex
+            onPhotoRectRef.current?.({
+              index: revealingIndex,
+              x: rect.x,
+              y: rect.y,
+              width: rect.width,
+              height: rect.height,
+            })
+          }
           stampPhoto(field, photo.grid, rect, photoReveal, cw, ch)
 
           const opacity = photoOpacity(photoReveal)

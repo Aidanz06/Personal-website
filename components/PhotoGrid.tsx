@@ -1,33 +1,64 @@
+import Image from 'next/image'
+import { isCaptionEmpty } from '@/lib/captions'
+import { listPhotos } from '@/lib/photos'
+
 /**
- * Placeholder photography grid for /about.
+ * The photography grid on /about.
  *
- * Twelve empty slots, sized and laid out as the real grid will be. The
- * ASCII-reactive version is explicitly out of scope for v0.5 — <AsciiImage>
- * is being built to support tiles like these, but nothing here is wired to
- * it yet.
+ * Same photographs and same captions as the pond, read from the same place —
+ * `listPhotos()` joined to captions.json. Describing a photograph once and
+ * having it appear correctly in both places is the entire reason the captions
+ * live in a data file rather than in the markup.
  *
- * The hairline outlines are a placeholder affordance only. Once real images
- * land they fill the cells edge to edge and the borders come off, keeping
- * the "no boxes, no cards" rule intact.
+ * What it deliberately does NOT show is the exposure line. At a tile width of
+ * about 160px, three lines of text under every picture is a wall of grey; the
+ * exposure is the most subordinate of the three and it is the one that goes.
+ * It is still there in the pond, where a photograph opens large enough to
+ * carry it, and it is still in every tile's screen-reader description.
  */
-export function PhotoGrid({ count = 12 }: { count?: number }) {
+export function PhotoGrid() {
+  const photos = listPhotos()
+
+  if (photos.length === 0) {
+    return (
+      <p className="my-3 font-mono text-small text-muted">
+        [photographs go here — drop them in public/photos and run
+        npm run photos:sync]
+      </p>
+    )
+  }
+
   return (
-    <div
-      className="my-3 grid grid-cols-3 gap-1"
-      role="list"
-      aria-label="photography placeholder grid"
-    >
-      {Array.from({ length: count }, (_, i) => (
-        <div
-          key={i}
-          role="listitem"
-          className="flex aspect-square items-center justify-center border border-rule"
-        >
-          <span className="font-mono text-small text-muted">
-            {String(i + 1).padStart(2, '0')}
-          </span>
-        </div>
+    <ul className="my-3 grid grid-cols-2 gap-1 sm:grid-cols-3">
+      {photos.map((photo) => (
+        <li key={photo.file}>
+          <figure className="m-0">
+            <div className="relative aspect-square overflow-hidden">
+              <Image
+                src={photo.original}
+                alt={photo.caption.alt}
+                fill
+                sizes="(max-width: 640px) 50vw, 200px"
+                className="object-cover"
+              />
+            </div>
+            {!isCaptionEmpty(photo.caption) && (
+              <figcaption className="mt-0.5">
+                {photo.caption.headline && (
+                  <span className="block font-mono text-tiny text-muted">
+                    {photo.caption.headline}
+                  </span>
+                )}
+                {photo.caption.line && (
+                  <span className="block font-mono text-tiny text-ink">
+                    {photo.caption.line}
+                  </span>
+                )}
+              </figcaption>
+            )}
+          </figure>
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }

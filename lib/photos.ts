@@ -1,5 +1,7 @@
 import { readdirSync } from 'node:fs'
 import { extname, join } from 'node:path'
+import { resolveCaption, type Caption } from './captions'
+import { loadCaptions } from './captionsFile'
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif'])
 
@@ -33,10 +35,14 @@ function optimised(src: string): string {
 }
 
 export type Photo = {
+  /** Filename, which is the key into captions.json. */
+  file: string
   /** What the canvas loads: optimised. */
   src: string
   /** The original file, kept for the filename and for a full-size link later. */
   original: string
+  /** Description, place, date and exposure. Blank fields are omitted, never shown. */
+  caption: Caption
 }
 
 /**
@@ -46,11 +52,18 @@ export type Photo = {
  * manifest to keep in step. Server-only: it touches the filesystem.
  */
 export function listPhotos(): Photo[] {
+  // Read once for the whole folder rather than per photograph.
+  const captions = loadCaptions()
   try {
     return readdirSync(join(process.cwd(), 'public', 'photos'))
       .filter((file) => IMAGE_EXTENSIONS.has(extname(file).toLowerCase()))
       .sort()
-      .map((file) => ({ src: optimised(`/photos/${file}`), original: `/photos/${file}` }))
+      .map((file) => ({
+        file,
+        src: optimised(`/photos/${file}`),
+        original: `/photos/${file}`,
+        caption: resolveCaption(file, captions),
+      }))
   } catch {
     return []
   }

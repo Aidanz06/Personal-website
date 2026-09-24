@@ -1,0 +1,87 @@
+{
+  "places": {
+    "2025-05-22": "",
+    "2025-05-25": "",
+    "2026-06-14": ""
+  },
+  "photos": {
+    "website-01.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-22",
+      "settings": "f/8 · 1/160 · iso 320"
+    },
+    "website-02.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-22",
+      "settings": "f/2.8 · 1/1000 · iso 800"
+    },
+    "website-03.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-22",
+      "settings": "f/2.8 · 1/640 · iso 500"
+    },
+    "website-04.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-22",
+      "settings": "f/2.8 · 1/640 · iso 500"
+    },
+    "website-05.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-22",
+      "settings": "f/2.8 · 1/640 · iso 500"
+    },
+    "website-06.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-22",
+      "settings": "f/2.8 · 1/500 · iso 400"
+    },
+    "website-07.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-22",
+      "settings": "f/16 · 1/25 · iso 1000"
+    },
+    "website-08.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-22",
+      "settings": "f/6.3 · 1/125 · iso 250"
+    },
+    "website-09.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-22",
+      "settings": "f/2.8 · 1/500 · iso 250"
+    },
+    "website-10.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-22",
+      "settings": "f/2.8 · 1/500 · iso 250"
+    },
+    "website-11.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-25",
+      "settings": "f/2.8 · 1/100 · iso 500"
+    },
+    "website-12.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2025-05-25",
+      "settings": "f/2.8 · 1/100 · iso 800"
+    },
+    "website-13.jpg": {
+      "alt": "",
+      "line": "",
+      "date": "2026-06-14",
+      "settings": "f/14 · 1/60 · iso 500"
+    }
+  }
+}

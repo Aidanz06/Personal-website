@@ -1572,3 +1572,129 @@ are correct by construction and their logic is unit-tested, but they have not
 been *watched*. First thing to check when the real slides land.
 
 277 tests.
+
+## step 3 — photograph captions
+
+### what changed
+
+Photographs now carry a description, a place, a date and an exposure, and
+those four things show up in three places: the caption under an open photo
+rock, the grid on /about, and what a screen reader reads out. All of it comes
+from one file, `public/photos/captions.json`.
+
+**Adding a photograph end to end is three steps.** Drop the file in
+`public/photos`, run `npm run photos:sync`, fill in what the script says is
+blank. That is the whole procedure, and it is written out in
+`public/photos/README.md` where someone will actually look for it.
+
+### reading EXIF without installing anything
+
+The date and the exposure are in the files already — Lightroom exports keep
+the whole EXIF block. Getting them out would normally mean an EXIF library.
+Aidan's call was to write the parser instead, so `lib/exif.ts` reads four tags
+and nothing else:
+
+| tag | becomes |
+|---|---|
+| `DateTimeOriginal` | `"2025-05-22"` |
+| `FNumber` | `f/2.8` |
+| `ExposureTime` | `1/1000` |
+| `PhotographicSensitivity` / `ISOSpeedRatings` | `iso 800` |
+
+It walks the JPEG segment chain to the APP1 that starts with `Exif\0\0`,
+reads the TIFF header's byte order, follows IFD0 to the Exif sub-IFD, and
+pulls those four entries. About 200 lines.
+
+**Two things it deliberately does not do.** It does not read the camera body
+or the lens, which are right there in the file — this is a site about
+photographs, not about gear, so the names are never read, never stored and
+never shown. And it does not show the day or the time, only the month and the
+year, because the camera's clock is set to the wrong timezone and at month
+resolution that error cannot surface.
+
+Tested against synthetic files in both byte orders — every photograph in the
+repo came off the same body and is little-endian, so a big-endian bug would
+sit there until Aidan borrowed a camera — and against all thirteen real files.
+
+### the one rule the sync script has
+
+`npm run photos:sync` must be safe to run twice. It fills in what the camera
+knows and never touches a word Aidan wrote, and that includes a date he
+corrected by hand: the script only ever fills a **blank** field, so a fixed
+date survives the next sync. A test runs the merge three times over an edited
+file and asserts nothing moved.
+
+Entries whose file has vanished are kept, not deleted, and reported — that is
+almost always a rename, and deleting would throw away a description to save a
+line of output.
+
+The script is `scripts/photos-sync.ts` and Node runs it directly. Worth
+knowing: Node's type stripping is **strip-only**, so nothing in its import
+graph may use TypeScript that needs real compilation. A `constructor(private
+bytes: Uint8Array)` in `lib/exif.ts` failed with
+`ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`; it is a plain factory function now.
+
+### where the caption goes, and how it gets there
+
+The photograph is painted on a canvas, so the caption cannot simply sit after
+it in the markup — nothing in the document knows where the picture landed.
+
+The pond reports it. `onPhotoRect` fires **twice per photograph**, not once
+per frame: once when the reveal passes 0.85 (at which point the eased
+rectangle is within a third of a percent of its final size) and once with
+`null` when the picture closes. Two React renders per open, instead of a
+hundred and fifty.
+
+The pond also now keeps 92px of clear water below a photograph, because a
+rock near the bottom of the screen used to open its picture flush against the
+bottom edge, leaving the caption nowhere to go but on top of it.
+
+Three lines, in the order the page reads them:
+
+```
+kamakura · may 2025      small, muted mono
+the tide was further out than the guidebook said.   small, body colour
+f/8 · 1/160 · iso 320    tiny, muted
+```
+
+Any of them can be missing. A blank field is omitted — never an empty
+bracket, never a stranded `·`, never the word "undefined" — and a photograph
+with nothing written about it shows no caption at all, which looks like a
+photograph with no caption rather than a hole in the page.
+
+### what a screen reader gets
+
+The visible caption is `aria-hidden`. The same words are attached to the
+photo rock's `<button>` through `aria-describedby`, so they are announced
+**on focus**, before the picture has opened, rather than only once a
+mouse-driven animation has finished. The `·` separators become commas there,
+because they are a typographic device and nobody wants "middle dot" read
+aloud.
+
+The description is one sentence, and a bug in building it became a test: the
+personal line usually ends in a full stop already, so joining the parts with
+`". "` produced `…said.. f/8` — wrong for a reader and wrong for a listener.
+
+### two smaller things
+
+**`/about` shows the exposure nowhere.** At a tile width of about 160px,
+three lines under every photograph is a wall of grey, so the grid shows place
+· date and the personal line, and the exposure stays in the pond where a
+photograph opens large enough to carry it. It is still in every tile's
+description for a screen reader.
+
+**A `node:fs` import broke the build, and now a test stops it.**
+`lib/captions.ts` started out with the file-reading in it. The homepage is a
+client component, so that import landed in the browser graph and Turbopack
+panicked with an error naming the chunking context rather than the import.
+The reading moved to `lib/captionsFile.ts`, and a test now asserts
+`lib/captions.ts` imports no `node:` builtins at all.
+
+### state right now
+
+Thirteen photographs, three shoot dates, every date and exposure filled in
+automatically. **Sixteen fields are still blank and will not ship blank:**
+three places, and thirteen descriptions. `npm run photos:sync` prints the
+list.
+
+312 tests.

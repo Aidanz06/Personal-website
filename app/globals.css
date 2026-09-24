@@ -53,6 +53,11 @@
   --text-small: 0.875rem; /* 14px */
   --text-small--line-height: 1.5;
 
+  /* Smaller than small, for the one thing that is genuinely subordinate:
+     the exposure line under a photograph. Not for body copy anywhere. */
+  --text-tiny: 0.75rem; /* 12px */
+  --text-tiny--line-height: 1.45;
+
   --text-heading: 1.375rem; /* 22px */
   --text-heading--line-height: 1.35;
 
