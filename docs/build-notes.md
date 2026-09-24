@@ -3433,3 +3433,14 @@ now pins it: exactly one contact, the email, with that href.
 The address was typed as `nrtheastern.edu`, which I read as a typo for
 `northeastern.edu` (the school named on the homepage) and flagged back to
 Aidan.
+
+## photo names
+
+Aidan named the 25 photo rocks. I went through a contact sheet and
+suggested a name for each one from what's in it. He replaced twenty of the
+suggestions with his own (mostly places: osaka, koenji, kamakura, skogafoss
+and so on) and kept five as I wrote them (#3 hydrangea, #4 water lilies,
+#8 car in the grass, #9 garage pair, #24 capybara lunch). They were written
+into the blank `name` fields of `public/photos/captions.json` only. Nothing
+else in the file changed, which the diff confirms: 25 lines, every one a
+`name`.
