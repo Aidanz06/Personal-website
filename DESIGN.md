@@ -306,9 +306,12 @@ A button, not a link: nothing navigates. The rock *is* the picture.
   as swaying Gallery Text; a rock with no name has no label. An album rock shows its rank (`01`–`05`). Hidden while its own
   picture is showing.
 - **Order and groups:** photo rocks run newest first, so going deeper goes
-  back in time, grouped by year. Each group starts a new row under a year
-  marker (`2025`, `undated`) in Gallery Text, which fades while a photo is
-  open.
+  back in time, grouped by shoot: a place in a month, kept together within
+  the month. Each group starts a new row under a marker in Gallery Text
+  ("kamakura · may 2025", `undated`), which fades while a photo is open.
+  Neighbouring single-photo shoots share one marker naming their places and
+  span ("qianling, hawaii, kaua'i · 2025–2026"), so a lone photo never costs
+  a marker and a row of its own. /about's grid uses the same order.
 - **States:** hover or focus opens it, a click or tap pins it
   (`aria-pressed`), and a second click or tap closes it outright. Esc
   closes it on both pages. Opening takes about 2.5 seconds: characters

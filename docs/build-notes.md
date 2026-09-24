@@ -3632,3 +3632,29 @@ The third was red first; the second landed with its fix.
   `themeScript()` and is tested by running it against a stand-in page. The
   first browser check still showed "dark": Chrome had served its cached copy
   of the old build. With the cache disabled, "dark" falls back to koi.
+
+## the gallery, grouped by shoot
+
+From the second critique's biggest finding: "the gallery is 25 blind
+choices". 2025 was one run of 17 rocks, 12 of them the same kamakura day.
+There were two candidate fixes. **A** drew each rock as a tiny character
+version of its photo. **C** grouped the rocks by shoot. I mocked both from
+the real photos in the site's font. At rock size A came out as a texture,
+not a picture, and Aidan chose **C only**.
+
+- **`orderGallery`**: still newest month first and undated last. Within a
+  month, each place is now kept together, in the order it first appears,
+  so kamakura's two days are one set rather than split around osaka.
+- **`galleryGroups`**: one marker per shoot (place and month, "kamakura ·
+  may 2025"). Neighbouring single-photo shoots share one marker that names
+  their places and the span they cover. Without that, the six lone photos
+  would each cost a marker and a row, and the pond would get longer for no
+  gain.
+- Real data gives five markers where there were four: "qianling, hawaii,
+  kaua'i · 2025–2026", "kamakura · may 2025" (11), "osaka · may 2025",
+  "kichijoji, london, san francisco, hangzhou · 2024–2025", and "undated".
+  The page is 7311px at 1280×800, against 7215px before, with no horizontal
+  scroll at 375.
+
+Ran under `/impeccable layout`, whose layout-scoped detector was clean.
+Tested in `gallery.test.ts`, written before the code.

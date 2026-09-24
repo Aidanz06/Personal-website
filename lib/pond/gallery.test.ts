@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { galleryGroup, orderGallery, rockLabel, rockName } from './gallery'
+import { galleryGroups, orderGallery, rockLabel, rockName } from './gallery'
 import { resolveCaption, type CaptionsFile } from '../captions'
 
 const data: CaptionsFile = {
@@ -36,10 +36,55 @@ describe('orderGallery', () => {
   })
 })
 
-describe('galleryGroup', () => {
-  it('groups by year, with the undated together', () => {
-    expect(galleryGroup(photo('a.jpg').caption)).toBe('2025')
-    expect(galleryGroup(photo('d.jpg').caption)).toBe('undated')
+describe('grouping by shoot', () => {
+  // The critique of 2026-09-24 (second run): 2025 was one run of 17 rocks,
+  // 12 of them the same kamakura day. Aidan chose to group by shoot instead.
+  const shoot = (file: string, date: string, place: string) =>
+    ({ file, caption: resolveCaption(file, { places: { [date]: place }, photos: { [file]: { date } } }) })
+  const undated = (file: string) => ({ file, caption: resolveCaption(file, { photos: { [file]: {} } }) })
+
+  const photos = [
+    shoot('01.jpg', '2025-05-22', 'kamakura'),
+    shoot('02.jpg', '2025-05-22', 'kamakura'),
+    shoot('11.jpg', '2025-05-25', 'osaka'),
+    shoot('12.jpg', '2025-05-25', 'osaka'),
+    shoot('13.jpg', '2026-06-14', 'qianling'),
+    shoot('15.jpg', '2025-08-03', 'hawaii'),
+    shoot('17.jpg', '2025-05-17', 'kamakura'),
+    shoot('18.jpg', '2025-08-09', "kaua'i"),
+    shoot('23.jpg', '2025-03-12', 'london'),
+    undated('14.jpg'),
+    undated('19.jpg'),
+  ]
+
+  it('keeps one place together within a month, newest month first', () => {
+    expect(orderGallery(photos).map((p) => p.file)).toEqual([
+      '13.jpg', '15.jpg', '18.jpg', '01.jpg', '02.jpg', '17.jpg', '11.jpg', '12.jpg', '23.jpg', '14.jpg', '19.jpg',
+    ])
+  })
+
+  it('labels a shoot by its place and month', () => {
+    const labels = galleryGroups(orderGallery(photos).map((p) => p.caption))
+    expect(labels.slice(3, 8)).toEqual([
+      'kamakura · may 2025', 'kamakura · may 2025', 'kamakura · may 2025',
+      'osaka · may 2025', 'osaka · may 2025',
+    ])
+  })
+
+  it('lets neighbouring lone photographs share one marker, so a single is not a group of its own', () => {
+    const labels = galleryGroups(orderGallery(photos).map((p) => p.caption))
+    expect(labels.slice(0, 3)).toEqual(Array(3).fill("qianling, hawaii, kaua'i · 2025–2026"))
+    expect(labels[8]).toBe('london · march 2025')
+  })
+
+  it('puts the undated together at the bottom', () => {
+    const labels = galleryGroups(orderGallery(photos).map((p) => p.caption))
+    expect(labels.slice(9)).toEqual(['undated', 'undated'])
+  })
+
+  it('names a merged run by its month when it shares one', () => {
+    const aug = [shoot('15.jpg', '2025-08-03', 'hawaii'), shoot('18.jpg', '2025-08-09', "kaua'i")]
+    expect(galleryGroups(orderGallery(aug).map((p) => p.caption))).toEqual(Array(2).fill("hawaii, kaua'i · august 2025"))
   })
 })
 

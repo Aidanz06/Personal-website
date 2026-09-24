@@ -7,7 +7,7 @@ import { ThemeMenu } from '@/components/ThemeMenu'
 import { DEEPEST_STONE_VH, HOME_STONES, POND_DEPTH_VH } from '@/lib/pond/stones'
 import { PHOTOS_START_VH, galleryDepthVh, photoGroupMarkers, placePhotoStones } from '@/lib/pond/photoStones'
 import { Bubbles } from '@/components/Bubbles'
-import { galleryGroup, orderGallery, rockLabel, rockName } from '@/lib/pond/gallery'
+import { galleryGroups, orderGallery, rockLabel, rockName } from '@/lib/pond/gallery'
 import { isCaptionEmpty } from '@/lib/captions'
 import type { Photo } from '@/lib/photos'
 import { contacts, site } from '@/lib/site'
@@ -99,15 +99,17 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
     rock.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' })
   }
 
-  // Newest first, grouped by year: going deeper goes back in time. Every
-  // lookup below reads `gallery`, never `photos`, so a rock, its hidden
-  // description and its open caption are always the same photograph.
+  // Newest first, grouped by shoot: going deeper goes back in time, one
+  // trip at a time. Every lookup below reads `gallery`, never `photos`, so a
+  // rock, its hidden description and its open caption are always the same
+  // photograph.
   const gallery = orderGallery(photos)
+  const groups = galleryGroups(gallery.map((photo) => photo.caption))
   const photoStones = placePhotoStones(
-    gallery.map((photo) => ({
+    gallery.map((photo, index) => ({
       ...photo,
       alt: rockName(photo.caption, photo.kind),
-      group: galleryGroup(photo.caption),
+      group: groups[index],
     })),
   )
   const groupMarkers = photoGroupMarkers(photoStones)
@@ -242,11 +244,12 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
           </div>
         )}
 
-        {/* One year per group, in the water above its first rock. Hidden
-            from screen readers: every rock's name already says its year. */}
+        {/* One marker per shoot, in the water above its first rock:
+            "kamakura · may 2025". Hidden from screen readers: each rock's
+            description already says where and when. */}
         {groupMarkers.map((marker) => (
           <div
-            key={marker.label}
+            key={`${marker.label}@${marker.depthVh}`}
             className={`column absolute inset-x-0 transition-opacity duration-500 ${
               photoOpen ? 'opacity-0' : 'opacity-100'
             }`}
