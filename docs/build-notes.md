@@ -2030,3 +2030,34 @@ optimiser, and clips are 1.9MB for all three. If the repo size becomes a
 problem, the originals are the thing to move out, not the clips.
 
 347 tests.
+
+### fix — the theme script was reporting itself as a hydration error
+
+Anyone who had ever changed theme got a React hydration mismatch in the
+console on every page load:
+
+```
+<html
++   data-theme="koi"
+-   data-theme="phosphor"
+```
+
+The mismatch is real and it is **the design working**. The server cannot know
+which theme this visitor picked last time, so it renders the default; the
+inline script in `<head>` rewrites the attribute from localStorage before the
+browser paints; React hydrates a moment later and finds a different value
+than the one it rendered.
+
+The alternative is not writing the attribute on the server, which is a
+full-screen flash of the wrong theme on a near-black site — the exact thing
+`ThemeScript` exists to prevent. So `<html>` is marked
+`suppressHydrationWarning`.
+
+That attribute deserves suspicion, because used broadly it hides real bugs.
+Two things keep it honest here: **it applies one level deep**, so it covers
+this element's own attributes and nothing inside the app; and a test asserts
+it appears exactly once and never on `<body>`. The test strips comments
+first — the first version of it counted the word in the comment explaining
+the attribute and failed on its own documentation.
+
+353 tests.
