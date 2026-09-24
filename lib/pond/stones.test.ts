@@ -13,6 +13,7 @@ describe('HOME_STONES', () => {
   it('covers every route except home', () => {
     expect(HOME_STONES.map((s) => s.href).sort()).toEqual([
       '/about',
+      '/listening',
       '/tailor-studio',
     ])
   })
@@ -105,5 +106,41 @@ describe('placeStones', () => {
     const placed = placeStones(HOME_STONES, 800, 800)
     expect(placed).toHaveLength(HOME_STONES.length)
     expect(placed.map((p) => p.spec.href)).toEqual(HOME_STONES.map((s) => s.href))
+  })
+})
+
+describe('the listening stone', () => {
+  const listening = HOME_STONES.find((s) => s.href === '/listening')!
+
+  it('is the third stone, below about', () => {
+    expect(HOME_STONES.map((s) => s.href)).toEqual(['/tailor-studio', '/about', '/listening'])
+    expect(listening.label).toBe('listening')
+    expect(listening.note).toBe("what's on repeat")
+  })
+
+  it('got its depth from the list, not from a number typed in', () => {
+    // The whole point of step 1's derivation: adding this stone was one entry.
+    expect(listening.depthVh).toBeCloseTo(FIRST_STONE_VH + 2 * STONE_STEP_VH, 10)
+    expect(DEEPEST_STONE_VH).toBe(listening.depthVh)
+    expect(POND_DEPTH_VH).toBeCloseTo(listening.depthVh + STONE_TAIL_VH, 10)
+  })
+
+  it('is the only stone that rings', () => {
+    expect(listening.rings).toBe(true)
+    for (const stone of HOME_STONES) {
+      if (stone !== listening) expect(stone.rings).toBeFalsy()
+    }
+  })
+
+  it('never overlaps its neighbour, at any viewport', () => {
+    for (const [w, h] of [[375, 667], [768, 1024], [1280, 860], [1440, 900]] as const) {
+      const placed = placeStones(HOME_STONES, w, h)
+      for (let i = 1; i < placed.length; i++) {
+        const a = placed[i - 1]!
+        const b = placed[i]!
+        const gap = Math.hypot(a.x - b.x, a.worldY - b.worldY) - (a.radius + b.radius)
+        expect(gap, `${w}x${h} stones ${i - 1} and ${i}`).toBeGreaterThan(0)
+      }
+    }
   })
 })

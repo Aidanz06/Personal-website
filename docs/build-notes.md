@@ -2520,3 +2520,76 @@ One thing to know: port 3000 was Aidan's own `next dev`, so production checks
 ran on 3100. The server was left alone.
 
 514 tests.
+
+## listening step 3 — the homepage stone
+
+### what changed
+
+`HOME_STONE_DEFINITIONS` has a third entry: `/listening`, "listening",
+"what's on repeat", at `xFraction: 0.42`. That's 0.24 from about's 0.66, so
+the path zig-zags back instead of running down the right-hand side. That one
+entry was the whole change to the layout. Step 1's derivation did the rest:
+
+| | 2 stones (before) | 3 stones (now) |
+|---|---|---|
+| stone depths | 0.95 / 1.51 | 0.95 / 1.51 / 2.07 |
+| pond depth before photographs | 2.11 | 2.67 |
+| photographs start at | 2.07 | 2.63 |
+| total depth, 25 items | 7.37 | **7.93** |
+
+Measured in Chrome, nothing collides. At 375 the listening label ends 98px
+above the "photographs" note, and the note ends above the first photo rock. At
+1280 the gap is 127px. The existing test "twenty-five pieces of media inside
+eight screens" still passes, but at 7.93 it is close. The next few
+photographs will trip it, and `PHOTO_STEP_VH` is the number to look at when
+they do.
+
+The homepage is still static (`○ /`). It imports stone definitions and nothing
+from `lib/listening`, so there is no last.fm data on it.
+
+### the rings
+
+The listening stone gives off a slow ring every 1.8 seconds, like a speaker
+cone. It is built from the existing ripple system: `rings: true` on a stone
+definition, and `Pond` drops an ordinary ripple at that stone's centre on a
+timer. Nothing new is drawn. The stone is stamped over the water, so the ring
+starts hidden under it and is seen coming out of the rim. `lib/pond/rings.ts`
+holds the timing as a pure function.
+
+- **It pauses off-screen.** A ring only fires while the stone is on screen,
+  and the whole frame loop already stops when the pond is out of view. The
+  timer resets when the stone leaves, so returning gives one ring straight
+  away, not a backlog of rings released together. A backlog is an alert.
+- **Never under reduced motion.** A ripple there would be a frozen circle.
+  Measured: with reduced motion on, the homepage canvas was byte-identical
+  across five seconds with the listening stone in view.
+
+**The strength was calibrated on the page, and the first guess was wrong.**
+0.2 looked right on paper because it's well under the pointer's 0.45. On the
+page it was invisible. The field takes a ripple at a third of its strength, so
+a single ring that faint never lifts a cell past the blank at the bottom of
+the ramp. Measured around the stone for four seconds, 0.2 produced no pulse at
+all. 1.0 as a positive control confirmed the rings were firing, since the lit
+pixels dipped about every 1.9s, but its trough bit into the stone's rim.
+**0.6** reads correctly: the stone's outer dots draw in as the trough passes
+and push out as the crest does, and a faint halo travels off it.
+
+The unit test that allowed 0.2 compared one ring against one pointer ripple.
+That's the wrong comparison, because the pointer drops a ripple every 110ms
+while it moves and they stack. It now compares disturbance per second, where
+the ring is under an eighth of a moving pointer. A second test holds the
+strength above 0.4, because a ring nobody can see is not subtle, it's absent.
+
+### verified with three stones
+
+| check | result |
+|---|---|
+| tab order | tailor studio → about → listening → photo rocks |
+| focusing the listening stone | it brightens, its label turns accent, the koi comes to it |
+| clicking it | navigates to /listening, and the wave crosses the pond on arrival |
+| `main` transform after the page animation | `none`, so the step 2 fix holds across a navigation |
+| photographs below | 25 rocks, captions under their pictures (step 2's fix) |
+| 375px | no horizontal scroll, no stone or label collisions |
+| `LASTFM` in any file under `.next/static` | none |
+
+527 tests.

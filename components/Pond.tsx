@@ -28,6 +28,7 @@ import {
   type Koi,
 } from '@/lib/pond/koi'
 import { drainSplashes } from '@/lib/pond/splash'
+import { RING_STRENGTH, ringDue } from '@/lib/pond/rings'
 import { placeStones, type StoneSpec } from '@/lib/pond/stones'
 import { pondPalette } from '@/lib/pond/theme'
 import {
@@ -313,6 +314,8 @@ export function Pond({
     let measuredBox = { width: 0, height: 0 }
     let lastTime = performance.now()
     let lastRippleAt = 0
+    /** When each ringing stone last rang, in seconds. Indexed like the stones. */
+    const lastRingAt: (number | null)[] = []
     let visible = true
     let unsubscribe: (() => void) | null = null
 
@@ -657,13 +660,34 @@ export function Pond({
       // fish it should stay with the reader the whole way down.
       // Specs win when given: the pond sizes them from its own box, so the
       // page never has to measure the viewport to render its links.
-      const placed: readonly PondStone[] = stoneSpecsRef.current
+      const placed: readonly (PondStone & { rings?: boolean })[] = stoneSpecsRef.current
         ? placeStones(stoneSpecsRef.current, width, height).map((p) => ({
             x: p.x,
             worldY: p.worldY,
             radius: p.radius,
+            rings: p.spec.rings,
           }))
         : stonesRef.current
+
+      // A ringing stone drops a soft ripple at its centre every couple of
+      // seconds. The stone is stamped over the water below, so the ring is
+      // hidden under it at first and seen emerging from the rim. Only while
+      // it is on screen — a ring nobody can see is a ring that is due the
+      // moment it comes back, not a backlog — and never under reduced motion,
+      // where it would be a frozen circle rather than a breath.
+      if (!reducedMotionQuery.matches) {
+        placed.forEach((stone, index) => {
+          if (!stone.rings) return
+          const screenY = stone.worldY - worldY
+          if (screenY < -stone.radius || screenY > height + stone.radius) {
+            lastRingAt[index] = null
+            return
+          }
+          if (!ringDue(lastRingAt[index] ?? null, seconds)) return
+          lastRingAt[index] = seconds
+          ripples.push({ x: stone.x, y: stone.worldY, startedAt: seconds, strength: RING_STRENGTH })
+        })
+      }
 
       const visibleStones: { x: number; y: number; radius: number }[] = []
       for (const stone of placed) {

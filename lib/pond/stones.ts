@@ -21,6 +21,14 @@ export type StoneSpec = {
   depthVh: number
   /** Radius as a fraction of the viewport's smaller dimension. */
   radiusFraction: number
+  /**
+   * Give off slow rings, like a speaker cone. See lib/pond/rings.ts.
+   *
+   * Only the listening stone does. It is the one page about something that
+   * is playing, and a stone that quietly moves the water around it says so
+   * without a word or an icon.
+   */
+  rings?: boolean
 }
 
 /**
@@ -68,6 +76,16 @@ export const HOME_STONE_DEFINITIONS: readonly StoneDefinition[] = [
     note: 'and photography',
     xFraction: 0.66,
     radiusFraction: 0.09,
+  },
+  {
+    href: '/listening',
+    label: 'listening',
+    note: "what's on repeat",
+    // 0.24 from about's 0.66, so the path zig-zags back rather than running
+    // down the right-hand side.
+    xFraction: 0.42,
+    radiusFraction: 0.09,
+    rings: true,
   },
 ]
 
