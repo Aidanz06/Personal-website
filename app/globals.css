@@ -112,24 +112,29 @@
   --t-koi-3: #d4ee3c;
 }
 
-/* --- paper: the original light design, kept as a theme ------------------- */
+/* --- paper: white and blue ----------------------------------------------
+   Navy on a soft blue-white. The ground is deliberately NOT bright: the old
+   #fafaf8 measured 0.955 relative luminance, close enough to pure white to
+   glare on a laptop at night. This is 0.83 — still plainly white, with a
+   cool cast that the blue belongs to. The koi go blue with it, head to tail,
+   because colour on this site belongs to the living thing in the pond. */
 [data-theme='paper'] {
   color-scheme: light;
 
-  --t-ground: #fafaf8;
-  --t-ink: #1a1a1a; /*                                 16.65:1 */
-  /* 62% here, not 55%. On this ground 55% measures 3.84:1 and fails AA —
-     the problem the dark themes do not have, because a light ink on a dark
-     ground has far more room to recede into. */
-  --t-muted-mix: 62%; /*                                 4.81:1 */
+  --t-ground: #e6ecf3; /* soft blue-white, luminance 0.83 */
+  --t-ink: #15263f; /* navy                              12.79:1 */
+  /* 68% here. 62% — what this theme used on the old ground — measures 4.17:1
+     on this softer one and fails AA; a less bright ground leaves less room
+     for grey to recede into. */
+  --t-muted-mix: 68%; /*                                 ~5.0:1 */
   --t-rule-mix: 14%;
-  --t-accent: #b8431a; /*                                 5.21:1 */
+  --t-accent: #2459ad; /* blue                             5.68:1 */
 
-  --t-water: #dfe3e0;
+  --t-water: #d0d9e5; /* a shade under the ground: texture, not content */
 
-  --t-koi-1: #c2461b;
-  --t-koi-2: #a8501f;
-  --t-koi-3: #6b5b4a;
+  --t-koi-1: #3a78c9; /* bright blue, head               3.75:1 */
+  --t-koi-2: #2159a8; /* blue, body                       5.77:1 */
+  --t-koi-3: #15325f; /* navy, tail                      10.68:1 */
 }
 
 /* ---------------------------------------------------------------------------

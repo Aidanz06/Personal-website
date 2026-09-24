@@ -2865,3 +2865,35 @@ overlaps at 375.
 
 528 tests. The count fell because the covers-script and boulder tests went
 with their code.
+
+## paper, white and blue
+
+The light theme is now white and blue, and its white is no longer glaring.
+
+| token | before | after |
+|---|---|---|
+| ground | `#fafaf8`, luminance 0.955 | `#e6ecf3`, luminance **0.83**, a soft blue-white |
+| ink | `#1a1a1a` | `#15263f` navy, 12.79:1 |
+| muted mix | 62% | **68%**, 4.97:1 |
+| accent | `#b8431a` rust | `#2459ad` blue, 5.68:1 |
+| water | `#dfe3e0` | `#d0d9e5` |
+| koi | red → brown | `#3a78c9` → `#2159a8` → `#15325f`, 3.75:1 at the lightest |
+
+The id stays `paper`. A visitor's choice is saved in localStorage under the
+id, so renaming it would silently reset everyone who picked it. Only the
+menu's note changed, from "light" to "white and blue".
+
+**The contrast rule is a test now.** It had only ever been comments in
+`globals.css`, and this change nearly broke it unnoticed. Muted text is ink
+mixed into the ground, so a softer ground moved it: the old 62% measures
+4.17:1 on the new one and fails AA. `lib/contrast.test.ts` parses every
+theme block in the real stylesheet and checks body, muted and link text at
+4.5:1 and every koi colour at 3:1. A new theme is covered as soon as it
+exists.
+
+Compared in Chrome, before and after, on the homepage, an open photograph,
+and an open cover on /listening. Photographs in this theme are as washed-out
+as they were before, just cooler now: the duotone for a light ground has
+always compressed them. That's unchanged here and worth a separate look.
+
+541 tests.

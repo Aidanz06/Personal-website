@@ -99,7 +99,7 @@ describe('pondPalette', () => {
     const koi = pondPalette(reader(themeTokens('koi')), RAMP, SHADES)
     const paper = pondPalette(reader(themeTokens('paper')), RAMP, SHADES)
     expect(koi.ink).toBe('rgb(236,231,221)')
-    expect(paper.ink).toBe('rgb(26,26,26)')
+    expect(paper.ink).toBe('rgb(21,38,63)')
     expect(pondPalette(() => '', RAMP, SHADES).ink).not.toContain('NaN')
   })
 
