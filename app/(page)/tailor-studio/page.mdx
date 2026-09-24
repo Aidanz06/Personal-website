@@ -12,47 +12,43 @@ export const metadata = {
 
 ## what it is
 
-tailor studio is a desktop app that turns a folder of photos from a clothing
-shoot into finished grailed listings. it groups the shoot into items, reads
-each piece's attributes off the photos, drafts the listing, looks up what
-comparable pieces actually sold for, and fills in grailed's sell form.
+a desktop app that turns a folder of photos from a clothing shoot into
+finished grailed listings. it groups, writes, prices and fills in the form;
+i review and publish.
 
 <Slideshow />
 
 ## why
 
-i sell clothing on grailed, and every listing took me fifteen to twenty
-minutes. none of that time was the interesting part: sorting a shoot into
-piles by item, writing another description in the same shape as the last one,
-digging through sold listings to work out what to ask, then typing all of it
-into a form field by field. do that across a stack of pieces and the
-afternoon is gone.
+i sell clothing on grailed. every listing cost me fifteen to twenty minutes:
+
+- sort the shoot into piles, one per item
+- write another description in the same shape as the last
+- dig through sold listings to work out what to ask
+- type all of it into the form, field by field
 
 ## how it works
 
-i point it at a shoot. it groups the photos by item, so a shoot of several
-pieces comes back as one item per piece. for each item it reads what it can
-see in the photos — what the garment is, its colour, its condition — and
-drafts a title and a description from that. it looks up comparable pieces
-that have actually sold, so the price starts from real numbers rather than a
-guess. then it fills in grailed's sell form.
+- **import** — groups the photos by item, and reads the garment, colour and
+  condition off them
+- **draft** — a title, a description, and a price that starts from pieces
+  that actually sold
+- **review** — mine. i fix whatever it wasn't sure about
+- **fill** — it types the draft into grailed's sell form
+- **publish** — mine, always
 
-and it stops there. i read every listing, fix what's wrong, and submit it
-myself. that's deliberate: it's a form-filling assistant, not an
-auto-poster. i don't want something posting under my name while i'm not
-looking, and the last stretch — is this price right for this piece, is this
-description honest — is the part that actually needs me.
+it's a form-filling assistant, not an auto-poster. i don't want something
+posting under my name while i'm not looking.
 
 ## what came of it
 
-a listing takes a few minutes now instead of fifteen to twenty. i use it
-every time i shoot, and a few close friends and family use it too. it makes
-no money and isn't meant to. it's a personal tool.
+- a listing takes a few minutes instead of fifteen to twenty
+- me, plus a few close friends and family
+- no revenue, and not trying for any — it's a personal tool
 
 ## how i built it
 
-i built it with claude. i found the problem, scoped it, set the bar for what
-counted as good enough, and steered the build; claude wrote most of the code.
-the parts i spent my own attention on were the accuracy tests for the ai
-steps, and a sweep across model configurations to find the cheapest setup
-that still cleared the accuracy targets i'd set.
+i built it with claude. i found the problem, scoped it, set the bar for good
+enough, and steered the build; claude wrote most of the code. my own
+attention went to the accuracy tests for the ai steps, and a sweep across
+model configurations to find the cheapest setup that still cleared them.

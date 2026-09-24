@@ -1803,3 +1803,86 @@ live repaint are correct by construction and the colour derivation is tested,
 but they have not been watched.
 
 320 tests.
+
+## step 2b — the real deck
+
+The slideshow shipped empty in step 2. The deck arrived as a PDF in the
+tailor-studio repo, so this is the conversion and what it turned up.
+
+### converting it, without installing anything
+
+`scripts/pdf-to-slides.swift` renders one PNG per page using PDFKit and
+CoreGraphics. Both are already on any Mac, so a deck costs nothing to
+convert; everything else that does this job — poppler, mupdf, ghostscript —
+is an install, and the alternative here was about eighty lines of Foundation.
+
+```
+swift scripts/pdf-to-slides.swift <pdf> public/tailor-studio/slides
+```
+
+Two details worth keeping:
+
+**It trims each page to its own content.** The deck was exported to US Letter
+**portrait**, so each 16:9 slide sits in the middle of a tall page with white
+bands above and below — 2000×2588 of which only 2000×1456 is the slide.
+Shipping that means every slide on the site is two-thirds empty paper. The
+trim finds the bounding box of everything that is not paper-coloured, with a
+tolerance of 6/255 per channel: an exported "white" is rarely `#ffffff`
+exactly, it carries the renderer's own antialiasing, and an exact comparison
+finds content in all four corners and trims nothing.
+
+All twelve pages trimmed to exactly 2000×1456, which matters — a deck that
+trimmed to twelve slightly different shapes would make the stage resize
+between slides.
+
+**It uses an explicit bitmap rep rather than `NSImage.lockFocus()`.** Focus
+locking sizes itself from the screen's backing scale, so the same command
+would produce different pixel dimensions on a laptop and an external monitor.
+
+### the deck is clipped on the right, in the source PDF
+
+**Six of the twelve slides have content cut off at the right edge**, and it
+is in the PDF itself, not the conversion — the page's MediaBox, CropBox,
+BleedBox, TrimBox and ArtBox are all 612×792, and the layout is wider than
+that. Any PDF viewer shows the same.
+
+| slide | what is cut |
+|---|---|
+| 02 the problem | the right edge of card 03, "price it against recent sold listings" |
+| 04 the workflow | stage 05 — the slide says "five stages" and shows four |
+| 05 import | the right half of the importing mockup |
+| 07 review | the right column of the confirm-drafts card |
+| 10 safety rails | the ends of all four "does not" lines |
+| 12 get started | the end of step 3, "open a draft, click Fill, publish" |
+
+The fix is a re-export at 16:9 landscape rather than Letter portrait — it is
+a page-size setting in whatever produced the PDF, not a redesign. Re-running
+the script over the new file replaces all twelve.
+
+Shipped as-is meanwhile: the slides are legible and carry the argument, and
+an empty placeholder is worse than a deck with cropped margins.
+
+### alt text
+
+Every slide is a picture of text, so all twelve have a real one-sentence
+description in `slides.json`, written from reading each slide. They are all
+marked `draft: true`, which renders as `[draft alt — aidan to check] …`
+beneath the deck until Aidan clears it.
+
+### cost
+
+4.8MB of PNG in the repo, of which slides 01 and 12 are 1.3MB each — both are
+large smooth gradients, which is the case PNG compresses worst. Delivered
+bytes are far lower, because every slide goes through Next's optimiser and is
+served as a resized WebP, and only three slides are ever mounted at once.
+
+### the story got shorter
+
+Rewritten from prose into bullets and cut from about 370 words to 250. The
+"how it works" list now names the same five stages the deck does — import,
+draft, review, fill, publish — so the page and the slides under it agree
+instead of describing the same thing two different ways. Two of those five
+stages say "mine", which is the whole argument of the project in the shape of
+a list.
+
+Still marked `{/* DRAFT — aidan to rewrite */}`.

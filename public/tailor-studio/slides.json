@@ -1,4 +1,54 @@
 {
   "_note": "One entry per file in slides/. `alt` is what a screen reader gets — the slides are pictures of text, so each needs a real one-sentence description. `draft: true` means Claude wrote it and Aidan has not checked it yet; set it to false once you have. A file with no entry here shows a visible bracketed placeholder on the page.",
-  "slides": {}
+  "_source": "Rendered from docs/tailor-studio-design.pdf in the tailor-studio repo with `swift scripts/pdf-to-slides.swift <pdf> public/tailor-studio/slides`.",
+  "slides": {
+    "01.png": {
+      "alt": "Title slide: “Tailor Studio”, a personal resale tool for Grailed — a folder of clothing photos becomes ready-to-post listings, priced, written and filled in for your review.",
+      "draft": true
+    },
+    "02.png": {
+      "alt": "The problem: every listing is the same twenty minutes of busywork — 15–20 minutes per item by hand, spent sorting a batch shoot into per-item groups, writing a title and description from scratch, and pricing against recent sold listings.",
+      "draft": true
+    },
+    "03.png": {
+      "alt": "What it is: Tailor does the tedious work before the sale — grouping, writing and pricing — then types the draft into a real Grailed form, while the point of sale stays human; it never logs in, solves captchas or clicks Publish.",
+      "draft": true
+    },
+    "04.png": {
+      "alt": "The workflow: five stages from photo folder to published listing — Import and Draft happen automatically, Review and Fill are yours.",
+      "draft": true
+    },
+    "05.png": {
+      "alt": "Stage one, Import: point it at a folder and it sorts the shoot, grouping photos by garment and reading brand, category, size, condition and colour from the images; confident groups become priced drafts, and anything ambiguous is flagged for review rather than guessed.",
+      "draft": true
+    },
+    "06.png": {
+      "alt": "Stage two, Draft: a written, priced listing with the comps behind it — a suggested price of $90 within a $72–$110 range drawn from 34 sold comparables — and no authenticity claims, only a probable brand.",
+      "draft": true
+    },
+    "07.png": {
+      "alt": "Stage three, Review: one card per draft, keyboard-first — confirm brand, category, condition and price at a glance, with J and K to walk the queue and Command-Enter to save and move on.",
+      "draft": true
+    },
+    "08.png": {
+      "alt": "Stage four, Fill: one click types the whole draft into a separately launched Chrome on the Grailed sell form, with a live per-field checklist, and it never clicks Publish.",
+      "draft": true
+    },
+    "09.png": {
+      "alt": "Stage five, Publish: you review the filled form and click Publish yourself, and one click then starts filling the next draft in the queue.",
+      "draft": true
+    },
+    "10.png": {
+      "alt": "Safety rails: what Tailor does — organise photos into items, draft titles and descriptions, pull sold comps to suggest a price, fill the Grailed form only when you click — set against what it never does: log in, submit anything, or touch the account on its own.",
+      "draft": true
+    },
+    "11.png": {
+      "alt": "Built for speed: a keyboard-first loop — J and K move through the draft queue, Command-Enter saves and advances, F fills the current draft into Chrome, and Command-K opens the command palette.",
+      "draft": true
+    },
+    "12.png": {
+      "alt": "Get started: three steps to a first listing — import a folder of item photos, launch Chrome and sign in, then open a draft, click Fill, and publish it yourself.",
+      "draft": true
+    }
+  }
 }
