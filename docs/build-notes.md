@@ -3497,3 +3497,11 @@ homepage rock's description, instead of "[photograph — aidan to describe]".
   line under each slide. Screen readers still get the line.
 - **Places**: nine shoot dates filled from Aidan's confirmation.
   2025-05-20 (the capybara) is still blank.
+
+The eval-harness bracket is now filled from Aidan's explanation: fixtures
+of hand-labelled photos, a clustering-accuracy regression gate, and a
+resumable sweep weighing accuracy against API cost across models and
+batching strategies. His source text gave "say, 40 photos" only as an
+example, so no fixture count or threshold appears on the page. Its lines
+about what makes the work impressive were left out: the page shows the
+work, and the reader can judge it.
