@@ -3,12 +3,14 @@ import {
   PHOTOS_PER_ROW,
   PHOTO_PAIR_OFFSET_VH,
   PHOTO_STEP_VH,
+  GALLERY_GAP_VH,
+  PHOTOS_START_VH,
   galleryDepthVh,
   photoGroupMarkers,
   placePhotoStones,
   pondDepthVh,
 } from './photoStones'
-import { HOME_STONES, POND_DEPTH_VH, placeStones } from './stones'
+import { DEEPEST_STONE_VH, HOME_STONES, POND_DEPTH_VH, STONE_STEP_VH, placeStones } from './stones'
 
 const photos = Array.from({ length: 8 }, (_, i) => ({
   src: `/_next/image?url=%2Fphotos%2Fp${i}.jpg&w=1200&q=75`,
@@ -189,8 +191,10 @@ describe('spacing', () => {
     }
   })
 
-  it('keeps twenty-five pieces of media inside eight screens', () => {
-    expect(pondDepthVh(25, POND_DEPTH_VH)).toBeLessThan(8)
+  it('keeps twenty-five pieces of media inside eight and a half screens', () => {
+    // Was eight. The bubble gap between the navigation and the gallery added
+    // 0.45 of a screen, on purpose; this still catches growth nobody chose.
+    expect(pondDepthVh(25, POND_DEPTH_VH)).toBeLessThan(8.5)
   })
 })
 
@@ -268,6 +272,17 @@ describe('depth with groups', () => {
       original: `/photos/p${i}.jpg`,
       group: i < 1 ? '2026' : i < 18 ? '2025' : i < 20 ? '2024' : 'undated',
     }))
-    expect(galleryDepthVh(placePhotoStones(media), POND_DEPTH_VH)).toBeLessThan(9)
+    // Nine and a half since the bubble gap (0.45 of a screen) went in above
+    // the gallery: 8.57 before it, about 9.02 with it.
+    expect(galleryDepthVh(placePhotoStones(media), POND_DEPTH_VH)).toBeLessThan(9.5)
   })
 })
+
+describe('the gap above the gallery', () => {
+  it('leaves room between the last stone and the gallery for the bubbles', () => {
+    // Aidan asked for the gap to grow and the bubbles to rise through it.
+    expect(GALLERY_GAP_VH).toBeGreaterThanOrEqual(0.4)
+    expect(PHOTOS_START_VH).toBeCloseTo(DEEPEST_STONE_VH + STONE_STEP_VH + GALLERY_GAP_VH, 10)
+  })
+})
+

@@ -28,6 +28,13 @@ export type PhotoStoneSpec = {
 }
 
 /**
+ * Extra water between the last navigation stone and the gallery, where the
+ * bubbles rise. Aidan's call: a pause between "the pages" and "the
+ * photographs", with something alive in it, instead of a cue at the surface.
+ */
+export const GALLERY_GAP_VH = 0.45
+
+/**
  * Where the photo rocks begin, in viewport heights.
  *
  * One stone-step below the deepest navigation stone, rather than a number
@@ -35,7 +42,7 @@ export type PhotoStoneSpec = {
  * photography section with it, which is the only way the two can never
  * collide.
  */
-export const PHOTOS_START_VH = DEEPEST_STONE_VH + STONE_STEP_VH
+export const PHOTOS_START_VH = DEEPEST_STONE_VH + STONE_STEP_VH + GALLERY_GAP_VH
 /**
  * Vertical gap between consecutive ROWS of photo rocks.
  *

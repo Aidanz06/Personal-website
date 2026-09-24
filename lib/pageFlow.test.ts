@@ -17,6 +17,21 @@ function selectorsUsing(name: string): string[] {
     .map(([, selector]) => selector!.trim().replace(/\s+/g, ' '))
 }
 
+/**
+ * Selectors a moving animation may use besides `> main`.
+ *
+ * The rule exists because a transform on an element makes it the containing
+ * block for any `position: fixed` element inside it. That only matters for
+ * elements that CONTAIN something. A leaf with nothing inside but its own
+ * glyph can't break it. Each entry here must stay a leaf: add one only with a
+ * comment saying what it is and why nothing will ever be put inside it.
+ */
+const LEAF_SELECTORS = [
+  // A single rising bubble character in the gap above the gallery
+  // (components/Bubbles.tsx). It holds one glyph and nothing else.
+  '.bubble',
+]
+
 describe('the page-change animation', () => {
   it('moves something, or it is not an animation', () => {
     const moving = keyframes.filter((frame) => /transform\s*:/.test(frame.body))
@@ -45,6 +60,7 @@ describe('the page-change animation', () => {
       const selectors = selectorsUsing(frame.name)
       expect(selectors.length, `nothing uses @keyframes ${frame.name}`).toBeGreaterThan(0)
       for (const selector of selectors) {
+        if (LEAF_SELECTORS.includes(selector)) continue
         expect(selector, `@keyframes ${frame.name} is attached to "${selector}"`)
           .toContain('> main')
       }

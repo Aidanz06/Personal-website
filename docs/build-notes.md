@@ -3173,3 +3173,39 @@ closes it, pin then scroll away closes it, and on a phone tapping the water
 closes it.
 
 603 tests.
+
+### bubbles instead of a sinking stone
+
+Aidan didn't like the sinking-ripple cue ("the bouncing rock just doesn't
+look very good"). Of the four alternatives offered, he chose bubbles rising,
+placed not at the surface but in a **wider gap between the listening stone
+and the gallery**.
+
+- **The ripple cue is gone** completely: `descentCue`, `shouldPlayCue`, its
+  tests, its DESIGN.md entry and its effect on the homepage.
+- **The gap:** `GALLERY_GAP_VH = 0.45` is added to `PHOTOS_START_VH`, so the
+  whole gallery moves down with it. The page is now **9.02 screens** (was
+  8.57). Both depth guards were moved on purpose, with comments: 25 items
+  ungrouped under 8.5 (was 8), and the real grouped split under 9.5 (was 9).
+  They still catch growth nobody chose.
+- **The bubbles** (`lib/pond/bubbles.ts`, `components/Bubbles.tsx`): nine
+  `o`, `°` and `.` glyphs, in mono and Drowned Grey, spread across the
+  column in jittered slots. Each rises the full gap in 5–9 seconds, fading
+  in, swaying up to 14px at the midpoint and popping at the top. Starts are
+  staggered so they never rise together. The positions come from a seeded
+  generator, not `Math.random`, so every visit is the same and the server's
+  HTML matches the browser's (no hydration warnings, checked).
+- **CSS, and an honest exception to a rule.** `lib/pageFlow.test.ts` forbids
+  `transform` keyframes anywhere but `> main`, because in step 7 a
+  transformed wrapper became the containing block for the fixed pond. A
+  bubble is a leaf holding one glyph, so it can't cause that. The test gained
+  an explicit `LEAF_SELECTORS` allowance, with a comment requiring each
+  entry to stay a leaf, rather than the animation dodging the rule. The
+  bubbles use fill-mode `backwards`, per the held-transform lesson.
+- Hidden under reduced motion, working with JavaScript off, `aria-hidden`.
+
+Checked in Chrome: 91px clear of the listening label and 53px clear of the
+gallery heading at 375 (118 and 69 at 1280), no horizontal scroll, and the
+bubbles visibly rise between frames.
+
+601 tests.

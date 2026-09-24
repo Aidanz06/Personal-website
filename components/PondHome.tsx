@@ -4,8 +4,9 @@ import Link from 'next/link'
 import { useEffect, useReducer, useState } from 'react'
 import { Pond, type PhotoRect } from '@/components/Pond'
 import { ThemeMenu } from '@/components/ThemeMenu'
-import { HOME_STONES, POND_DEPTH_VH } from '@/lib/pond/stones'
-import { galleryDepthVh, photoGroupMarkers, placePhotoStones } from '@/lib/pond/photoStones'
+import { DEEPEST_STONE_VH, HOME_STONES, POND_DEPTH_VH } from '@/lib/pond/stones'
+import { PHOTOS_START_VH, galleryDepthVh, photoGroupMarkers, placePhotoStones } from '@/lib/pond/photoStones'
+import { Bubbles } from '@/components/Bubbles'
 import { galleryGroup, orderGallery, rockLabel, rockName } from '@/lib/pond/gallery'
 import { isCaptionEmpty } from '@/lib/captions'
 import type { Photo } from '@/lib/photos'
@@ -13,7 +14,6 @@ import { contacts, site } from '@/lib/site'
 import { WaterFilters, WaterText } from '@/components/WaterText'
 import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
 import { usePinDismissal } from '@/components/usePinDismissal'
-import { MAX_CUES, descentCue, requestDescentCue, shouldPlayCue } from '@/lib/pond/splash'
 
 /**
  * The homepage: a pond you descend.
@@ -40,6 +40,13 @@ import { MAX_CUES, descentCue, requestDescentCue, shouldPlayCue } from '@/lib/po
  */
 /** How far above the first photo rock the title sits, in viewport heights. */
 const GALLERY_TITLE_LIFT_VH = 0.25
+/**
+ * The stretch of water the bubbles rise through: from clear of the last
+ * stone's label to clear of the gallery heading. Measured at 375x667, the
+ * tightest case, where the label ends about 0.23 of a screen below its stone.
+ */
+const BUBBLES_TOP_VH = DEEPEST_STONE_VH + 0.3
+const BUBBLES_BOTTOM_VH = PHOTOS_START_VH - GALLERY_TITLE_LIFT_VH - 0.08
 
 function vh(value: number): string {
   return `${(value * 100).toFixed(4)}vh`
@@ -54,28 +61,6 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
   const activePhoto = activeRock(selection)
   const pinnedPhoto = selection.pinned
   usePinDismissal(pinnedPhoto, select)
-
-  // The cue to descend: a stone sinking from under the name to the first
-  // stone, a couple of seconds after arrival, then twice more at most. It
-  // checks the scroll each time, so it ends the moment the visitor starts
-  // down — and never plays for someone who arrives already scrolled, or who
-  // asked for reduced motion. See descentCue() in lib/pond/splash.ts.
-  useEffect(() => {
-    const first = HOME_STONES[0]
-    if (!first) return
-    const cue = descentCue(first.xFraction, 0.5, first.depthVh)
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
-    let played = 0
-    let timer: ReturnType<typeof setTimeout>
-    function play() {
-      if (!shouldPlayCue({ scrollY: window.scrollY, played, reducedMotion: reduced.matches })) return
-      requestDescentCue(cue)
-      played++
-      if (played < MAX_CUES) timer = setTimeout(play, 6500)
-    }
-    timer = setTimeout(play, 2200)
-    return () => clearTimeout(timer)
-  }, [])
 
   // Esc closes whatever is open, the same as on /listening.
   useEffect(() => {
@@ -191,6 +176,14 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
         })}
 
         {/* --- the photo rocks --- */}
+        {/* --- between the pages and the photographs --- */}
+        {photoStones.length > 0 && (
+          <Bubbles
+            top={vh(BUBBLES_TOP_VH)}
+            height={vh(BUBBLES_BOTTOM_VH - BUBBLES_TOP_VH)}
+          />
+        )}
+
         {/* The gallery's heading: "photo gallery" as ASCII art, at about
             the height of the one-line note it replaced, seen through the
             water. An SVG filter displaces it by a slowly shifting turbulence

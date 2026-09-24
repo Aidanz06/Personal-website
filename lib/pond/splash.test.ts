@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { drainSplashes, pageSplashWave, requestPageSplash, descentCue, shouldPlayCue, MAX_CUES } from './splash'
+import { drainSplashes, pageSplashWave, requestPageSplash } from './splash'
 
 describe('pageSplashWave', () => {
   it('crosses the pond left to right', () => {
@@ -63,58 +63,5 @@ describe('the queue', () => {
     requestPageSplash()
     requestPageSplash()
     expect(drainSplashes()).toHaveLength(pageSplashWave().length)
-  })
-})
-
-describe('descentCue', () => {
-  const cue = descentCue(0.3, 0.55, 0.95)
-
-  it('is a chain of rings, each lower than the last, like a stone sinking', () => {
-    expect(cue.length).toBeGreaterThanOrEqual(4)
-    for (let i = 1; i < cue.length; i++) {
-      expect(cue[i]!.yFraction).toBeGreaterThan(cue[i - 1]!.yFraction)
-      expect(cue[i]!.delay).toBeGreaterThan(cue[i - 1]!.delay)
-    }
-  })
-
-  it('runs from under the name to the first stone, and no further', () => {
-    expect(cue[0]!.yFraction).toBeCloseTo(0.55, 6)
-    expect(cue.at(-1)!.yFraction).toBeCloseTo(0.95, 6)
-  })
-
-  it('sinks toward the stone it is pointing at', () => {
-    for (const point of cue) expect(Math.abs(point.xFraction - 0.3)).toBeLessThan(0.08)
-  })
-
-  it('is slow enough to read as sinking, not as a flash', () => {
-    expect(cue.at(-1)!.delay).toBeGreaterThan(1.5)
-  })
-
-  it('is gentler than a page-change wave', () => {
-    const wave = pageSplashWave()
-    for (const point of cue) expect(point.strength).toBeLessThan(wave[0]!.strength)
-  })
-
-  it('fades as it sinks, the way a disturbance does going deeper', () => {
-    expect(cue.at(-1)!.strength).toBeLessThan(cue[0]!.strength)
-  })
-})
-
-describe('shouldPlayCue', () => {
-  it('plays at the top of the page, a few times at most', () => {
-    expect(shouldPlayCue({ scrollY: 0, played: 0, reducedMotion: false })).toBe(true)
-    expect(shouldPlayCue({ scrollY: 0, played: MAX_CUES, reducedMotion: false })).toBe(false)
-  })
-
-  it('stops once the visitor has started to descend: the cue has done its job', () => {
-    expect(shouldPlayCue({ scrollY: 60, played: 0, reducedMotion: false })).toBe(false)
-  })
-
-  it('never plays under reduced motion', () => {
-    expect(shouldPlayCue({ scrollY: 0, played: 0, reducedMotion: true })).toBe(false)
-  })
-
-  it('does not nag: three times, then never again this visit', () => {
-    expect(MAX_CUES).toBeLessThanOrEqual(3)
   })
 })

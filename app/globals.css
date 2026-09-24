@@ -269,6 +269,44 @@
   }
 }
 
+/* Bubbles rising through the gap above the gallery (components/Bubbles.tsx).
+
+   Each bubble is a single glyph that rises the height of the gap, drifting
+   sideways at the midpoint and fading in and out. The rise and sway come in
+   per bubble as custom properties. `backwards`, not `both`: see page-flow
+   above for why a held transform is trouble. A bubble is a leaf, so the rule
+   that confines transforms to `main` has an explicit allowance for it in
+   lib/pageFlow.test.ts. */
+@keyframes bubble-rise {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(var(--sway), calc(var(--rise) * -0.5));
+  }
+  85% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate(0, calc(var(--rise) * -1));
+    opacity: 0;
+  }
+}
+
+.bubble {
+  animation: bubble-rise var(--duration) ease-in-out var(--delay) infinite backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble {
+    display: none;
+  }
+}
+
 /* A tap target of at least 44x44, whatever the control looks like.
 
    The site's controls are words and single characters — the theme glyph is
