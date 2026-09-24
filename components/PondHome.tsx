@@ -72,7 +72,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
         {/* --- the surface --- */}
         <section className="column pt-[22vh]">
           <div className="flex items-baseline gap-1.5">
-            <h1 className="font-display text-name font-normal">{site.name}</h1>
+            <h1 className="font-display text-name font-normal">{site.greeting}</h1>
             <ThemeMenu />
           </div>
           <p className="mt-1 text-muted">{site.identity}</p>
