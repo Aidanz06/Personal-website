@@ -3563,3 +3563,9 @@ JetBrains Mono and koi-theme colours, 480×252 at 2.5×, giving 1200×630.
 `public/preview.png` is replaced and `PREVIEW_IMAGE.alt` describes the new
 picture. The composer is a scratch script in the gitignored
 `Claude outputs/verify/logo/` folder, not part of the site.
+
+**Follow-up: the new preview didn't show.** The live site was already
+serving the new file (its hash matched the commit), but it was at the same
+URL, `/preview.png`, and link previews are cached by URL. It's now
+`/preview-koi.png`. The rule, noted in `PREVIEW_IMAGE`: a new picture gets
+a new file name.

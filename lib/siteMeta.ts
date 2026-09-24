@@ -35,7 +35,10 @@ export function robotsRules(): MetadataRoute.Robots {
  * in the site's mono font and koi-theme colours, at 1200×630.
  */
 export const PREVIEW_IMAGE = {
-  url: '/preview.png',
+  // A new file name for every new picture: link previews are cached by URL
+  // (LinkedIn, iMessage, Slack), so replacing the file in place leaves the
+  // old picture showing wherever the link was seen before.
+  url: '/preview-koi.png',
   width: 1200,
   height: 630,
   alt: 'an ascii koi curled around a stone, with a second stone beside it, in a dark pond drawn in characters.',
