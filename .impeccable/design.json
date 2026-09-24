@@ -1,0 +1,540 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-24T05:38:08+00:00",
+  "title": "Design System: aidan zheng",
+  "extensions": {
+    "colorMeta": {
+      "night-water": {
+        "role": "neutral",
+        "displayName": "Night Water",
+        "theme": "koi",
+        "canonical": "oklch(16.7% 0.008 181.8)",
+        "tonalRamp": [
+          "#080c0b",
+          "#212625",
+          "#3d4342",
+          "#5c6361",
+          "#7d8483",
+          "#a0a7a5",
+          "#c4cbc9",
+          "#e9f0ef"
+        ]
+      },
+      "moonlit-ink": {
+        "role": "neutral",
+        "displayName": "Moonlit Ink",
+        "theme": "koi",
+        "canonical": "oklch(92.9% 0.014 84.6)",
+        "tonalRamp": [
+          "#0e0b05",
+          "#28251d",
+          "#464239",
+          "#656158",
+          "#868279",
+          "#a9a49b",
+          "#cdc9bf",
+          "#f3eee4"
+        ]
+      },
+      "koi-orange": {
+        "role": "primary",
+        "displayName": "Koi Orange",
+        "theme": "koi",
+        "canonical": "oklch(71.6% 0.159 50.0)",
+        "tonalRamp": [
+          "#2b0000",
+          "#590000",
+          "#7e1300",
+          "#a43b00",
+          "#ca5f04",
+          "#f2833c",
+          "#ffa763",
+          "#ffd7a5"
+        ]
+      },
+      "pond-moss": {
+        "role": "neutral",
+        "displayName": "Pond Moss",
+        "theme": "koi",
+        "canonical": "oklch(30.4% 0.019 185.4)",
+        "tonalRamp": [
+          "#030e0c",
+          "#1a2826",
+          "#374543",
+          "#566563",
+          "#768684",
+          "#98a9a7",
+          "#bccdcb",
+          "#e1f3f0"
+        ]
+      },
+      "kohaku-red": {
+        "role": "secondary",
+        "displayName": "Kohaku Red",
+        "theme": "koi",
+        "canonical": "oklch(58.6% 0.184 35.5)",
+        "tonalRamp": [
+          "#2d0000",
+          "#630000",
+          "#8a0000",
+          "#b12200",
+          "#da4c26",
+          "#ff724d",
+          "#ff9771",
+          "#ffd2b7"
+        ]
+      },
+      "tancho-cream": {
+        "role": "secondary",
+        "displayName": "Tancho Cream",
+        "theme": "koi",
+        "canonical": "oklch(95.5% 0.019 80.1)",
+        "tonalRamp": [
+          "#0f0a03",
+          "#2a241a",
+          "#474137",
+          "#676055",
+          "#888176",
+          "#aba498",
+          "#d0c8bb",
+          "#f5ede0"
+        ]
+      },
+      "drowned-grey": {
+        "role": "neutral",
+        "displayName": "Drowned Grey",
+        "theme": "koi",
+        "canonical": "oklch(61.9% 0.009 99.0)",
+        "tonalRamp": [
+          "#0c0b07",
+          "#262520",
+          "#43423d",
+          "#62615c",
+          "#83827c",
+          "#a6a59f",
+          "#cac9c3",
+          "#f0efe8"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "theme": "koi",
+        "canonical": "oklch(31.3% 0.005 156.9)",
+        "tonalRamp": [
+          "#090c0a",
+          "#232624",
+          "#404341",
+          "#5f6260",
+          "#808381",
+          "#a2a6a4",
+          "#c6cac8",
+          "#ecf0ed"
+        ]
+      },
+      "phosphor-ground": {
+        "role": "neutral",
+        "displayName": "Phosphor Ground",
+        "theme": "phosphor",
+        "canonical": "oklch(14.1% 0.029 293.9)",
+        "tonalRamp": [
+          "#0c0916",
+          "#262232",
+          "#433f50",
+          "#625e70",
+          "#837f92",
+          "#a6a2b6",
+          "#cac6db",
+          "#efebff"
+        ]
+      },
+      "phosphor-ink": {
+        "role": "neutral",
+        "displayName": "Phosphor Ink",
+        "theme": "phosphor",
+        "canonical": "oklch(90.4% 0.050 138.9)",
+        "tonalRamp": [
+          "#011000",
+          "#182b12",
+          "#34492e",
+          "#53684d",
+          "#738a6d",
+          "#95ad8f",
+          "#b9d2b2",
+          "#def7d7"
+        ]
+      },
+      "phosphor-green": {
+        "role": "primary",
+        "displayName": "Phosphor Green",
+        "theme": "phosphor",
+        "canonical": "oklch(81.0% 0.213 139.0)",
+        "tonalRamp": [
+          "#001300",
+          "#003600",
+          "#005700",
+          "#007a00",
+          "#259d00",
+          "#51c224",
+          "#77e953",
+          "#c5ffb4"
+        ]
+      },
+      "phosphor-water": {
+        "role": "neutral",
+        "displayName": "Phosphor Water",
+        "theme": "phosphor",
+        "canonical": "oklch(27.0% 0.026 255.7)",
+        "tonalRamp": [
+          "#050b16",
+          "#1d2632",
+          "#394350",
+          "#586270",
+          "#788392",
+          "#9ba6b5",
+          "#becada",
+          "#e3f0ff"
+        ]
+      },
+      "phosphor-teal": {
+        "role": "secondary",
+        "displayName": "Phosphor Teal",
+        "theme": "phosphor",
+        "canonical": "oklch(80.0% 0.131 179.4)",
+        "tonalRamp": [
+          "#00170d",
+          "#003627",
+          "#005644",
+          "#007863",
+          "#009b84",
+          "#05bfa7",
+          "#4fe5cb",
+          "#8afff1"
+        ]
+      },
+      "phosphor-lime": {
+        "role": "secondary",
+        "displayName": "Phosphor Lime",
+        "theme": "phosphor",
+        "canonical": "oklch(90.0% 0.192 117.9)",
+        "tonalRamp": [
+          "#0a0e00",
+          "#222b00",
+          "#3d4a00",
+          "#5b6c00",
+          "#7a8f00",
+          "#9cb300",
+          "#bfd810",
+          "#e7fa9b"
+        ]
+      },
+      "paper-ground": {
+        "role": "neutral",
+        "displayName": "Paper Ground",
+        "theme": "paper",
+        "canonical": "oklch(94.1% 0.011 252.1)",
+        "tonalRamp": [
+          "#080c10",
+          "#21262b",
+          "#3e4248",
+          "#5d6268",
+          "#7e8389",
+          "#a0a6ac",
+          "#c4cad1",
+          "#e9eff6"
+        ]
+      },
+      "paper-navy": {
+        "role": "neutral",
+        "displayName": "Paper Navy",
+        "theme": "paper",
+        "canonical": "oklch(26.8% 0.052 257.9)",
+        "tonalRamp": [
+          "#000a21",
+          "#14253e",
+          "#30435e",
+          "#4f627f",
+          "#6f84a2",
+          "#91a7c6",
+          "#b4cbec",
+          "#d9f0ff"
+        ]
+      },
+      "paper-blue": {
+        "role": "primary",
+        "displayName": "Paper Blue",
+        "theme": "paper",
+        "canonical": "oklch(47.7% 0.146 259.4)",
+        "tonalRamp": [
+          "#00003c",
+          "#001969",
+          "#033c8d",
+          "#295eb2",
+          "#4a81d8",
+          "#6ca5ff",
+          "#8fcaff",
+          "#bef0ff"
+        ]
+      },
+      "paper-water": {
+        "role": "neutral",
+        "displayName": "Paper Water",
+        "theme": "paper",
+        "canonical": "oklch(88.2% 0.019 255.5)",
+        "tonalRamp": [
+          "#060b13",
+          "#1f262e",
+          "#3b434c",
+          "#5a626c",
+          "#7b838e",
+          "#9da6b1",
+          "#c1cad6",
+          "#e6effc"
+        ]
+      },
+      "paper-sky": {
+        "role": "secondary",
+        "displayName": "Paper Sky",
+        "theme": "paper",
+        "canonical": "oklch(57.2% 0.141 256.2)",
+        "tonalRamp": [
+          "#00003c",
+          "#001c67",
+          "#003e8a",
+          "#2160af",
+          "#4583d5",
+          "#67a7fc",
+          "#8bccff",
+          "#b9f2ff"
+        ]
+      },
+      "paper-deep": {
+        "role": "secondary",
+        "displayName": "Paper Deep",
+        "theme": "paper",
+        "canonical": "oklch(47.2% 0.140 257.9)",
+        "tonalRamp": [
+          "#00003c",
+          "#001b66",
+          "#003d8a",
+          "#275faf",
+          "#4982d5",
+          "#6ba6fb",
+          "#8fcbff",
+          "#bcf1ff"
+        ]
+      },
+      "paper-tail": {
+        "role": "secondary",
+        "displayName": "Paper Tail",
+        "theme": "paper",
+        "canonical": "oklch(32.2% 0.087 259.0)",
+        "tonalRamp": [
+          "#00052f",
+          "#06234e",
+          "#244170",
+          "#426293",
+          "#6283b7",
+          "#84a6dc",
+          "#a7cbff",
+          "#ccf1ff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The homepage greeting and each inner page name. Once per page."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Stepping-stone labels, prose section heads, inner-page headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Prose within the 640px column."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Mono machinery: notes, numbers, captions, controls."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "The one subordinate line: exposure, as-of dates. Never body copy."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "page-flow",
+        "value": "480ms cubic-bezier(0.2, 0.7, 0.3, 1) backwards",
+        "purpose": "Incoming page content rises 10px and fades in while a wave crosses the pond."
+      },
+      {
+        "name": "link-underline",
+        "value": "120ms ease",
+        "purpose": "Underline thickens 1px to 2px on hover."
+      },
+      {
+        "name": "menu-close-delay",
+        "value": "220ms",
+        "purpose": "Theme menu stays open crossing the gap to its options."
+      },
+      {
+        "name": "surface",
+        "value": "exponential ease, rate 1.45/s (~2.5s)",
+        "purpose": "A picture surfacing from characters; slow on purpose."
+      },
+      {
+        "name": "ring",
+        "value": "1.8s interval, strength 0.6",
+        "purpose": "A stone breathing, like a speaker cone."
+      },
+      {
+        "name": "water-heading",
+        "value": "SVG turbulence baseFrequency cycle, 11s",
+        "purpose": "Lettering seen through moving water."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Nothing animates; the pond draws one still frame and redraws on scroll."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "picture-mid",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Stepping Stone Label",
+      "kind": "nav",
+      "refersTo": "stone-label",
+      "description": "A navigation stone’s label, under the stone: headline in ink, mono note beneath.",
+      "html": "<a class=\"ds-stone\" href=\"#\"><span class=\"ds-stone-label\">listening</span><span class=\"ds-stone-note\">what’s on repeat</span></a>",
+      "css": ".ds-stone{display:inline-flex;flex-direction:column;align-items:center;text-decoration:none;color:var(--color-ink)} .ds-stone-label{font-family:var(--font-display);font-size:1.375rem;line-height:1.35;font-weight:400;text-decoration:none;text-underline-offset:4px} .ds-stone-note{margin-top:4px;font-family:var(--font-mono);font-size:0.875rem;line-height:1.5;color:var(--color-muted)} .ds-stone:hover .ds-stone-label,.ds-stone:focus-visible .ds-stone-label{color:var(--color-accent);text-decoration:underline} .ds-stone:focus-visible{outline:2px solid var(--color-accent);outline-offset:3px}"
+    },
+    {
+      "name": "Rock Number",
+      "kind": "custom",
+      "refersTo": "rock-number",
+      "description": "The two-digit mono label under a photo or album rock; accent while open.",
+      "html": "<button class=\"ds-rock\" type=\"button\" aria-pressed=\"false\">01</button>",
+      "css": ".ds-rock{background:none;border:0;padding:4px;font-family:var(--font-mono);font-size:0.875rem;line-height:1.5;color:var(--color-muted);cursor:pointer} .ds-rock:hover,.ds-rock[aria-pressed=true]{color:var(--color-accent)} .ds-rock:focus-visible{outline:2px solid var(--color-accent);outline-offset:3px}"
+    },
+    {
+      "name": "Text Link",
+      "kind": "custom",
+      "refersTo": "text-link",
+      "description": "Accent text with a hairline underline that thickens on hover.",
+      "html": "<a class=\"ds-link\" href=\"#\">tailor studio</a>",
+      "css": ".ds-link{color:var(--color-accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:0.2em;transition:text-decoration-thickness 120ms ease} .ds-link:hover{text-decoration-thickness:2px} .ds-link:focus-visible{outline:2px solid var(--color-accent);outline-offset:3px}"
+    },
+    {
+      "name": "Text Control",
+      "kind": "button",
+      "refersTo": "text-control",
+      "description": "Every non-link control: a word or character in mono, no button shape.",
+      "html": "<button class=\"ds-control\" type=\"button\">← prev</button> <button class=\"ds-control\" type=\"button\" disabled>next →</button>",
+      "css": ".ds-control{background:none;border:0;padding:0;font-family:var(--font-mono);font-size:0.875rem;line-height:1.5;color:var(--color-muted);cursor:pointer} .ds-control:hover{color:var(--color-ink)} .ds-control:disabled{opacity:0.4;cursor:default} .ds-control:focus-visible{outline:2px solid var(--color-accent);outline-offset:3px}"
+    },
+    {
+      "name": "Theme Control",
+      "kind": "nav",
+      "refersTo": "text-control",
+      "description": "A single mono glyph that opens the theme list; each option has a hairline-framed two-square swatch.",
+      "html": "<span class=\"ds-theme\"><button class=\"ds-theme-trigger\" type=\"button\" aria-haspopup=\"menu\">◐</button><span class=\"ds-theme-option\"><span class=\"ds-swatch\"><span style=\"background:var(--color-ground)\"></span><span style=\"background:var(--color-accent)\"></span></span>koi</span></span>",
+      "css": ".ds-theme{display:inline-flex;align-items:baseline;gap:12px;font-family:var(--font-mono);font-size:0.875rem;color:var(--color-muted)} .ds-theme-trigger{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer} .ds-theme-trigger:hover{color:var(--color-ink)} .ds-theme-option{display:inline-flex;align-items:center;gap:8px;color:var(--color-ink)} .ds-swatch{display:inline-flex;border:1px solid var(--color-rule)} .ds-swatch span{display:block;width:8px;height:8px}"
+    },
+    {
+      "name": "Picture Caption",
+      "kind": "custom",
+      "refersTo": "caption-meta",
+      "description": "Under an opened picture: place and date muted, the personal line in ink, exposure at caption size.",
+      "html": "<div class=\"ds-caption\"><p class=\"ds-caption-meta\">kamakura · may 2025</p><p class=\"ds-caption-line\">the tide was further out than the guidebook said.</p><p class=\"ds-caption-exposure\">f/8 · 1/160 · iso 320</p></div>",
+      "css": ".ds-caption{font-family:var(--font-mono);max-width:40ch} .ds-caption p{margin:0} .ds-caption-meta{font-size:0.875rem;line-height:1.5;color:var(--color-muted)} .ds-caption-line{font-size:0.875rem;line-height:1.5;color:var(--color-ink)} .ds-caption-exposure{font-size:0.75rem;line-height:1.45;color:var(--color-muted)}"
+    },
+    {
+      "name": "Water Heading",
+      "kind": "custom",
+      "refersTo": "caption-meta",
+      "description": "A section heading as five-row ASCII art in muted mono, seen through moving water.",
+      "html": "<pre class=\"ds-water\" aria-hidden=\"true\">###  #  #  ##  ###  ##\n#  # #  # #  #  #  #  #\n###  #### #  #  #  #  #\n#    #  # #  #  #  #  #\n#    #  #  ##   #   ##</pre>",
+      "css": ".ds-water{margin:0;font-family:var(--font-mono);font-size:7px;line-height:0.62;color:var(--color-muted);filter:blur(0.2px)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Pond",
+    "overview": "The site is a dark, still pond seen from above, and you read it by looking down into it. Everything lives in the water: the water itself, the ripples you leave, one koi that swims alongside you, the stepping stones that lead to the pages, and the photographs resting on the bottom as small rocks. All of it is drawn as monospace characters on a single canvas, so nothing is laid on top of the pond. Light draws the eye: the koi, a link, a picture surfacing out of the characters. Everything else stays dark and quiet.\n\nThe feel is **crafted and playful, with calm underneath**. It's crafted because every surface shows its making: the characters, the measured glyph ramp, captions and controls set in monospace like instrument labels. It's playful because of small rewards for attention: a koi that comes to the stone you focus, rings breathing off the listening stone, album covers rising as ASCII art, a heading that warps as if seen through water. And it's calm because motion is slow, most of the surface is empty water, and nothing competes for attention. Going deeper means going more personal: the name at the surface, then the navigation, then photographs and music in the depths.\n\nTwo looks are confirmed rejections: **template portfolios** (hero, grid of project cards, skills bars) and **boxes and cards** (rounded containers, drop shadows, filled buttons, anything that sits on the pond like furniture). Glossy treatments are **not** ruled out. They're an open experiment, to be tried deliberately and in specific places.",
+    "keyCharacteristics": [
+      "One grid of character cells draws everything in the pond.",
+      "Colour belongs to the living thing; everything else is monochrome.",
+      "No containers: no radius, no shadows, no boxes. Hairlines only.",
+      "Three typefaces, each with one job: serif for names, sans for prose, mono for machinery.",
+      "Every control in the pond is real HTML over a decorative canvas.",
+      "Slow, eased motion that stops completely under reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The Living Colour Rule",
+        "body": "Colour belongs to living things. Water, stones, rules and text stay monochrome; the koi's colours are the single exception, and the accent is taken from the koi. Anything new that wants a colour has to be alive or be a link.",
+        "section": "colors"
+      },
+      {
+        "name": "The Theme Slot Rule",
+        "body": "A colour is never written into a component. Every colour resolves through a `--t-*` slot, so a new theme is one CSS block, and the pond canvas repaints from the same slots when the theme changes.",
+        "section": "colors"
+      },
+      {
+        "name": "The Contrast Floor Rule",
+        "body": "In every theme, body, muted and link text clear 4.5:1 against the ground, and every koi colour clears 3:1. `lib/contrast.test.ts` parses the real stylesheet and enforces it, so a theme that breaks this doesn't ship.",
+        "section": "colors"
+      },
+      {
+        "name": "The Machinery Is Mono Rule",
+        "body": "Anything that describes, numbers, controls or labels is set in mono. Anything a person would say aloud (a name, a heading, a sentence) is not.",
+        "section": "typography"
+      },
+      {
+        "name": "The Metric-Stable Rule",
+        "body": "The ASCII grid depends on every glyph having the same advance width. Any replacement mono must be metric-stable, or the pond tears.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Grid Rule",
+        "body": "Everything in the pond writes brightness into one field of character cells, drawn once through one density ramp. A new element in the water is a new source writing into that field, not a second renderer on top of it.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Surfacing Rule",
+        "body": "Nothing floats over the pond. Things come up out of it: a picture resolves from its own characters, is tinted into the pond's colours, and dissolves at its edges into the water.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** put new things in the water: a stone, a rock, something surfacing, drawn into the one character field.",
+      "**Do** make every interactive element real HTML over the canvas (a link or a button) and keep the canvas `aria-hidden`.",
+      "**Do** resolve every colour through a `--t-*` slot, and check new pairings against the 4.5:1 and 3:1 floors in all three themes.",
+      "**Do** set labels, captions, numbers and controls in mono at label or caption size, in Drowned Grey.",
+      "**Do** keep motion slow and eased (the page change is 480ms `cubic-bezier(0.2, 0.7, 0.3, 1)`; a picture takes about 2.5s to surface), and stop it entirely under `prefers-reduced-motion` without hiding content.",
+      "**Do** design at 375px first. Nothing scrolls sideways, and tap targets stay at least 44px.",
+      "**Do** feather, dissolve or distort edges in the pond rather than cutting them square."
+    ],
+    "donts": [
+      "**Don't** add cards, boxes, rounded corners, drop shadows or filled buttons. The site's argument is that it has no furniture.",
+      "**Don't** build the template portfolio: hero, grid of project cards, skills bars, logo walls.",
+      "**Don't** use colour on anything that isn't alive or a link.",
+      "**Don't** add a second renderer or overlay that draws over the pond. Write into the field.",
+      "**Don't** hit-test the canvas for interaction.",
+      "**Don't** set body copy in mono, or use Caption size for anything a visitor must read.",
+      "**Don't** apply glossy effects (glass, glow, gradient text) broadly. They're an open experiment: try one in a specific place, on purpose, and judge it there."
+    ]
+  }
+}
