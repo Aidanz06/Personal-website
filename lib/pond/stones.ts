@@ -36,10 +36,15 @@ export type StoneDefinition = Omit<StoneSpec, 'depthVh'>
 
 /** Where the first stone sits. Below the fold, so the name gets the surface. */
 export const FIRST_STONE_VH = 0.95
-/** Depth between consecutive stones. Also the gap before the photographs. */
-export const STONE_STEP_VH = 0.7
+/**
+ * Depth between consecutive stones. Also the gap before the photographs.
+ *
+ * Was 0.7; tightened 20% so the navigation reads as one group you descend
+ * past rather than three separate screens.
+ */
+export const STONE_STEP_VH = 0.56
 /** Empty water below the last stone, so the navigation does not end abruptly. */
-export const STONE_TAIL_VH = 0.75
+export const STONE_TAIL_VH = 0.6
 
 /**
  * Ordered top to bottom. Tailor Studio comes first because it is the page

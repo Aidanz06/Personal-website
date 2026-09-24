@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { fontVariables } from './fonts'
+import { PageFlow } from '@/components/PageFlow'
 import { ThemeScript } from '@/components/ThemeScript'
 import { site } from '@/lib/site'
 import { DEFAULT_THEME } from '@/lib/themes'
@@ -28,7 +29,9 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body>{children}</body>
+      <body>
+        <PageFlow>{children}</PageFlow>
+      </body>
     </html>
   )
 }

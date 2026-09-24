@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { formatSettings, readExif } from './exif'
+import { formatSettings, readExif, trustedDate } from './exif'
 
 /**
  * Build a JPEG carrying exactly the EXIF this module reads.
@@ -136,19 +136,28 @@ describe('readExif', () => {
       .toEqual(nothing)
   })
 
-  it('reads every photograph actually in the repo', () => {
-    // Thirteen Lightroom exports off a Canon R7. The synthetic fixtures prove
-    // the parser; these prove it against what the pipeline really produces.
+  it('reads every photograph actually in the repo without producing nonsense', () => {
+    // The synthetic fixtures prove the parser; these prove it against what
+    // the real pipeline produces. Note what is NOT asserted: that every file
+    // has exposure data. Two of them are Lightroom exports with no camera
+    // EXIF at all, and an earlier version of this test demanded an aperture
+    // from them and failed.
     const dir = join(process.cwd(), 'public', 'photos')
     const files = readdirSync(dir).filter((file) => file.endsWith('.jpg'))
     expect(files.length).toBeGreaterThan(0)
+
+    let withExposure = 0
     for (const file of files) {
       const fields = readExif(readFileSync(join(dir, file)))
-      expect(fields.date, file).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-      expect(fields.fNumber, file).toBeGreaterThan(0)
-      expect(fields.exposureTime, file).toBeGreaterThan(0)
-      expect(fields.iso, file).toBeGreaterThan(0)
+      if (fields.date !== null) expect(fields.date, file).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      for (const value of [fields.fNumber, fields.exposureTime, fields.iso]) {
+        if (value !== null) expect(value, file).toBeGreaterThan(0)
+      }
+      if (formatSettings(fields) !== '') withExposure++
     }
+    // Most of them are real camera files; if that ever stops being true the
+    // parser has broken rather than the folder having changed.
+    expect(withExposure).toBeGreaterThan(files.length / 2)
   })
 })
 
@@ -173,5 +182,39 @@ describe('formatSettings', () => {
   it('omits what is missing instead of printing a gap', () => {
     expect(formatSettings({ ...base, fNumber: 4, iso: 100 })).toBe('f/4 · iso 100')
     expect(formatSettings(base)).toBe('')
+  })
+})
+
+describe('trustedDate', () => {
+  const base = { date: '2026-09-23', fNumber: null, exposureTime: null, iso: null }
+
+  it('returns the date when the file has exposure data behind it', () => {
+    expect(trustedDate({ ...base, fNumber: 8, exposureTime: 1 / 160, iso: 320 }))
+      .toBe('2026-09-23')
+  })
+
+  it('accepts any one of the three as evidence of a camera', () => {
+    expect(trustedDate({ ...base, iso: 100 })).toBe('2026-09-23')
+    expect(trustedDate({ ...base, fNumber: 2.8 })).toBe('2026-09-23')
+    expect(trustedDate({ ...base, exposureTime: 0.01 })).toBe('2026-09-23')
+  })
+
+  it('refuses a date from a file with no camera EXIF at all', () => {
+    // These are Lightroom exports whose DateTimeOriginal is the export date.
+    // Believing it invents a shoot date, and with it a phantom place to name.
+    expect(trustedDate(base)).toBeNull()
+  })
+
+  it('refuses rather than passing through a null date', () => {
+    expect(trustedDate({ ...base, date: null, iso: 100 })).toBeNull()
+  })
+
+  it('matches the two real files this rule exists for', () => {
+    const dir = join(process.cwd(), 'public', 'photos')
+    for (const file of ['website-14.jpg', 'website-19.jpg']) {
+      const fields = readExif(readFileSync(join(dir, file)))
+      expect(fields.date, file).not.toBeNull()
+      expect(trustedDate(fields), file).toBeNull()
+    }
   })
 })

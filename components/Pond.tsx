@@ -27,6 +27,7 @@ import {
   stepKoi,
   type Koi,
 } from '@/lib/pond/koi'
+import { drainSplashes } from '@/lib/pond/splash'
 import { placeStones, type StoneSpec } from '@/lib/pond/stones'
 import { pondPalette } from '@/lib/pond/theme'
 import {
@@ -259,11 +260,30 @@ export function Pond({
     let ripples: Ripple[] = []
 
     type LoadedPhoto = {
+      /** The still: a photograph, or a clip's poster frame. */
       image: HTMLImageElement
       /** The photograph, filtered to belong to the pond. See stylise(). */
       styled: HTMLCanvasElement | null
       grid: PhotoGrid
       aspect: number
+      /**
+       * A clip, if this rock holds one.
+       *
+       * Muted, looping and inline, which is the only combination a browser
+       * will start on its own. It is created but never played until the rock
+       * opens — twenty clips decoding in the background is a page that melts
+       * a laptop.
+       */
+      video: HTMLVideoElement | null
+      /**
+       * Scratch canvas for filtering a clip's current frame.
+       *
+       * A photograph is filtered once at load. A clip changes thirty times a
+       * second, so its duotone has to be redone every frame — into one reused
+       * canvas, because allocating a canvas per frame is how you find out
+       * what a garbage collector sounds like.
+       */
+      scratch: HTMLCanvasElement | null
     }
     /**
      * Sparse, indexed alongside the photo rocks. A photograph is only decoded
@@ -361,11 +381,30 @@ export function Pond({
 
       try {
         const pixels = samplerContext.getImageData(0, 0, cols, rows).data
+
+        // The ASCII stage is built from the still either way, so a rock holding
+        // a clip is drawable long before a single frame of video has arrived.
+        let video: HTMLVideoElement | null = null
+        if (spec.video) {
+          video = document.createElement('video')
+          video.src = spec.video
+          video.muted = true
+          video.loop = true
+          video.playsInline = true
+          video.preload = 'auto'
+          // Never audible, and never asked to be: a clip that wanted sound
+          // would simply refuse to autoplay.
+          video.volume = 0
+          video.load()
+        }
+
         loadedPhotos[index] = {
           image,
           styled: stylise(image),
           grid: { cols, rows, luminance: luminanceGrid(pixels, cols, rows) },
           aspect: image.naturalWidth / image.naturalHeight,
+          video,
+          scratch: null,
         }
         photoLoadState[index] = 'done'
       } catch {
@@ -390,18 +429,39 @@ export function Pond({
     function stylise(image: HTMLImageElement): HTMLCanvasElement | null {
       const maxWidth = 1400
       const scale = Math.min(1, maxWidth / Math.max(1, image.naturalWidth))
-      const w = Math.max(1, Math.round(image.naturalWidth * scale))
-      const h = Math.max(1, Math.round(image.naturalHeight * scale))
+      return styliseInto(
+        null,
+        image,
+        Math.max(1, Math.round(image.naturalWidth * scale)),
+        Math.max(1, Math.round(image.naturalHeight * scale)),
+      )
+    }
 
-      const out = document.createElement('canvas')
-      out.width = w
-      out.height = h
+    /**
+     * The filter itself, over anything the canvas can draw.
+     *
+     * `into` lets a clip reuse one canvas for every frame. Passing null
+     * allocates a fresh one, which is what a photograph wants: it is filtered
+     * exactly once and then kept.
+     */
+    function styliseInto(
+      into: HTMLCanvasElement | null,
+      source: CanvasImageSource,
+      w: number,
+      h: number,
+    ): HTMLCanvasElement | null {
+      const out = into ?? document.createElement('canvas')
+      if (out.width !== w) out.width = w
+      if (out.height !== h) out.height = h
       const c = out.getContext('2d')
       if (!c) return null
+      c.setTransform(1, 0, 0, 1, 0, 0)
+      c.globalAlpha = 1
+      c.globalCompositeOperation = 'source-over'
 
       // Desaturate and firm up the contrast first.
       c.filter = 'grayscale(1) contrast(1.14) brightness(1.02)'
-      c.drawImage(image, 0, 0, w, h)
+      c.drawImage(source, 0, 0, w, h)
       c.filter = 'none'
 
       // Duotone, in the pond's own two colours.
@@ -547,6 +607,19 @@ export function Pond({
           })
         }
       }
+      // A page change sends a wave across. The delays are in the future, and
+      // rippleContribution() returns nothing for a ripple that has not
+      // started, so the row arrives as a wave travelling rather than a line
+      // appearing.
+      for (const point of drainSplashes()) {
+        ripples.push({
+          x: width * point.xFraction,
+          y: worldY + height * point.yFraction,
+          startedAt: seconds + point.delay,
+          strength: point.strength,
+        })
+      }
+
       ripples = ripples.filter((r) => !isRippleExpired(r, seconds, DEFAULT_RIPPLE_SETTINGS))
 
       // --- water + ripples into the field ---
@@ -673,6 +746,26 @@ export function Pond({
       // a picture surfacing out of the water, not a hover state, and the
       // ASCII stage needs time to be seen before the photograph takes over.
       photoReveal += (targetReveal - photoReveal) * (1 - Math.exp(-1.45 * dt))
+      // A clip plays only while its own rock is open, and never under
+      // reduced motion — an autoplaying loop is exactly the kind of movement
+      // that preference is asking us not to start.
+      for (let i = 0; i < loadedPhotos.length; i++) {
+        const video = loadedPhotos[i]?.video
+        if (!video) continue
+        const shouldPlay =
+          i === revealingIndex && photoReveal > 0.2 && !reducedMotionQuery.matches
+        if (shouldPlay) {
+          // play() rejects if the browser declines; it is muted and inline so
+          // it should not, and if it does the poster frame stays up.
+          if (video.paused) void video.play().catch(() => {})
+        } else if (!video.paused) {
+          video.pause()
+          // Back to the first frame, so a rock always opens on the start of
+          // the loop rather than wherever it was abandoned.
+          video.currentTime = 0
+        }
+      }
+
       if (!opening && photoReveal < 0.01) revealingIndex = null
       if (revealingIndex === null && reportedPhoto !== null) {
         reportedPhoto = null
@@ -762,7 +855,21 @@ export function Pond({
       // to be able to actually see the photograph.
       if (photoDraw) {
         const { photo, rect, opacity } = photoDraw
-        const source = photo.styled ?? photo.image
+        let source: CanvasImageSource = photo.styled ?? photo.image
+
+        // A clip is filtered frame by frame, into the one scratch canvas it
+        // keeps. The ASCII stage behind it stays built from the poster: the
+        // characters only show while the picture is opening, and re-reading
+        // the pixels of every frame to rebuild them would cost a getImageData
+        // per frame to animate something nobody looks at for longer than a
+        // second.
+        const video = photo.video
+        if (video && video.readyState >= 2 && video.videoWidth > 0) {
+          const w = Math.min(720, video.videoWidth)
+          const h = Math.max(1, Math.round(w * (video.videoHeight / video.videoWidth)))
+          photo.scratch = styliseInto(photo.scratch, video, w, h)
+          if (photo.scratch) source = photo.scratch
+        }
         context!.save()
         context!.globalAlpha = opacity
         context!.drawImage(
@@ -808,6 +915,10 @@ export function Pond({
     function detach(): void {
       unsubscribe?.()
       unsubscribe = null
+      // Nothing is being drawn any more, so nothing should be decoding.
+      for (const photo of loadedPhotos) {
+        if (photo?.video && !photo.video.paused) photo.video.pause()
+      }
     }
 
     /**

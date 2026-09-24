@@ -3,52 +3,57 @@ import { Slideshow } from '@/components/Slideshow'
 export const metadata = {
   title: 'tailor studio',
   description:
-    'tailor studio — a desktop app that drafts my grailed listings, so a listing takes a few minutes instead of twenty.',
+    'tailor studio — a desktop app that drafts, prices and fills in grailed listings, taking a listing from twenty minutes to a few.',
 }
 
 {/* DRAFT — aidan to rewrite */}
 
 # tailor studio
 
-## what it is
-
-a desktop app that turns a folder of photos from a clothing shoot into
-finished grailed listings. it groups, writes, prices and fills in the form;
-i review and publish.
+a desktop app that turns a folder of clothing photos into finished grailed
+listings: grouped, written, priced against sold comparables, typed into the
+sell form. i review and publish every one.
 
 <Slideshow />
 
-## why
+## problem
 
-i sell clothing on grailed. every listing cost me fifteen to twenty minutes:
+fifteen to twenty minutes an item, all of it manual:
 
-- sort the shoot into piles, one per item
-- write another description in the same shape as the last
-- dig through sold listings to work out what to ask
-- type all of it into the form, field by field
+- sorting a batch shoot into per-item groups
+- writing a title and description from scratch
+- pricing against recent sold listings
+- filling the form, field by field
 
-## how it works
+## approach
 
-- **import** — groups the photos by item, and reads the garment, colour and
-  condition off them
-- **draft** — a title, a description, and a price that starts from pieces
-  that actually sold
-- **review** — mine. i fix whatever it wasn't sure about
-- **fill** — it types the draft into grailed's sell form
-- **publish** — mine, always
+five stages, two of them mine:
 
-it's a form-filling assistant, not an auto-poster. i don't want something
-posting under my name while i'm not looking.
+- **import** — groups the shoot by garment; reads brand, category, size,
+  condition and colour off the photos
+- **draft** — title, description, and a price range from sold comparables,
+  with a confidence rating
+- **review** — mine: fix uncertain groups, confirm the key fields
+- **fill** — types the draft into the sell form in one click
+- **publish** — mine: nothing is submitted without me
 
-## what came of it
+## decisions
 
-- a listing takes a few minutes instead of fifteen to twenty
-- me, plus a few close friends and family
-- no revenue, and not trying for any — it's a personal tool
+- **a form-fill assistant, not an auto-poster** — it never signs in and never
+  submits; operating the account stays with me
+- **ambiguity is flagged, not guessed** — anything the vision step is unsure
+  of goes to review, not into a listing
+- **no authenticity claims** — brand is reported as probable, never confirmed
+- **accuracy tests gate the ai steps**, and a model sweep picked the cheapest
+  configuration that still cleared them
 
-## how i built it
+## result
 
-i built it with claude. i found the problem, scoped it, set the bar for good
-enough, and steered the build; claude wrote most of the code. my own
-attention went to the accuracy tests for the ai steps, and a sweep across
-model configurations to find the cheapest setup that still cleared them.
+- a few minutes an item instead of fifteen to twenty
+- used on every shoot, and by a few close friends and family
+- a personal tool: no revenue, and not built for any
+
+## authorship
+
+built with claude. i found the problem, scoped it, set the accuracy bar and
+steered the build; claude wrote most of the code.

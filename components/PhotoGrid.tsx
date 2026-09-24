@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { LoopingClip } from '@/components/LoopingClip'
 import { isCaptionEmpty } from '@/lib/captions'
 import { listPhotos } from '@/lib/photos'
 
@@ -34,13 +35,24 @@ export function PhotoGrid() {
         <li key={photo.file}>
           <figure className="m-0">
             <div className="relative aspect-square overflow-hidden">
-              <Image
-                src={photo.original}
-                alt={photo.caption.alt}
-                fill
-                sizes="(max-width: 640px) 50vw, 200px"
-                className="object-cover"
-              />
+              {photo.video ? (
+                <LoopingClip
+                  src={photo.video}
+                  // The poster is the file the optimiser has already resized;
+                  // a clip tile should not pull a full-size still.
+                  poster={photo.src}
+                  alt={photo.caption.alt}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <Image
+                  src={photo.original}
+                  alt={photo.caption.alt}
+                  fill
+                  sizes="(max-width: 640px) 50vw, 200px"
+                  className="object-cover"
+                />
+              )}
             </div>
             {!isCaptionEmpty(photo.caption) && (
               <figcaption className="mt-0.5">

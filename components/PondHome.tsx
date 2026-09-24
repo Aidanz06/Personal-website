@@ -134,7 +134,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
         {photoStones.length > 0 && (
           <p
             className="column absolute inset-x-0 font-mono text-small text-muted"
-            style={{ top: vh(photoStones[0]!.depthVh - 0.42) }}
+            style={{ top: vh(photoStones[0]!.depthVh - 0.25) }}
           >
             photographs. rest on a stone to bring one up.
           </p>

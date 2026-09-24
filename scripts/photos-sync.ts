@@ -17,23 +17,36 @@
  */
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
-import { formatSettings, readExif } from '../lib/exif.ts'
+import { formatSettings, readExif, trustedDate } from '../lib/exif.ts'
 import { mergeCaptions, type ScannedPhoto } from '../lib/photosSync.ts'
 import { loadCaptions } from '../lib/captionsFile.ts'
 
 const PHOTOS_DIR = join(process.cwd(), 'public', 'photos')
 const CAPTIONS_PATH = join(PHOTOS_DIR, 'captions.json')
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif'])
+/**
+ * Clips are scanned too. They carry no EXIF, so their date and settings come
+ * back blank and land on the checklist for Aidan to fill in — which is
+ * honest, and better than the alternative: an mp4's container timestamp is
+ * rewritten by any transcode, so reading one would confidently record the
+ * date the file was last processed as the day the clip was shot.
+ */
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.mov'])
 
 function scan(): ScannedPhoto[] {
   return readdirSync(PHOTOS_DIR)
-    .filter((file) => IMAGE_EXTENSIONS.has(extname(file).toLowerCase()))
+    .filter((file) => {
+      const extension = extname(file).toLowerCase()
+      return IMAGE_EXTENSIONS.has(extension) || VIDEO_EXTENSIONS.has(extension)
+    })
     .sort()
     .map((file) => {
       const fields = readExif(readFileSync(join(PHOTOS_DIR, file)))
       return {
         file,
-        date: fields.date ?? '',
+        // trustedDate, not fields.date: a date with no exposure data behind
+        // it is an export date wearing a shoot date's clothes.
+        date: trustedDate(fields) ?? '',
         settings: formatSettings(fields),
       }
     })
@@ -63,10 +76,15 @@ if (result.missingPlace.length === 0 && result.missingAlt.length === 0) {
 }
 list('shoot dates with no place', result.missingPlace)
 list('photographs with no description (alt)', result.missingAlt)
+list(
+  'no usable date — clips carry none, and an export with no camera EXIF has\n  only the date it was exported. Type the shoot date in',
+  result.missingDate,
+)
 list('photographs with no personal line (optional)', result.missingLine)
 list('entries whose file is gone — kept, delete by hand if you meant it', result.orphans)
 
-const blocking = result.missingPlace.length + result.missingAlt.length
+const blocking =
+  result.missingPlace.length + result.missingAlt.length + result.missingDate.length
 console.log(
   `\n${blocking} field${blocking === 1 ? '' : 's'} still blank that should not ship blank.`,
 )

@@ -6,7 +6,7 @@ import {
   placePhotoStones,
   pondDepthVh,
 } from './photoStones'
-import { HOME_STONES, POND_DEPTH_VH } from './stones'
+import { HOME_STONES, POND_DEPTH_VH, placeStones } from './stones'
 
 const photos = Array.from({ length: 8 }, (_, i) => ({
   src: `/_next/image?url=%2Fphotos%2Fp${i}.jpg&w=1200&q=75`,
@@ -142,5 +142,52 @@ describe('pondDepthVh', () => {
       expect(depth).toBeGreaterThanOrEqual(previous)
       previous = depth
     }
+  })
+})
+
+describe('clips', () => {
+  it('carries a clip through to the rock, and leaves stills without one', () => {
+    const [clip, still] = placePhotoStones([
+      { src: '/p/posters/a.jpg', original: '/photos/a.mp4', video: '/photos/a.mp4' },
+      { src: '/p/b.jpg', original: '/photos/b.jpg' },
+    ])
+    expect(clip!.video).toBe('/photos/a.mp4')
+    expect(still!.video).toBeUndefined()
+  })
+
+  it('places a clip exactly like a photograph', () => {
+    // A clip is a rock with a moving picture on it, not a different kind of
+    // thing, so nothing about its geometry may differ.
+    const withVideo = placePhotoStones([{ src: 's', original: '/photos/a.jpg', video: '/v.mp4' }])
+    const without = placePhotoStones([{ src: 's', original: '/photos/a.jpg' }])
+    expect({ ...withVideo[0], video: undefined }).toEqual({ ...without[0], video: undefined })
+  })
+})
+
+describe('spacing', () => {
+  const media = Array.from({ length: 25 }, (_, i) => ({
+    src: `s${i}`,
+    original: `/photos/p${i}.jpg`,
+  }))
+
+  it('never overlaps two rocks, at any viewport', () => {
+    // The gallery was tightened by a third. Rocks that touch read as one
+    // blob, and the spacing is now close enough that this needs guarding
+    // rather than eyeballing.
+    for (const [width, height] of [[375, 667], [768, 1024], [1280, 860], [1440, 900]] as const) {
+      const placed = placeStones(placePhotoStones(media), width, height)
+      for (let i = 0; i < placed.length; i++) {
+        for (let j = i + 1; j < placed.length; j++) {
+          const a = placed[i]!
+          const b = placed[j]!
+          const gap = Math.hypot(a.x - b.x, a.worldY - b.worldY) - (a.radius + b.radius)
+          expect(gap, `${width}x${height} rocks ${i} and ${j}`).toBeGreaterThan(0)
+        }
+      }
+    }
+  })
+
+  it('keeps twenty-five pieces of media inside eight screens', () => {
+    expect(pondDepthVh(25, POND_DEPTH_VH)).toBeLessThan(8)
   })
 })

@@ -212,3 +212,24 @@ export function formatSettings(fields: ExifFields): string {
 
   return parts.join(' · ')
 }
+
+/**
+ * The date, but only when the file gives a reason to believe it.
+ *
+ * A date with no exposure data behind it did not come from a camera. Two of
+ * the photographs in this folder are Lightroom exports carrying no make, no
+ * model and no exposure block — and a `DateTimeOriginal` of the day they were
+ * exported. Trusting that produces a shoot date that is really an export
+ * date, and since places are keyed by shoot date it also invents a whole
+ * phantom day to name.
+ *
+ * So: no aperture, no shutter and no ISO means the date is unknown, and
+ * unknown lands on the sync checklist for Aidan to type in. The cost of being
+ * wrong here is one date to fill in by hand. The cost of being wrong the
+ * other way is a caption that states something false.
+ */
+export function trustedDate(fields: ExifFields): string | null {
+  const hasExposure =
+    (fields.fNumber ?? 0) > 0 || (fields.exposureTime ?? 0) > 0 || (fields.iso ?? 0) > 0
+  return hasExposure ? fields.date : null
+}

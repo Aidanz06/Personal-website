@@ -1,4 +1,5 @@
 import { BackLink } from '@/components/BackLink'
+import { PondBackdrop } from '@/components/PondBackdrop'
 import { ThemeMenu } from '@/components/ThemeMenu'
 
 /**
@@ -15,12 +16,15 @@ export default function PageLayout({
   children: React.ReactNode
 }) {
   return (
-    <main className="column py-3">
-      <div className="flex items-baseline gap-1">
-        <BackLink />
-        <ThemeMenu />
-      </div>
-      <article className="mt-4">{children}</article>
-    </main>
+    <>
+      <PondBackdrop />
+      <main className="column py-3">
+        <div className="flex items-baseline gap-1">
+          <BackLink />
+          <ThemeMenu />
+        </div>
+        <article className="mt-4">{children}</article>
+      </main>
+    </>
   )
 }

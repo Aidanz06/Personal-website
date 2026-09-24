@@ -1886,3 +1886,147 @@ stages say "mine", which is the whole argument of the project in the shape of
 a list.
 
 Still marked `{/* DRAFT — aidan to rewrite */}`.
+
+## step 7 — clips, water on every page, and a tighter pond
+
+Five things arrived together: the deck's tone, video in the pond, the pond
+behind the inner pages, a page-change animation, and a spacing pass.
+
+### first, something that went wrong
+
+The three clips arrived as 1080p60 phone files. The transcode pipeline wrote
+them to a scratch folder and then **copied the results back over the
+originals**, which destroyed 27MB of source footage and, with it, the only
+record of when each clip was shot. There is no recovering either from what is
+in the repo.
+
+`scripts/video-to-loop.swift` now refuses outright to write to its own input.
+That is a two-line guard that should have been there first.
+
+### clips
+
+A clip is a photo rock that moves. Not a new kind of thing — the same rock,
+the same ASCII stage, the same duotone, the same caption; it just keeps
+going once it has opened.
+
+**Transcoding.** `scripts/video-to-loop.swift`, AVFoundation, nothing
+installed. Audio dropped, scaled to fit 540x960, 30fps, 900kbps, plus a poster
+frame.
+
+| | before | after |
+|---|---|---|
+| three clips | 27.6MB, 1080x1920, 60fps, ~13Mbps, with audio | **1.9MB**, 540x960, 30fps, 900kbps, silent |
+
+The audio is dropped by building a composition containing only the video
+track, so it is gone by construction rather than by a flag someone can
+forget. It would never play — nothing autoplays with sound — and it is
+whatever was being said around the camera, which is nobody's business.
+
+This uses `AVAssetWriter` rather than the two lines of `AVAssetExportSession`
+it looks like it wants to be, because **the export presets have no bitrate
+control**. The preset route produced 540x960 at 4.8Mbps: the right dimensions
+and still 5.7MB for ten seconds.
+
+**In the pond.** A photograph is duotoned once at load. A clip changes thirty
+times a second, so its filter runs every frame — into one scratch canvas it
+keeps, because allocating a canvas per frame is how you find out what a
+garbage collector sounds like.
+
+What does *not* run per frame is the ASCII stage: those characters are built
+from the poster frame and stay there. They are only visible while the picture
+is opening, and animating them would cost a `getImageData` per frame to
+animate something nobody looks at for longer than a second.
+
+A clip plays only while its own rock is open, is rewound when it closes so it
+always opens on the start of the loop, pauses when the pond scrolls out of
+view, and never plays at all under reduced motion.
+
+**On /about**, `<LoopingClip>` behaves like an animated GIF: silent, looping,
+no controls. `preload="none"` plus a poster means nothing downloads until the
+tile is on screen, an IntersectionObserver starts and stops it, and reduced
+motion leaves the poster frame up. That last point is why it is a component
+and not an `autoPlay` attribute — the attribute cannot ask.
+
+### a date that was really an export date
+
+Two of the new images are Lightroom exports with no make, no model and no
+exposure block, carrying a `DateTimeOriginal` of the day they were exported.
+The sync believed it, recorded it as a shoot date, and invented a phantom day
+in `places` to go and name.
+
+`trustedDate()` now returns a date only when there is exposure data behind
+it. No aperture, no shutter and no ISO means it did not come from a camera,
+so the date is unknown — and unknown lands on the checklist. The cost of
+being wrong this way is one date to type in; the cost of being wrong the
+other way is a caption stating something false.
+
+### water on the inner pages, and a wave between them
+
+The pond is now behind /about and /tailor-studio too, which is what makes
+them feel like part of the same place rather than two documents sharing a
+palette.
+
+**Dimmer than the homepage, deliberately.** The homepage has a name and two
+words of navigation on it. These pages are several hundred words of body
+text, and a koi at full brightness passing behind a paragraph makes that
+paragraph hard to read. Water base, amplitude and koi brightness are all
+turned down in `PondBackdrop`.
+
+**The page change is a wave.** The water is the only thing that survives a
+navigation, so it is the only thing that can connect two pages. A row of
+ripples is queued left to right, each started a beat after the last, so it
+travels across rather than appearing all at once — and the incoming content
+rises and fades in over 480ms behind it.
+
+The obvious tool was React's `<ViewTransition>`, which would also animate the
+*outgoing* page. It wants a wrapper inside every `page.tsx`, and two of these
+pages are MDX files whose default export is the prose itself. Keeping the
+transition in a wrapper in the root layout keeps the content files free of it,
+at the cost of an exit animation.
+
+Queuing is a module-level array for the same reason the pointer position is:
+the canvas owns a frame loop that never re-renders, and the navigation
+happens somewhere else entirely. Two fast navigations replace the queue
+rather than appending to it, so clicking through three pages sends one wave
+instead of a storm.
+
+### tighter
+
+| | before | after |
+|---|---|---|
+| between navigation stones | 0.70vh | **0.56vh** (−20%) |
+| between gallery rows | 0.58vh | **0.383vh** (−34%) |
+| pair offset | 0.16vh | 0.106vh |
+| water below each group | 0.75vh | 0.60vh |
+| pond depth, 25 items | ~9.9vh | **7.37vh** |
+
+A test now asserts no two rocks overlap at 375, 768, 1280 or 1440 wide.
+Closest approach with 25 items is 121px on a phone and 249px on a laptop, so
+there is real room left — but at a third tighter this is worth guarding
+rather than eyeballing.
+
+One collision the numbers did cause: the "photographs" note sat 0.42vh above
+the first rock, which after tightening put it on top of the *about* stone's
+label. It is 0.25vh now.
+
+### copy
+
+**Tailor studio is a case now, not a story.** Problem, approach, decisions,
+result, authorship. The five stages match the deck exactly, and the personal
+asides are gone — what is left is what the project actually did. It is
+shorter than the story version it replaces and carries a decisions section
+the story did not have. Still `{/* DRAFT */}`, and still honest about Claude
+having written most of the code.
+
+**/about** opens with Aidan's own line, and the personal-photo slot is gone.
+The homepage line under the name drops the "hi, i'm aidan" — the `<h1>`
+immediately above it already says the name — and keeps only what is new.
+
+### cost
+
+`public/photos` is 45MB, almost all of it 22 full-size Lightroom JPEGs at
+1–3MB each. Delivered bytes are far lower: every still goes through Next's
+optimiser, and clips are 1.9MB for all three. If the repo size becomes a
+problem, the originals are the thing to move out, not the clips.
+
+347 tests.

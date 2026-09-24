@@ -79,6 +79,30 @@ describe('mergeCaptions', () => {
     expect(result.missingAlt).toHaveLength(3)
     expect(result.missingPlace).toEqual(['2025-05-22', '2025-05-25'])
     expect(result.missingLine).toHaveLength(3)
+    expect(result.missingDate).toEqual([])
+  })
+
+  it('reports a clip as needing a date, since it carries none', () => {
+    // An mp4's container timestamp is rewritten by any transcode, so reading
+    // one would record the day the file was last processed as the day the
+    // clip was shot. Blank and on the checklist is the honest answer.
+    const result = mergeCaptions({}, [
+      ...scan,
+      { file: 'website-16.mp4', date: '', settings: '' },
+    ])
+    expect(result.missingDate).toEqual(['website-16.mp4'])
+    // And no blank key creeps into places off the back of it.
+    expect(Object.keys(result.captions.places!)).not.toContain('')
+  })
+
+  it('stops reporting a clip once its date is typed in', () => {
+    const typed = mergeCaptions(
+      { photos: { 'clip.mp4': { alt: 'a', line: '', date: '2025-08-03', settings: '' } } },
+      [{ file: 'clip.mp4', date: '', settings: '' }],
+    )
+    expect(typed.missingDate).toEqual([])
+    expect(typed.captions.photos!['clip.mp4']!.date).toBe('2025-08-03')
+    expect(typed.captions.places!['2025-08-03']).toBe('')
   })
 
   it('stops reporting a field once it is filled in', () => {

@@ -10,8 +10,9 @@ export const site = {
   name: 'aidan zheng',
   // No domain purchased yet; metadataBase and OG images land in v1.
   url: 'https://example.com',
-  identity:
-    '[a line about me — aidan to write, e.g. school + city + one real thing]',
+  // The <h1> directly above this already says the name, so the line under it
+  // drops the "hi, i'm aidan" that opens /about and keeps only what is new.
+  identity: 'a student at northeastern',
   description:
     'aidan zheng — a personal site: what i make, what i shoot, what i listen to.',
 } as const

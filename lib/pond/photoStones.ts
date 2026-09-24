@@ -10,7 +10,10 @@
 import { DEEPEST_STONE_VH, STONE_STEP_VH } from './stones'
 
 export type PhotoStoneSpec = {
+  /** The still the ASCII stage is built from. A clip's poster frame. */
   src: string
+  /** For a clip, the file to loop once the rock opens. */
+  video?: string
   /** Real alt text for the button that sits over the rock. */
   alt: string
   xFraction: number
@@ -28,17 +31,23 @@ export type PhotoStoneSpec = {
  * collide.
  */
 export const PHOTOS_START_VH = DEEPEST_STONE_VH + STONE_STEP_VH
-/** Vertical gap between consecutive ROWS of photo rocks. */
-export const PHOTO_STEP_VH = 0.58
+/**
+ * Vertical gap between consecutive ROWS of photo rocks.
+ *
+ * Was 0.58, tightened by a third. Twenty-five pieces of media at the old
+ * spacing is a very long descent, and the gallery reads better as a drift of
+ * rocks close enough to take in together than as one rock per screen.
+ */
+export const PHOTO_STEP_VH = 0.383
 /**
  * How much lower the second rock of a pair sits than the first.
  *
  * Two rocks at identical depth read as a grid, which is the gallery page this
  * replaced. A small offset keeps them scattered.
  */
-export const PHOTO_PAIR_OFFSET_VH = 0.16
+export const PHOTO_PAIR_OFFSET_VH = 0.106
 /** Empty water below the last rock, so the pond does not end abruptly. */
-export const PHOTOS_TAIL_VH = 0.75
+export const PHOTOS_TAIL_VH = 0.6
 /** Rocks per row. */
 export const PHOTOS_PER_ROW = 2
 
@@ -55,7 +64,7 @@ export const PHOTOS_PER_ROW = 2
  * crowded as you descend past it.
  */
 export function placePhotoStones(
-  sources: readonly { src: string; original: string; alt?: string }[],
+  sources: readonly { src: string; original: string; alt?: string; video?: string }[],
 ): PhotoStoneSpec[] {
   return sources.map((photo, index) => {
     const row = Math.floor(index / PHOTOS_PER_ROW)
@@ -67,6 +76,7 @@ export function placePhotoStones(
 
     return {
       src: photo.src,
+      ...(photo.video ? { video: photo.video } : {}),
       // The real description when captions.json has one; the same bracketed
       // placeholder as before when it does not.
       alt:

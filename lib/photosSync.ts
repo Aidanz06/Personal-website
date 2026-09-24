@@ -29,6 +29,13 @@ export type SyncResult = {
   missingPlace: string[]
   /** Photographs with no personal line. Optional — not every picture needs one. */
   missingLine: string[]
+  /**
+   * Media with no date at all.
+   *
+   * Only clips reach this list: a photograph's date comes from its EXIF. A
+   * blank date also means no place, because place is keyed by shoot date.
+   */
+  missingDate: string[]
   /** Entries whose file is no longer in the folder. Kept, never deleted. */
   orphans: string[]
 }
@@ -77,9 +84,11 @@ export function mergeCaptions(
 
   const missingAlt: string[] = []
   const missingLine: string[] = []
+  const missingDate: string[] = []
   for (const [file, entry] of Object.entries(photos)) {
     if (!(entry.alt ?? '').trim()) missingAlt.push(file)
     if (!(entry.line ?? '').trim()) missingLine.push(file)
+    if (!(entry.date ?? '').trim()) missingDate.push(file)
   }
 
   const missingPlace = Object.entries(places)
@@ -93,6 +102,7 @@ export function mergeCaptions(
     missingAlt: missingAlt.sort(),
     missingPlace: missingPlace.sort(),
     missingLine: missingLine.sort(),
+    missingDate: missingDate.sort(),
     orphans: orphans.sort(),
   }
 }
