@@ -8,8 +8,9 @@
 
 export const site = {
   name: 'aidan zheng',
-  // No domain purchased yet; metadataBase and OG images land in v1.
-  url: 'https://example.com',
+  // The live domain. The apex, aidanzheng.me, 308-redirects here, so www is
+  // the address canonical links, the sitemap and link previews use.
+  url: 'https://www.aidanzheng.me',
   // The homepage opens as one sentence across two lines: the greeting is the
   // <h1>, so it still carries the name, and the identity finishes it.
   // A non-breaking space inside the name: on a phone the line has to wrap,

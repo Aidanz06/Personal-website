@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ListeningPond } from '@/components/ListeningPond'
 import { getListeningData } from '@/lib/listening/data'
+import { pageOpenGraph } from '@/lib/siteMeta'
 
 /**
  * /listening — the month's top five tracks, as rocks in a pond.
@@ -26,6 +27,12 @@ export const revalidate = 21600
 export const metadata: Metadata = {
   title: 'listening',
   description: 'what aidan zheng has on repeat: the top five tracks of the month.',
+  alternates: { canonical: '/listening' },
+  openGraph: pageOpenGraph(
+    'listening',
+    'what aidan zheng has on repeat: the top five tracks of the month.',
+    '/listening',
+  ),
 }
 
 export default async function ListeningPage() {

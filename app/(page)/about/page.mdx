@@ -1,9 +1,16 @@
 import { PhotoGrid } from '@/components/PhotoGrid'
+import { pageOpenGraph } from '@/lib/siteMeta'
 
 export const metadata = {
   title: 'about',
   description:
     'about aidan zheng — photography, the things he builds, and what he is into.',
+  alternates: { canonical: '/about' },
+  openGraph: pageOpenGraph(
+    'about',
+    'about aidan zheng — photography, the things he builds, and what he is into.',
+    '/about',
+  ),
 }
 
 # about

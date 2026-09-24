@@ -56,6 +56,8 @@ it, and the site is built so that everything is also real, accessible HTML.
   every six hours.
 - Deployed on Vercel from the GitHub repo `Aidanz06/Personal-website`;
   pushes to `main` deploy.
+- Live at `https://www.aidanzheng.me`. The apex redirects to www, so www is
+  the address canonical links, the sitemap and link previews use.
 
 ## Capabilities and Constraints
 
@@ -72,9 +74,7 @@ it, and the site is built so that everything is also real, accessible HTML.
   - the all-lowercase voice: current practice, not yet decided as a rule;
   - the "no pitch" stance (no résumé, co-op, GPA or hire-me framing):
     current, but may change;
-  - naming camera, lens or audio gear: currently never done, not a rule;
-  - the domain: not bought yet (`aidanzheng.me` was available on
-    2026-09-24); `site.url` is still a placeholder.
+  - naming camera, lens or audio gear: currently never done, not a rule.
 
 ## Brand Commitments
 

@@ -1,9 +1,16 @@
 import { Slideshow } from '@/components/Slideshow'
+import { pageOpenGraph } from '@/lib/siteMeta'
 
 export const metadata = {
   title: 'tailor studio',
   description:
     'tailor studio — a desktop app that drafts, prices and fills in grailed listings, taking a listing from twenty minutes to a few.',
+  alternates: { canonical: '/tailor-studio' },
+  openGraph: pageOpenGraph(
+    'tailor studio',
+    'tailor studio — a desktop app that drafts, prices and fills in grailed listings, taking a listing from twenty minutes to a few.',
+    '/tailor-studio',
+  ),
 }
 
 # tailor studio

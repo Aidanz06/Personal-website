@@ -3,6 +3,7 @@ import { fontVariables } from './fonts'
 import { PageFlow } from '@/components/PageFlow'
 import { ThemeScript } from '@/components/ThemeScript'
 import { site } from '@/lib/site'
+import { pageOpenGraph } from '@/lib/siteMeta'
 import { DEFAULT_THEME } from '@/lib/themes'
 import './globals.css'
 
@@ -15,6 +16,12 @@ export const metadata: Metadata = {
     template: `%s — ${site.name}`,
   },
   description: site.description,
+  // Makes the preview image and each page's canonical absolute. Canonicals
+  // are set per page, never here: one here would be inherited by every page.
+  metadataBase: new URL(site.url),
+  // The fallback for a page without its own; see pageOpenGraph.
+  openGraph: pageOpenGraph(null, site.description, '/'),
+  twitter: { card: 'summary_large_image' },
 }
 
 /**

@@ -3505,3 +3505,37 @@ batching strategies. His source text gave "say, 40 photos" only as an
 example, so no fixture count or threshold appears on the page. Its lines
 about what makes the work impressive were left out: the page shows the
 work, and the reader can judge it.
+
+## the domain: www.aidanzheng.me
+
+The domain was already live. `aidanzheng.me` 308-redirects to
+`www.aidanzheng.me`, so www is the canonical address, and `site.url`
+(previously `https://example.com`) is set to it.
+
+- **`metadataBase`** in the root layout, so every URL in the metadata
+  resolves against the live domain.
+- **Canonicals per page** (`/`, `/tailor-studio`, `/about`, `/listening`),
+  never in the layout: a layout canonical would be inherited by every page
+  and tell search engines they're all the homepage.
+- **`app/sitemap.ts` and `app/robots.ts`**, both built from
+  `lib/siteMeta.ts`. /lab, the noindex workbench, is left out of the
+  sitemap and disallowed in robots.
+- **Link previews**: `pageOpenGraph()` gives each page its own title
+  ("tailor studio — aidan zheng") and description on top of the shared
+  site name, type and locale, plus `twitter:card = summary_large_image`.
+- **The preview image is a real screenshot**: the homepage at 1200×630 from
+  the production build in headless Chrome, koi theme, with the theme button
+  hidden for the capture. Of six frames, I used the one where the koi curves
+  under the name without crossing it (`public/preview.png`, 40 KB).
+
+**A bug found on the way, test first.** I began with the file convention
+(`app/opengraph-image.png`). The built HTML showed it only on `/`: a page
+that sets its own `openGraph` replaces the parent's wholesale, file-convention
+image included, so /about, /tailor-studio and /listening had no og:image. The
+image now lives in `public/` and `pageOpenGraph` carries it explicitly.
+`lib/siteMeta.test.ts` checks that every public route's preview has it and
+that the file really is 1200×630.
+
+Verified from the production build: each page has the right canonical,
+og:title and og:image; `/preview.png` serves; robots and the sitemap point
+at www; the last.fm key is not in `.next/static`. 626 tests.
