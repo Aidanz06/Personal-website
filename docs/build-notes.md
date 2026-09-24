@@ -2927,3 +2927,33 @@ The old line also explained how the rocks work. That explanation is gone,
 at Aidan's request: hovering or tapping a rock is the only way in now.
 
 548 tests.
+
+### smaller, and under the water
+
+Two follow-ups: make it look distorted by the water, and bring it back to
+about the size of the one-line note it replaced.
+
+**Drawing it in the pond's own canvas was the obvious route, and it was the
+wrong one.** It would have given real refraction: the same waves, the pointer's
+ripples and the koi's wake bending it. But the pond's grid cells are 7×12px,
+so the heading could not be smaller than about 420×60px. The request was for
+smaller.
+
+So it stays HTML, at 7px with the 0.62 line height: **252×22px**, the same
+height as the old note. It goes through an SVG filter: a turbulence pattern
+whose frequency slowly shifts over 11 seconds, feeding a displacement map
+that moves each part of the text by up to about 4px. The strokes bend and
+waver like lettering seen through moving water. It needs no script, so it
+works with JavaScript off, and it's one line on a phone too, so the stacked
+version is gone. Under reduced motion it gets the same distortion held still:
+it still looks like it's under water, it just doesn't move.
+
+Checked in Chrome, zoomed 3× across three frames 1.8s apart: legible, and
+the O, D and G visibly change shape. 150px of clear water to the first rock
+at 1280, 119px at 375.
+
+It doesn't respond to the pointer or the koi the way real refraction in the
+canvas would. That's the price of the size.
+
+548 tests.
+

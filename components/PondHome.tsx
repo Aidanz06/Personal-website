@@ -34,17 +34,16 @@ import { asciiBanner } from '@/lib/banner'
  * decimal places of a viewport height is well under a pixel, and it keeps the
  * inline styles readable when someone opens the inspector.
  */
-/** "photo gallery" as ASCII art: one line for wide screens, stacked for phones. */
-const GALLERY_TITLE_WIDE = asciiBanner('photo gallery').join('\n')
-const GALLERY_TITLE_STACKED = [...asciiBanner('photo'), '', ...asciiBanner('gallery')].join('\n')
 /**
- * How far above the first photo rock the title starts, in viewport heights.
+ * "photo gallery" as ASCII art, one line.
  *
- * Was 0.25 for a one-line note. The stacked title is eleven rows, about 95px
- * on a phone at a 0.62 line height; 0.28 leaves clear water above the first
- * rock at every size.
+ * At 7px with a 0.62 line height — about a glyph's width, so each pixel of
+ * the font is square and the strokes join — it is 22px tall and 250px wide:
+ * the size of the one-line note it replaced, and narrow enough for a phone.
  */
-const GALLERY_TITLE_LIFT_VH = 0.28
+const GALLERY_TITLE = asciiBanner('photo gallery').join('\n')
+/** How far above the first photo rock the title sits, in viewport heights. */
+const GALLERY_TITLE_LIFT_VH = 0.25
 
 function vh(value: number): string {
   return `${(value * 100).toFixed(4)}vh`
@@ -144,15 +143,15 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
         })}
 
         {/* --- the photo rocks --- */}
-        {/* The gallery's heading, drawn in characters like everything else
-            in the pond, in the theme's muted tone so it changes with it.
-            One line where there is room; stacked on a phone, where 60
-            characters will not fit at a size anyone can read.
+        {/* The gallery's heading: "photo gallery" as ASCII art, at about
+            the height of the one-line note it replaced, seen through the
+            water. An SVG filter displaces it by a slowly shifting turbulence
+            pattern, so the letters bend and waver the way anything under
+            moving water does. No script: it works with JavaScript off, and
+            costs nothing per frame on the page's side.
 
-            Line height 0.62, about a monospace glyph's width, so each
-            "pixel" of the font is square and the strokes join. At the usual
-            line height the letters came out twice as tall as they are wide
-            and fell apart into dots.
+            Under reduced motion it gets the same distortion held still — it
+            still looks like it is under water, it just does not move.
 
             A screen reader gets the words from the hidden <h2>. The art is
             hidden from it: read aloud, it is a minute of "number sign". */}
@@ -162,17 +161,33 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
             style={{ top: vh(photoStones[0]!.depthVh - GALLERY_TITLE_LIFT_VH) }}
           >
             <h2 className="sr-only">photo gallery</h2>
+            <svg aria-hidden="true" width="0" height="0" className="absolute">
+              <filter id="gallery-water" x="-4%" y="-40%" width="108%" height="180%">
+                <feTurbulence
+                  type="fractalNoise"
+                  baseFrequency="0.018 0.11"
+                  numOctaves="2"
+                  seed="7"
+                >
+                  <animate
+                    attributeName="baseFrequency"
+                    dur="11s"
+                    values="0.018 0.11;0.026 0.15;0.02 0.09;0.018 0.11"
+                    repeatCount="indefinite"
+                  />
+                </feTurbulence>
+                <feDisplacementMap in="SourceGraphic" scale="4.5" xChannelSelector="R" yChannelSelector="G" />
+              </filter>
+              <filter id="gallery-water-still" x="-4%" y="-40%" width="108%" height="180%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.018 0.11" numOctaves="2" seed="7" />
+                <feDisplacementMap in="SourceGraphic" scale="4.5" xChannelSelector="R" yChannelSelector="G" />
+              </filter>
+            </svg>
             <pre
               aria-hidden="true"
-              className="hidden font-mono text-[16px] leading-[0.62] text-muted sm:block"
+              className="w-max font-mono text-[7px] leading-[0.62] text-muted [filter:url(#gallery-water)] motion-reduce:[filter:url(#gallery-water-still)]"
             >
-              {GALLERY_TITLE_WIDE}
-            </pre>
-            <pre
-              aria-hidden="true"
-              className="font-mono text-[14px] leading-[0.62] text-muted sm:hidden"
-            >
-              {GALLERY_TITLE_STACKED}
+              {GALLERY_TITLE}
             </pre>
           </div>
         )}
