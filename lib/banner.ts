@@ -1,28 +1,63 @@
 /**
  * Words drawn as ASCII art, for headings that belong to the pond.
  *
- * A five-row bitmap font, written by hand, covering only the letters the site
- * uses. A figlet-style library would be a dependency for ten letters, and its
- * fonts are far wider than a phone: "photo gallery" in figlet's standard font
- * is about 90 characters. This one is 60 on a line, 33 stacked.
+ * A five-row bitmap font, written by hand. A figlet-style library would be a
+ * dependency, and its fonts are far wider than a phone: "photo gallery" in
+ * figlet's standard font is about 90 characters. This one is 60.
  *
  * Pure: it returns lines of text. What colour they are is the page's job, and
  * the page gives them a theme token, so they change with the theme like every
  * other character on the site.
  */
 
-/** Each letter as rows of '#' (ink) and '.' (blank). Widths vary by letter. */
+/**
+ * Each glyph as rows of '#' (ink) and '.' (blank). Widths vary by glyph, but
+ * every row of one glyph is the same width.
+ *
+ * The whole alphabet, the digits, and the two separators labels use. Place
+ * names are whatever Aidan writes, so the font can't stop at the letters of
+ * "photo gallery". Those ten (a e g h l o p r t y) are unchanged from the
+ * first version, so the heading keeps its shape.
+ */
 const FONT: Record<string, readonly string[]> = {
   a: ['.##.', '#..#', '####', '#..#', '#..#'],
+  b: ['###.', '#..#', '###.', '#..#', '###.'],
+  c: ['.###', '#...', '#...', '#...', '.###'],
+  d: ['###.', '#..#', '#..#', '#..#', '###.'],
   e: ['####', '#...', '###.', '#...', '####'],
+  f: ['####', '#...', '###.', '#...', '#...'],
   g: ['.###', '#...', '#.##', '#..#', '.###'],
   h: ['#..#', '#..#', '####', '#..#', '#..#'],
+  i: ['###', '.#.', '.#.', '.#.', '###'],
+  j: ['..##', '...#', '...#', '#..#', '.##.'],
+  k: ['#..#', '#.#.', '##..', '#.#.', '#..#'],
   l: ['#..', '#..', '#..', '#..', '###'],
+  m: ['#...#', '##.##', '#.#.#', '#...#', '#...#'],
+  n: ['#..#', '##.#', '#.##', '#..#', '#..#'],
   o: ['.##.', '#..#', '#..#', '#..#', '.##.'],
   p: ['###.', '#..#', '###.', '#...', '#...'],
+  q: ['.##.', '#..#', '#..#', '.###', '...#'],
   r: ['###.', '#..#', '###.', '#.#.', '#..#'],
+  s: ['.###', '#...', '.##.', '...#', '###.'],
   t: ['###', '.#.', '.#.', '.#.', '.#.'],
+  u: ['#..#', '#..#', '#..#', '#..#', '.##.'],
+  v: ['#...#', '#...#', '.#.#.', '.#.#.', '..#..'],
+  w: ['#...#', '#...#', '#.#.#', '##.##', '#...#'],
+  x: ['#...#', '.#.#.', '..#..', '.#.#.', '#...#'],
   y: ['#...#', '.#.#.', '..#..', '..#..', '..#..'],
+  z: ['####', '...#', '.##.', '#...', '####'],
+  '0': ['.##.', '#.##', '#..#', '##.#', '.##.'],
+  '1': ['.#.', '##.', '.#.', '.#.', '###'],
+  '2': ['###.', '...#', '.##.', '#...', '####'],
+  '3': ['###.', '...#', '.##.', '...#', '###.'],
+  '4': ['#..#', '#..#', '####', '...#', '...#'],
+  '5': ['####', '#...', '###.', '...#', '###.'],
+  '6': ['.##.', '#...', '###.', '#..#', '.##.'],
+  '7': ['####', '...#', '..#.', '.#..', '.#..'],
+  '8': ['.##.', '#..#', '.##.', '#..#', '.##.'],
+  '9': ['.##.', '#..#', '.###', '...#', '.##.'],
+  '·': ['.', '.', '#', '.', '.'],
+  '-': ['...', '...', '###', '...', '...'],
   ' ': ['..', '..', '..', '..', '..'],
 }
 

@@ -3066,3 +3066,31 @@ markers, the heading or stone labels, and no horizontal scroll. Today the
 The /about grid keeps filename order.
 
 577 tests.
+
+### the gallery's words, in the water
+
+Aidan didn't like the year markers and month labels as plain mono text. All
+text in the gallery should be ASCII art like the heading, and all of it
+wavier.
+
+- **The font grew to the whole alphabet**, plus digits, `·` and `-`, because
+  place names will be whatever Aidan writes. The ten original letters are
+  unchanged, and a test pins the heading's first row so it can't drift.
+  0 and o, and 1 and l, are tested as distinct.
+- **`components/WaterText.tsx`** is now the one way the gallery draws text:
+  a block `<span>` rather than a `<pre>`, so it can sit inside a rock's
+  `<button>`, and always `aria-hidden`. `WaterFilters` defines the filters
+  once per page.
+- **Wavier.** Horizontal turbulence frequency dropped from 0.018 to 0.011
+  (longer, rolling waves), the drift cycle went to 13s, and displacement
+  went from 4.5 to 8 for the heading and markers.
+- **Labels needed their own settings.** At 5px with the strong filter,
+  "june" tore into noise in the first look. Labels are now 6px with
+  displacement 3.5. "OCTOBER" and "clip" read well rolling. Short words
+  with narrow letters ("june") still break up at the strongest moments;
+  `water-small`'s scale is the number to calm if that bothers anyone.
+
+Checked at 375 and 1280: no overlaps and no horizontal scroll. Screen
+readers are unchanged, since the rocks' names still carry the words.
+
+581 tests.

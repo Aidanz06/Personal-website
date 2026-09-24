@@ -10,7 +10,7 @@ import { galleryGroup, orderGallery, rockLabel, rockName } from '@/lib/pond/gall
 import { isCaptionEmpty } from '@/lib/captions'
 import type { Photo } from '@/lib/photos'
 import { contacts, site } from '@/lib/site'
-import { asciiBanner } from '@/lib/banner'
+import { WaterFilters, WaterText } from '@/components/WaterText'
 import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
 
 /**
@@ -36,14 +36,6 @@ import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rock
  * decimal places of a viewport height is well under a pixel, and it keeps the
  * inline styles readable when someone opens the inspector.
  */
-/**
- * "photo gallery" as ASCII art, one line.
- *
- * At 7px with a 0.62 line height — about a glyph's width, so each pixel of
- * the font is square and the strokes join — it is 22px tall and 250px wide:
- * the size of the one-line note it replaced, and narrow enough for a phone.
- */
-const GALLERY_TITLE = asciiBanner('photo gallery').join('\n')
 /** How far above the first photo rock the title sits, in viewport heights. */
 const GALLERY_TITLE_LIFT_VH = 0.25
 
@@ -107,6 +99,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
       </div>
 
       <main className="relative" style={{ minHeight: vh(depthVh) }}>
+        <WaterFilters />
         {/* --- the surface --- */}
         <section className="column pt-[22vh]">
           <div className="flex items-baseline gap-1.5">
@@ -193,50 +186,22 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
             style={{ top: vh(photoStones[0]!.depthVh - GALLERY_TITLE_LIFT_VH) }}
           >
             <h2 className="sr-only">photo gallery</h2>
-            <svg aria-hidden="true" width="0" height="0" className="absolute">
-              <filter id="gallery-water" x="-4%" y="-40%" width="108%" height="180%">
-                <feTurbulence
-                  type="fractalNoise"
-                  baseFrequency="0.018 0.11"
-                  numOctaves="2"
-                  seed="7"
-                >
-                  <animate
-                    attributeName="baseFrequency"
-                    dur="11s"
-                    values="0.018 0.11;0.026 0.15;0.02 0.09;0.018 0.11"
-                    repeatCount="indefinite"
-                  />
-                </feTurbulence>
-                <feDisplacementMap in="SourceGraphic" scale="4.5" xChannelSelector="R" yChannelSelector="G" />
-              </filter>
-              <filter id="gallery-water-still" x="-4%" y="-40%" width="108%" height="180%">
-                <feTurbulence type="fractalNoise" baseFrequency="0.018 0.11" numOctaves="2" seed="7" />
-                <feDisplacementMap in="SourceGraphic" scale="4.5" xChannelSelector="R" yChannelSelector="G" />
-              </filter>
-            </svg>
-            <pre
-              aria-hidden="true"
-              className="w-max font-mono text-[7px] leading-[0.62] text-muted [filter:url(#gallery-water)] motion-reduce:[filter:url(#gallery-water-still)]"
-            >
-              {GALLERY_TITLE}
-            </pre>
+            <WaterText text="photo gallery" size="heading" />
           </div>
         )}
 
         {/* One year per group, in the water above its first rock. Hidden
             from screen readers: every rock's name already says its year. */}
         {groupMarkers.map((marker) => (
-          <p
+          <div
             key={marker.label}
-            aria-hidden="true"
-            className={`column absolute inset-x-0 font-mono text-small text-muted transition-opacity duration-500 ${
+            className={`column absolute inset-x-0 transition-opacity duration-500 ${
               photoOpen ? 'opacity-0' : 'opacity-100'
             }`}
             style={{ top: vh(marker.depthVh) }}
           >
-            {marker.label}
-          </p>
+            <WaterText text={marker.label} size="marker" />
+          </div>
         ))}
 
         {photoStones.map((spec, index) => {
@@ -278,14 +243,12 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
                   opens centred on the rock, and an orange number in the
                   middle of the picture is the first thing the eye lands on. */}
               {!(isActive && photoOpen) && rockLabel(gallery[index]!.caption, gallery[index]!.kind) && (
-                <span
-                  className={
-                    isActive
-                      ? 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-accent'
-                      : 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-muted'
-                  }
-                >
-                  {rockLabel(gallery[index]!.caption, gallery[index]!.kind)}
+                <span className="absolute top-full left-1/2 -translate-x-1/2 pt-1">
+                  <WaterText
+                    text={rockLabel(gallery[index]!.caption, gallery[index]!.kind)}
+                    size="label"
+                    className={isActive ? 'text-accent' : 'text-muted'}
+                  />
                 </span>
               )}
               {!isCaptionEmpty(gallery[index]!.caption) && (

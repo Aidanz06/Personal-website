@@ -35,6 +35,38 @@ describe('asciiBanner', () => {
     // A heading missing a letter is a typo that ships.
     expect(() => asciiBanner('photo!')).toThrow(/!/)
     expect(bannerSupports('photo gallery')).toBe(true)
-    expect(bannerSupports('zebra')).toBe(false)
+    expect(bannerSupports('snowman ☃')).toBe(false)
   })
 })
+
+describe('the full font', () => {
+  it('draws every letter and digit, and the separators labels use', () => {
+    // Place names are whatever Aidan writes, so the font cannot stop at the
+    // ten letters of "photo gallery".
+    expect(bannerSupports('abcdefghijklmnopqrstuvwxyz0123456789 ·-')).toBe(true)
+    expect(() => asciiBanner('kyoto · may 2025 - undated clip')).not.toThrow()
+  })
+
+  it('keeps every glyph rectangular, so letters line up row to row', () => {
+    for (const char of 'abcdefghijklmnopqrstuvwxyz0123456789 ·-') {
+      const glyph = asciiBanner(char, '#')
+      expect(glyph, char).toHaveLength(BANNER_ROWS)
+    }
+    // Untrimmed widths are equal per glyph; check through a two-glyph join,
+    // where a ragged glyph would push its neighbour out of line.
+    const rows = asciiBanner('mw')
+    expect(new Set(rows.map((r) => r.indexOf('#', 6))).size).toBeGreaterThan(0)
+  })
+
+  it('tells 0 and o apart, and 1 and l', () => {
+    expect(asciiBanner('0')).not.toEqual(asciiBanner('o'))
+    expect(asciiBanner('1')).not.toEqual(asciiBanner('l'))
+  })
+
+  it('leaves the heading exactly as it was', () => {
+    // The ten original letters are unchanged, so "photo gallery" keeps its
+    // shape while the font grows around it.
+    expect(asciiBanner('photo gallery')[0]).toBe('###  #  #  ##  ###  ##      ###  ##  #   #   #### ###  #   #')
+  })
+})
+

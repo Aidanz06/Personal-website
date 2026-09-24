@@ -290,15 +290,15 @@ The site's navigation: a real link laid over a stone drawn in the canvas.
 A button, not a link: nothing navigates. The rock *is* the picture.
 - **Shape:** a smaller round character stone. At least 52px across for a
   photo, 60px for an album; album size scales with play count.
-- **Label:** mono, below it, in Drowned Grey, or koi orange while open.
-  A photo rock says its place and month (`kyoto · may`, or just `may`
-  until the place is written) and `clip` for a clip; an undated still has
-  no label. An album rock shows its rank (`01`–`05`). Hidden while its own
+- **Label:** below it, in Drowned Grey, or koi orange while open. A photo
+  rock's label is Water Text giving its place and month (`kyoto · may`, or
+  just `may` until the place is written), or `clip` for a clip; an undated
+  still has no label. An album rock shows its rank (`01`–`05`). Hidden while its own
   picture is showing.
 - **Order and groups:** photo rocks run newest first, so going deeper goes
-  back in time, grouped by year. Each group starts a new row under a mono
-  year marker (`2025`, `undated`) in the water, and the marker fades while
-  a photo is open.
+  back in time, grouped by year. Each group starts a new row under a year
+  marker in Water Text (`2025`, `undated`), which fades while a photo is
+  open.
 - **States:** hover or focus opens it, a click or tap pins it
   (`aria-pressed`), and a second click or tap closes it outright. Esc
   closes it on both pages. Opening takes about 2.5 seconds: characters
@@ -336,13 +336,21 @@ wants, and a finger can still hit them.
 Koi orange, with a 1px underline offset 0.2em, thickening to 2px on hover
 (120ms). Focus is a 2px accent outline, offset 3px.
 
-### Water Heading (signature)
-A section heading drawn as ASCII art in a hand-built five-row bitmap font
-(`lib/banner.ts`), at 7px mono with a 0.62 line height so each font pixel is
-square. It's in Drowned Grey, distorted by an SVG turbulence and
-displacement filter that shifts slowly, so it looks like lettering seen
-through moving water. The real words are in a visually hidden `<h2>`, and
-the art is `aria-hidden`.
+### Water Text (signature)
+All text inside the gallery: its heading, the year markers, and the label
+under each rock. It's ASCII art in a hand-built five-row bitmap font
+(`lib/banner.ts`, the full alphabet, digits, `·` and `-`), drawn by
+`components/WaterText.tsx` with a 0.62 line height so each font pixel is
+square. It's distorted by an SVG turbulence and displacement filter with
+long, rolling horizontal waves and a drifting frequency (13s), so it bends
+like lettering seen through moving water.
+- **Sizes:** heading 7px (22px tall), markers 6px, labels 6px.
+- **Strength:** displacement 8 for the heading and markers, 3.5 for labels.
+  Labels are small enough that the stronger setting tears them apart.
+- **Colour:** Drowned Grey, or koi orange for the open rock's label.
+- **Reduced motion:** the same distortion, held still.
+- **Accessibility:** always `aria-hidden`. The words reach screen readers
+  some other way: the hidden `<h2>`, and each rock's accessible name.
 
 ## Do's and Don'ts
 
