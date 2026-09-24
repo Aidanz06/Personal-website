@@ -2830,3 +2830,38 @@ Watched in Chrome with the real account: *Majesty* opens as its title in
 characters; *Touch the Sky* opens as *Empires* in fine ASCII.
 
 570 tests.
+
+## listening step 6 — no boulders
+
+Aidan doesn't need "the ones that never leave", so the feature is gone
+rather than left empty. It had never shown anything: all three slots in
+`content/listening.json` were blank, and blank slots render nothing. But
+unused code with a script, a folder and a file format attached still invites
+someone to fill it in, and still has to be kept working.
+
+Removed:
+
+- the boulder type, layout, `BOULDER_*` numbers, and the "the ones that never
+  leave" label;
+- boulder lines: the second caption line, `aria-describedby`, and the section
+  in the no-JavaScript list;
+- `npm run listening:covers`, `lib/listening/covers.ts`, and
+  `public/listening/covers/`. They existed only to keep boulder covers in the
+  repo;
+- `neverLeave` from `content/listening.json`, which is now only the hide
+  list;
+- **the shared `density` setting on photo rocks.** It was added for
+  boulders' heavier texture and nothing else used it. `lib/pond/photoStones.ts`
+  is back byte-for-byte to what it was before this feature, and the pond's
+  photo-rock brightness line is back to the original.
+
+The hide list moved from `boulders.ts` to its own `lib/listening/hide.ts`.
+The rock type is `TrackRock` now, since the only rock is a track.
+
+Everything the earlier steps say about boulders is history, left as written.
+The page is the top five tracks: same cluster, same covers, same ASCII art.
+Checked in Chrome afterwards: five rocks, both kinds of cover open, and no
+overlaps at 375.
+
+528 tests. The count fell because the covers-script and boulder tests went
+with their code.

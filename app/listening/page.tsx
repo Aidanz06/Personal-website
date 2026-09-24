@@ -3,7 +3,7 @@ import { ListeningPond } from '@/components/ListeningPond'
 import { getListeningData } from '@/lib/listening/data'
 
 /**
- * /listening — the pond of album rocks.
+ * /listening — the month's top five tracks, as rocks in a pond.
  *
  * **Static, and revalidated every six hours.** 21600 seconds, written as a
  * literal because Next has to be able to read the value without running the
@@ -25,7 +25,7 @@ export const revalidate = 21600
 
 export const metadata: Metadata = {
   title: 'listening',
-  description: 'what aidan zheng has on repeat, and the records that never leave.',
+  description: 'what aidan zheng has on repeat: the top five tracks of the month.',
 }
 
 export default async function ListeningPage() {

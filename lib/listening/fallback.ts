@@ -4,7 +4,7 @@
  * The rocks are real buttons over a canvas, so with no script they are
  * focusable controls scattered over an empty pond that will never draw — a
  * worse page than a plain list, not a better one. So the whole rock layer is
- * hidden and a list takes its place: the same tracks and albums, in the same order, with
+ * hidden and a list takes its place: the same tracks, in the same order, with
  * the same words.
  *
  * Built as a string and set directly, the same way the slideshow's fallback
@@ -17,7 +17,7 @@
  * first paint, not by a script that has to run first.
  */
 
-import type { Boulder, Pebble } from './types.ts'
+import type { Pebble } from './types.ts'
 
 export function escapeHtml(value: string): string {
   return value
@@ -38,8 +38,6 @@ function titleLine(title: string, artist: string, rank?: number): string {
 
 export type FallbackContent = {
   pebbles: readonly Pebble[]
-  boulders: readonly Boulder[]
-  neverLeaveLabel: string
 }
 
 export function listeningFallbackMarkup(content: FallbackContent): string {
@@ -52,8 +50,6 @@ export function listeningFallbackMarkup(content: FallbackContent): string {
     '.lf li{margin:0 0 12px}' +
     '.lf-n,.lf-a{display:block;font-family:var(--font-mono);font-size:var(--text-small);color:var(--color-muted)}' +
     '.lf-t{display:block}' +
-    '.lf-l{display:block;font-family:var(--font-mono);font-size:var(--text-small)}' +
-    '.lf-h{font-family:var(--font-mono);font-size:var(--text-small);color:var(--color-muted);margin-top:32px}' +
     '</style>'
 
   const pebbles = content.pebbles.length
@@ -62,16 +58,5 @@ export function listeningFallbackMarkup(content: FallbackContent): string {
         .join('')}</ol>`
     : ''
 
-  const boulders = content.boulders.length
-    ? `<p class="lf-h">${escapeHtml(content.neverLeaveLabel)}</p>` +
-      `<ul class="lf">${content.boulders
-        .map(
-          (boulder) =>
-            `<li>${titleLine(boulder.album, boulder.artist)}` +
-            `<span class="lf-l">${escapeHtml(boulder.line)}</span></li>`,
-        )
-        .join('')}</ul>`
-    : ''
-
-  return `${style}<div class="column">${pebbles}${boulders}</div>`
+  return `${style}<div class="column">${pebbles}</div>`
 }

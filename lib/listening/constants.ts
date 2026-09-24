@@ -61,16 +61,8 @@ export const COVER_WIDTH = 640
 /** Next 16's default `images.qualities` allowlist is `[75]`. */
 export const COVER_QUALITY = 75
 
-/** last.fm's API root. Used by the page's fetch and by the covers script. */
+/** last.fm's API root. */
 export const LASTFM_ENDPOINT = 'https://ws.audioscrobbler.com/2.0/'
 
-/** Where `npm run listening:covers` puts the boulders' covers. */
-export const COVERS_DIR = 'public/listening/covers'
-/** The same folder as a URL. */
-export const COVERS_URL = '/listening/covers'
-
-/** Aidan's file: the boulders, and the hide list. */
+/** Aidan's file: the hide list. */
 export const LISTENING_FILE = 'content/listening.json'
-
-/** Shown under a boulder that has no line written for it yet. */
-export const BOULDER_LINE_PLACEHOLDER = '[why this one never leaves — aidan to write]'

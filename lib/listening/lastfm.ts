@@ -22,7 +22,7 @@
  * 3. **The API failed and we have a remembered answer** — use that. A dead
  *    API should cost freshness, not content.
  * 4. **The API failed and there is nothing remembered** — no pebbles at all.
- *    The boulders still render and the page says nothing about an error,
+ *    The page still renders its heading and water, and says nothing about an error,
  *    because a visitor did not come here to read about last.fm's uptime.
  */
 
@@ -205,7 +205,7 @@ async function lookUpCovers(
  * The pebbles, by whichever route works.
  *
  * Never throws and never returns nothing to render: the worst case is an
- * empty pebble list, which the page draws as a pond with only boulders in it.
+ * empty pebble list, which the page draws as a quiet pond with nothing in it.
  */
 export async function loadPebbles(options: LoadOptions = {}): Promise<PebbleResult> {
   const period = options.period ?? LISTENING_PERIOD

@@ -1,15 +1,8 @@
 /**
- * What /listening is made of.
+ * What /listening is made of: the month's top five tracks, pulled from
+ * last.fm, each with a playcount and a rank and no opinion attached.
  *
- * Two kinds of rock, and they are genuinely different things rather than one
- * thing at two sizes:
- *
- * - a **pebble** is a track: a fact about the last month, pulled from
- *   last.fm, with a playcount and a rank and no opinion attached;
- * - a **boulder** is a choice Aidan made, written down in a file, with a line
- *   from him and no playcount at all.
- *
- * Pure types. Nothing here imports anything.
+ * Pure types. Nothing here imports anything at runtime.
  */
 
 import type { Period } from './constants.ts'
@@ -46,18 +39,6 @@ export type Pebble = {
   cover: string
 }
 
-/** An album at the bottom: big, heavy, and there because Aidan says so. */
-export type Boulder = {
-  album: string
-  artist: string
-  /** Aidan's line. Never blank on the page — the placeholder stands in. */
-  line: string
-  /** True while that line is still the placeholder. */
-  lineMissing: boolean
-  /** Cover URL through the image optimiser, or '' for a coverless album. */
-  cover: string
-}
-
 /**
  * One entry in the hide list. A blank track hides the whole artist.
  *
@@ -72,12 +53,6 @@ export type HideRule = {
 
 /** content/listening.json, as written. Every field is allowed to be blank. */
 export type ListeningFile = {
-  neverLeave?: {
-    album?: string
-    artist?: string
-    line?: string
-    cover?: string
-  }[]
   hide?: HideRule[]
 }
 
@@ -93,7 +68,6 @@ export type PebbleSource =
 /** Everything /listening needs, resolved at build time. */
 export type ListeningData = {
   pebbles: Pebble[]
-  boulders: Boulder[]
   period: Period
   /**
    * "2026-09-23" — when the pebble data was fetched. Blank when there is no

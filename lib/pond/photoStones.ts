@@ -20,19 +20,6 @@ export type PhotoStoneSpec = {
   depthVh: number
   radiusFraction: number
   minRadius: number
-  /**
-   * How much heavier this rock's texture is than an ordinary one.
-   *
-   * A multiplier on the stone's brightness, which the renderer maps through
-   * the density ramp — so a larger number is literally a denser character in
-   * every cell of the rock. Undefined means 1, which is what every photo rock
-   * uses: the homepage is unaffected by this existing.
-   *
-   * Added for the boulders on /listening, where a record that never leaves
-   * has to read as heavier than a record that is merely on repeat this month.
-   * It is the same stone drawing leaned on harder, not a second kind of rock.
-   */
-  density?: number
 }
 
 /**

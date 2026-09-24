@@ -1,23 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { escapeHtml, listeningFallbackMarkup } from './fallback.ts'
-import type { Boulder, Pebble } from './types.ts'
+import type { Pebble } from './types.ts'
 
 const pebbles: Pebble[] = [
   { title: 'Idioteque', artist: 'Radiohead', playcount: 40, rank: 1, size: 1, cover: '' },
   { title: 'Hidden Place', artist: 'Björk', playcount: 20, rank: 2, size: 0.7, cover: '' },
 ]
 
-const boulders: Boulder[] = [
-  {
-    album: 'Blue',
-    artist: 'Joni Mitchell',
-    line: 'the one i keep going back to',
-    lineMissing: false,
-    cover: '',
-  },
-]
-
-const content = { pebbles, boulders, neverLeaveLabel: 'the ones that never leave' }
+const content = { pebbles }
 
 describe('escapeHtml', () => {
   it('escapes what would otherwise become markup', () => {
@@ -28,9 +18,9 @@ describe('escapeHtml', () => {
 describe('listeningFallbackMarkup', () => {
   const markup = listeningFallbackMarkup(content)
 
-  it('lists every track and album, with the artist', () => {
-    for (const title of ['Idioteque', 'Hidden Place', 'Blue']) expect(markup).toContain(title)
-    for (const artist of ['Radiohead', 'Björk', 'Joni Mitchell']) {
+  it('lists every track, with the artist', () => {
+    for (const title of ['Idioteque', 'Hidden Place']) expect(markup).toContain(title)
+    for (const artist of ['Radiohead', 'Björk']) {
       expect(markup).toContain(artist)
     }
   })
@@ -38,11 +28,6 @@ describe('listeningFallbackMarkup', () => {
   it('keeps the ranking', () => {
     expect(markup).toContain('>01<')
     expect(markup).toContain('>02<')
-  })
-
-  it('carries the boulders’ lines, which are the whole point of them', () => {
-    expect(markup).toContain('the one i keep going back to')
-    expect(markup).toContain('the ones that never leave')
   })
 
   it('hides the rock layer and collapses the pond', () => {
@@ -61,19 +46,9 @@ describe('listeningFallbackMarkup', () => {
     expect(nasty).toContain('&lt;script&gt;')
   })
 
-  it('leaves out a section that has nothing in it', () => {
-    const noBoulders = listeningFallbackMarkup({ ...content, boulders: [] })
-    expect(noBoulders).not.toContain('the ones that never leave')
-
-    const noPebbles = listeningFallbackMarkup({ ...content, pebbles: [] })
-    expect(noPebbles).not.toContain('<ol')
-    expect(noPebbles).toContain('Blue')
-  })
-
   it('is still valid with nothing at all to list', () => {
-    const empty = listeningFallbackMarkup({ pebbles: [], boulders: [], neverLeaveLabel: 'x' })
+    const empty = listeningFallbackMarkup({ pebbles: [] })
     expect(empty).toContain('<style>')
     expect(empty).not.toContain('<ol')
-    expect(empty).not.toContain('<ul')
   })
 })

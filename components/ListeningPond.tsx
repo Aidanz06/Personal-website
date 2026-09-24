@@ -10,7 +10,7 @@ import { listeningLayout } from '@/lib/listening/rocks'
 import type { ListeningData } from '@/lib/listening/types'
 
 /**
- * /listening: a pond you descend, where songs and albums are rocks.
+ * /listening: a small pond where the month's top five tracks are rocks.
  *
  * Structurally this is the homepage's pond with different rocks in it. The
  * canvas is fixed to the viewport and reads the scroll position itself; the
@@ -25,7 +25,7 @@ import type { ListeningData } from '@/lib/listening/types'
  * a photograph.
  *
  * Buttons rather than links, for the same reason the photo rocks are: nothing
- * navigates. The rock IS the album.
+ * navigates. The rock IS the song.
  */
 
 /**
@@ -74,8 +74,6 @@ function rockSize(radiusFraction: number, minRadius: number): string {
   return `clamp(${minRadius * 2}px, min(100vw, 100vh) * ${(radiusFraction * 2).toFixed(4)}, 240px)`
 }
 
-const NEVER_LEAVE_LABEL = 'the ones that never leave'
-
 /** The caption's width, in CSS: the cover's, but never cramped or off-screen. */
 function captionWidth(coverWidth: number): string {
   return `min(max(${coverWidth}px, 240px), calc(100vw - 40px))`
@@ -108,7 +106,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
     return () => window.removeEventListener('keydown', close)
   }, [active])
 
-  const { rocks, neverLeaveLabelVh, depthVh } = listeningLayout(data.pebbles, data.boulders)
+  const { rocks, depthVh } = listeningLayout(data.pebbles)
   const asOf = formatAsOf(data.asOf)
   const rectIsCurrent = rect !== null && rect.index === active
 
@@ -116,12 +114,9 @@ export function ListeningPond({ data }: { data: ListeningData }) {
     const rock = rocks[index]
     if (!rock) return null
     return (
-      <>
-        <p className="font-mono text-small text-muted">
-          {rock.title} · {rock.artist}
-        </p>
-        {rock.line && <p className="text-small text-ink">{rock.line}</p>}
-      </>
+      <p className="font-mono text-small text-muted">
+        {rock.title} · {rock.artist}
+      </p>
     )
   }
 
@@ -151,7 +146,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
 
           {/* Only when there is something on repeat. With last.fm down and
               nothing remembered, a label over empty water is a caption for a
-              picture that is not there — the boulders carry the page alone. */}
+              picture that is not there. */}
           {data.pebbles.length > 0 && (
             <>
               <p className="mt-3 font-mono text-small text-muted">
@@ -172,32 +167,15 @@ export function ListeningPond({ data }: { data: ListeningData }) {
 
         {/* --- the rocks --- */}
         <div className="listening-rocks">
-          {neverLeaveLabelVh !== null && (
-            <p
-              // Out of the way while a cover is open: it is HTML over the
-              // canvas, so it would otherwise sit on top of the picture.
-              className={`column absolute inset-x-0 font-mono text-small text-muted transition-opacity duration-500 ${
-                rectIsCurrent ? 'opacity-0' : 'opacity-100'
-              }`}
-              style={{ top: vh(neverLeaveLabelVh) }}
-            >
-              {NEVER_LEAVE_LABEL}
-            </p>
-          )}
-
           {rocks.map((rock, index) => {
             const isActive = active === index
             return (
               <button
-                key={`${rock.kind}-${rock.dataIndex}`}
+                key={rock.dataIndex}
                 type="button"
                 // Not a link: nothing navigates. It is a control that surfaces
                 // a cover in place.
                 aria-label={rock.alt}
-                // A boulder's line is a description, not part of its name, and
-                // it is on the button rather than on the visible caption so a
-                // screen reader gets it on focus — before the picture opens.
-                aria-describedby={rock.line ? `listening-line-${index}` : undefined}
                 aria-pressed={pinned === index}
                 className="absolute block cursor-pointer"
                 style={{
@@ -216,12 +194,11 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                 onClick={() => setPinned((current) => (current === index ? null : index))}
               >
                 {/* A pebble carries its rank, because the ranking is the
-                    information. A boulder has no rank — it is not in a
-                    league table, it is just there. */}
+                    information. */}
                 {/* Hidden while this rock's cover is showing: the cover opens
                     centred on the rock, and an orange number in the middle of
                     the art is the first thing the eye lands on. */}
-                {rock.rank > 0 && !(isActive && rectIsCurrent) && (
+                {!(isActive && rectIsCurrent) && (
                   <span
                     className={
                       isActive
@@ -246,11 +223,6 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                   </span>
                 )}
 
-                {rock.line && (
-                  <span id={`listening-line-${index}`} className="sr-only">
-                    {rock.line}
-                  </span>
-                )}
               </button>
             )
           })}
@@ -283,11 +255,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
 
         <noscript
           dangerouslySetInnerHTML={{
-            __html: listeningFallbackMarkup({
-              pebbles: data.pebbles,
-              boulders: data.boulders,
-              neverLeaveLabel: NEVER_LEAVE_LABEL,
-            }),
+            __html: listeningFallbackMarkup({ pebbles: data.pebbles }),
           }}
         />
       </main>

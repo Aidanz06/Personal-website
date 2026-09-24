@@ -47,7 +47,7 @@ const EXTENSIONS = ['', '.ts', '.tsx', '.json', '/index.ts', '/index.tsx']
  * Comments out, before anything is searched.
  *
  * The same trap the suppressHydrationWarning test fell into: the first
- * version of this failed on the comment in boulders.ts explaining why a
+ * version of this failed on a comment in the listening code explaining why a
  * `node:fs` import must not appear there. A test that fails on its own
  * documentation teaches everyone to weaken the test.
  *
@@ -147,7 +147,11 @@ describe('the last.fm key', () => {
 describe('the modules the page shares with the browser', () => {
   const shared = [
     'lib/listening/pebbles.ts',
-    'lib/listening/boulders.ts',
+    'lib/listening/hide.ts',
+    'lib/listening/rocks.ts',
+    'lib/listening/coverless.ts',
+    'lib/listening/fallback.ts',
+    'lib/listening/format.ts',
     'lib/listening/constants.ts',
     'lib/listening/types.ts',
   ]

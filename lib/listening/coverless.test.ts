@@ -3,7 +3,7 @@ import { coverlessCover, escapeXml, wrapText } from './coverless.ts'
 
 describe('wrapText', () => {
   it('breaks at word boundaries', () => {
-    expect(wrapText('the ones that never leave', 12)).toEqual(['the ones', 'that never', 'leave'])
+    expect(wrapText('what is on repeat this month', 12)).toEqual(['what is on', 'repeat this', 'month'])
   })
 
   it('leaves a short title on one line', () => {
