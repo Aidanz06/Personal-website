@@ -285,6 +285,12 @@ The site's navigation: a real link laid over a stone drawn in the canvas.
   like hover, so the keyboard path feels intended.
 - **Ringing:** a stone may give off a slow ripple every 1.8s, like a speaker
   cone. Only the listening stone does.
+- **The descent cue:** the surface holds only the name, so the pond shows
+  there's more below instead of saying so. About 2s after arrival, a chain
+  of six rings sinks from under the name to the first stone, each lower, a
+  beat later (0.42s) and weaker than the last, swaying slightly as it
+  falls. It plays at most three times, 6.5s apart. It stops for good once
+  the visitor scrolls past 40px, and never plays under reduced motion.
 
 ### Photo / Album Rock
 A button, not a link: nothing navigates. The rock *is* the picture.

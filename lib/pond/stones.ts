@@ -66,7 +66,7 @@ export const HOME_STONE_DEFINITIONS: readonly StoneDefinition[] = [
   {
     href: '/tailor-studio',
     label: 'tailor studio',
-    note: 'the thing i built',
+    note: 'something i built',
     xFraction: 0.3,
     radiusFraction: 0.1,
   },

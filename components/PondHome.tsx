@@ -12,6 +12,7 @@ import type { Photo } from '@/lib/photos'
 import { contacts, site } from '@/lib/site'
 import { WaterFilters, WaterText } from '@/components/WaterText'
 import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
+import { MAX_CUES, descentCue, requestDescentCue, shouldPlayCue } from '@/lib/pond/splash'
 
 /**
  * The homepage: a pond you descend.
@@ -51,6 +52,28 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
   const [selection, select] = useReducer(rockSelection, initialRockSelection)
   const activePhoto = activeRock(selection)
   const pinnedPhoto = selection.pinned
+
+  // The cue to descend: a stone sinking from under the name to the first
+  // stone, a couple of seconds after arrival, then twice more at most. It
+  // checks the scroll each time, so it ends the moment the visitor starts
+  // down — and never plays for someone who arrives already scrolled, or who
+  // asked for reduced motion. See descentCue() in lib/pond/splash.ts.
+  useEffect(() => {
+    const first = HOME_STONES[0]
+    if (!first) return
+    const cue = descentCue(first.xFraction, 0.5, first.depthVh)
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let played = 0
+    let timer: ReturnType<typeof setTimeout>
+    function play() {
+      if (!shouldPlayCue({ scrollY: window.scrollY, played, reducedMotion: reduced.matches })) return
+      requestDescentCue(cue)
+      played++
+      if (played < MAX_CUES) timer = setTimeout(play, 6500)
+    }
+    timer = setTimeout(play, 2200)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Esc closes whatever is open, the same as on /listening.
   useEffect(() => {

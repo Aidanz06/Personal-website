@@ -3122,3 +3122,30 @@ Checked with two temporary names in a build, then restored: "test name"
 wraps to two centred lines, and a long name stays inside 375px as three.
 
 590 tests.
+
+## a stone sinking (/impeccable onboard)
+
+The critique found that the first screen gave no reason to scroll. The first
+stone's label sits below the fold (y≈830 at 860px tall), and nothing on the
+surface says there's more. Aidan chose to keep the surface quiet, with just
+his name, and add a cue rather than raise the stones or add words.
+
+- **The cue** is a stone sinking. About 2.2s after arrival, a chain of six
+  rings runs from half a screen down (under the identity line) to the first
+  stone. Each ring is 0.42s later and a little lower than the last, fading
+  as it sinks and swaying slightly, because a dead-straight drop reads as a
+  loading indicator. It's the existing splash queue with new points
+  (`descentCue()` in `lib/pond/splash.ts`), not a new system.
+- **It doesn't nag.** It plays at most 3 times, 6.5s apart, and checks the
+  scroll before every play: once the visitor passes 40px it's done its job
+  and stops for good. It never plays for someone who arrives already
+  scrolled, and never under reduced motion (`shouldPlayCue()`, tested).
+- **Calibrated in the browser.** At strength 0.55 → 0.3 it was only visible
+  in brightened frames. At 0.8 → 0.45 it shows unbrightened: a ring and its
+  trough visibly sink to the stone. That's still below the page-change wave
+  (0.85), so it stays an invitation rather than an event.
+
+The Tailor Studio stone's note is now Aidan's own "something i built", in
+place of "the thing i built".
+
+600 tests.
