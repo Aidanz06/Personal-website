@@ -6,3 +6,6 @@ out/
 next-env.d.ts
 .env*.local
 .vercel
+
+# Scratch space, not part of the site.
+Claude outputs/
