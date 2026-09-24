@@ -2,7 +2,7 @@ import { BackLink } from '@/components/BackLink'
 import { ThemeSwitcher } from '@/components/ThemeSwitcher'
 
 /**
- * Shared chrome for /tailor-studio, /about and /resume.
+ * Shared chrome for the inner pages: /tailor-studio and /about.
  *
  * `(page)` is a route group — the parentheses mean the folder organizes files
  * without appearing in the URL, so these stay at /about rather than

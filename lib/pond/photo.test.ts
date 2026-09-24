@@ -134,8 +134,8 @@ describe('photoDepthFactor', () => {
   const H = 800
 
   it('opens no photographs at the surface', () => {
-    // The surface carries the name and the availability line. A photograph
-    // over them buries the one thing a recruiter came for.
+    // The surface carries the name and the line under it. A photograph over
+    // them buries the first thing anyone reads.
     expect(photoDepthFactor(0, H)).toBe(0)
     expect(photoDepthFactor(H * 0.4, H)).toBe(0)
   })

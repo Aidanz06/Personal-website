@@ -107,10 +107,9 @@ export function photoOpacity(reveal: number, handover = 0.62): number {
  * Zero at the surface, rising to one as the reader descends.
  *
  * This is a design rule before it is a technical one: the surface carries the
- * name and the availability line, which are the whole reason the site exists,
- * and a photograph opening over them buries the one thing a recruiter came
- * for under an image — muted grey text on a bright picture is unreadable.
- * Professional at the surface, personal further down.
+ * name and the line under it, and a photograph opening over them buries the
+ * first thing anyone reads — muted grey text on a bright picture is
+ * unreadable. Names at the surface, pictures in the depths.
  */
 export function photoDepthFactor(scrollY: number, viewportHeight: number): number {
   if (!Number.isFinite(scrollY) || !Number.isFinite(viewportHeight) || viewportHeight <= 0) {

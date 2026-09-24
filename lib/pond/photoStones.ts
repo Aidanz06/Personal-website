@@ -7,6 +7,8 @@
  * different — photo rocks are smaller and sit below every nav stone.
  */
 
+import { DEEPEST_STONE_VH, STONE_STEP_VH } from './stones'
+
 export type PhotoStoneSpec = {
   src: string
   /** Real alt text for the button that sits over the rock. */
@@ -17,8 +19,15 @@ export type PhotoStoneSpec = {
   minRadius: number
 }
 
-/** Where the photo rocks begin, in viewport heights. Below the last nav stone. */
-export const PHOTOS_START_VH = 3.0
+/**
+ * Where the photo rocks begin, in viewport heights.
+ *
+ * One stone-step below the deepest navigation stone, rather than a number
+ * typed in here. Adding or removing a navigation stone moves the whole
+ * photography section with it, which is the only way the two can never
+ * collide.
+ */
+export const PHOTOS_START_VH = DEEPEST_STONE_VH + STONE_STEP_VH
 /** Vertical gap between consecutive ROWS of photo rocks. */
 export const PHOTO_STEP_VH = 0.58
 /**

@@ -6,7 +6,7 @@ import { site } from '@/lib/site'
 export const metadata: Metadata = {
   // `absolute` opts out of the "%s — aidan zheng" template from the root
   // layout, which would otherwise render "aidan zheng — aidan zheng".
-  title: { absolute: `${site.name} — business analytics @ northeastern` },
+  title: { absolute: site.name },
   description: site.description,
 }
 

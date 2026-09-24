@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { HOME_STONES, POND_DEPTH_VH, placeStones } from './stones'
+import {
+  DEEPEST_STONE_VH,
+  FIRST_STONE_VH,
+  HOME_STONES,
+  POND_DEPTH_VH,
+  STONE_STEP_VH,
+  STONE_TAIL_VH,
+  placeStones,
+} from './stones'
 
 describe('HOME_STONES', () => {
   it('covers every route except home', () => {
     expect(HOME_STONES.map((s) => s.href).sort()).toEqual([
       '/about',
-      '/resume',
       '/tailor-studio',
     ])
   })
@@ -28,16 +35,29 @@ describe('HOME_STONES', () => {
     }
   })
 
-  it('leaves the first screen clear for the name and availability line', () => {
-    // The first stone must sit below the fold, or it competes with the one
-    // thing the site exists to say.
+  it('leaves the first screen clear for the name and the line under it', () => {
+    // The first stone must sit below the fold, or it competes with the first
+    // thing anyone reads.
     expect(HOME_STONES[0]!.depthVh).toBeGreaterThanOrEqual(0.9)
   })
 
   it('keeps the navigation within the first three screens', () => {
-    // Someone who only wants the resume should not have to descend the whole
-    // photography section to find it.
-    expect(Math.max(...HOME_STONES.map((s) => s.depthVh))).toBeLessThanOrEqual(2.5)
+    // Nobody should have to descend the whole photography section to find a
+    // page the site is actually about.
+    expect(DEEPEST_STONE_VH).toBeLessThanOrEqual(2.5)
+  })
+
+  it('derives depth from position in the list, not from a typed-in number', () => {
+    // This is what makes the list extensible: a third stone in step 5 is one
+    // entry, not four numbers to re-tune.
+    HOME_STONES.forEach((stone, index) => {
+      expect(stone.depthVh).toBeCloseTo(FIRST_STONE_VH + index * STONE_STEP_VH, 10)
+    })
+  })
+
+  it('ends the pond below the last stone, with water to spare', () => {
+    expect(POND_DEPTH_VH).toBeCloseTo(DEEPEST_STONE_VH + STONE_TAIL_VH, 10)
+    expect(POND_DEPTH_VH).toBeGreaterThan(DEEPEST_STONE_VH)
   })
 
   it('staggers the stones horizontally so the path reads as a path', () => {

@@ -1383,3 +1383,83 @@ still a clear surge-and-glide, but worth knowing that the character flattens
 as speed rises. Push much further and it will read as a constant glide.
 
 238 tests.
+
+---
+
+# the pivot: a personal site
+
+Milestones 1–6f built the pond on the assumption that the site's job was to
+get someone to hire Aidan. It isn't. The site is personal first — what he
+makes, what he shoots, what he listens to — and it happens to be linked from
+LinkedIn, which is a reason to keep it presentable, not a reason to make it a
+portfolio.
+
+What follows is one section per step of that rework.
+
+## step 1 — pivot cleanup
+
+### what changed
+
+**`/resume` is gone.** The route, the stone that led to it, and every mention
+of it. Nothing links there any more, and the build no longer emits the page.
+
+**The surface lost its sales pitch.** The homepage used to carry a name, an
+identity line, and `spring 2027 co-op · [target roles]`. The co-op line is
+deleted outright. The identity line is now a bracketed placeholder for Aidan
+to write, because "business analytics @ northeastern · boston" is a LinkedIn
+headline rather than a sentence about a person.
+
+Also rewritten, for the same reason: the homepage `<title>` (now just the
+name), `site.description`, both inner-page metadata descriptions, and the
+placeholder prompts on /about that asked for GPA-adjacent facts and
+paid-work stats.
+
+### the non-obvious part: depth is now derived, not typed
+
+Removing a stone from `HOME_STONES` used to mean re-tuning four numbers by
+hand: the two surviving stones' depths, the pond's total depth, and the depth
+at which the photographs start. Miss one and the photographs overlap the
+navigation, or the pond ends above its own last stone.
+
+So depth is no longer authored. A stone is now written down as a
+`StoneDefinition` — href, label, note, x position, radius — and `depthVh` is
+computed from its index:
+
+| number | value | what it means |
+|---|---|---|
+| `FIRST_STONE_VH` | 0.95 | the first stone sits just below the fold |
+| `STONE_STEP_VH` | 0.7 | gap between stones, and before the photographs |
+| `STONE_TAIL_VH` | 0.75 | water below the last stone |
+
+`DEEPEST_STONE_VH`, `POND_DEPTH_VH` and `PHOTOS_START_VH` all fall out of
+those three. Adding the "listening" stone in step 5 is one entry in a list
+and an x position at least 0.15 away from its neighbours' — nothing else.
+
+A test asserts the derivation rather than the resulting numbers, so it keeps
+holding when the list changes length.
+
+### what it did to the pond
+
+| | 3 stones (before) | 2 stones (now) |
+|---|---|---|
+| stone depths | 0.95 / 1.62 / 2.3 | 0.95 / 1.65 |
+| depth before photographs | 3.05 | 2.40 |
+| photographs start at | 3.0 | 2.35 |
+| total depth, 13 photographs | 7.39 | **6.74** |
+
+The pond got most of a screen shorter for free, purely because there is one
+less stone to descend past.
+
+### what's left, and why
+
+`grep -ri "resume\|co-op\|recruiter\|business analytics"` over `app/`,
+`components/`, `lib/`, `scripts/` and `public/` returns nothing. Two places
+outside that scope still match and should:
+
+- **`docs/build-notes.md`** — this file. It is a record of what was built and
+  when, including the parts that were later removed. Editing history to match
+  the present is how you lose the reasoning.
+- **`Personal Website PRD.md`** — the original brief, kept as a source
+  document.
+
+240 tests.

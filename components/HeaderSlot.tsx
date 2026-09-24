@@ -4,7 +4,7 @@ import { AsciiImage } from '@/components/AsciiImage'
  * The homepage ASCII header.
  *
  * The height is set by --header-height (see globals.css), which is fluid so
- * the availability line below it stays above the fold at 375px. Reserving
+ * the line below it stays above the fold at 375px. Reserving
  * the space in CSS rather than letting the image size the box means the
  * renderer causes no layout shift when it initialises.
  */

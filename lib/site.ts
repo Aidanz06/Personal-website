@@ -10,9 +10,10 @@ export const site = {
   name: 'aidan zheng',
   // No domain purchased yet; metadataBase and OG images land in v1.
   url: 'https://example.com',
-  identity: 'business analytics @ northeastern · boston',
+  identity:
+    '[a line about me — aidan to write, e.g. school + city + one real thing]',
   description:
-    'aidan zheng — business analytics student at northeastern (d’amore-mckim), cs minor.',
+    'aidan zheng — a personal site: what i make, what i shoot, what i listen to.',
 } as const
 
 /**
@@ -37,10 +38,3 @@ export const contacts: readonly Contact[] = [
     placeholder: '[linkedin url — aidan to add]',
   },
 ]
-
-/** The three inline links on the homepage. */
-export const routes = [
-  { label: 'tailor studio', href: '/tailor-studio' },
-  { label: 'about', href: '/about' },
-  { label: 'resume', href: '/resume' },
-] as const

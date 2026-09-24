@@ -59,10 +59,6 @@ export function PondHome({
         <section className="column pt-[22vh]">
           <h1 className="font-display text-name font-normal">{site.name}</h1>
           <p className="mt-1 text-muted">{site.identity}</p>
-          <p className="mt-1" data-availability="">
-            spring 2027 co-op ·{' '}
-            <span className="text-muted">[target roles — aidan to add]</span>
-          </p>
         </section>
 
         {/* --- the stones --- */}
