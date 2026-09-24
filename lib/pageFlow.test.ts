@@ -51,6 +51,39 @@ describe('the page-change animation', () => {
     }
   })
 
+  /**
+   * The second half of the same bug, found building /listening.
+   *
+   * Moving the animation to `main` kept the pond out of it — but the photo
+   * captions are `position: fixed` too, and they live INSIDE main. With
+   * `animation-fill-mode: both` the finished animation holds its last
+   * keyframe forever, and a held `transform: none` is computed as
+   * `matrix(1, 0, 0, 1, 0, 0)` — an identity, but not `none`. So main stayed
+   * the containing block for every fixed caption, and each one was placed
+   * relative to the top of the document instead of the viewport: measured at
+   * 609px above the top of the screen on the homepage, 413px on /listening.
+   *
+   * `backwards` fills only before the animation starts. When it ends, the
+   * element falls back to its own style — opacity 1, no transform, which is
+   * exactly the last keyframe — so it looks identical and leaves nothing
+   * behind.
+   */
+  it('does not hold a transform after it has finished', () => {
+    for (const frame of keyframes) {
+      if (!/transform\s*:/.test(frame.body)) continue
+      const rules = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)].filter(([, , body]) =>
+        new RegExp(`animation:[^;]*\\b${frame.name}\\b`).test(body ?? ''),
+      )
+      for (const [, selector, body] of rules) {
+        const declaration = /animation:([^;]*)/.exec(body ?? '')?.[1] ?? ''
+        const fill = /animation-fill-mode:\s*([\w-]+)/.exec(body ?? '')?.[1] ?? ''
+        const words = `${declaration} ${fill}`
+        expect(words, `"${selector!.trim()}" holds @keyframes ${frame.name} after it ends`)
+          .not.toMatch(/\b(both|forwards)\b/)
+      }
+    }
+  })
+
   it('still reaches the page, via main', () => {
     expect(selectorsUsing('page-flow').join(' ')).toContain('.page-flow')
   })

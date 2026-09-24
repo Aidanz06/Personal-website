@@ -27,6 +27,7 @@ const ROOT = resolve(__dirname, '..', '..')
  * test that silently passes.
  */
 const CLIENT_ENTRIES = [
+  'components/ListeningPond.tsx',
   'components/Pond.tsx',
   'components/PondHome.tsx',
   'components/PondBackdrop.tsx',

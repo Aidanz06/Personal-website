@@ -731,6 +731,9 @@ export function Pond({
             x: p.x,
             worldY: p.worldY,
             radius: p.radius,
+            // 1 for a photo rock. Heavier for a rock that is meant to read as
+            // heavier — see PhotoStoneSpec.density.
+            density: p.spec.density ?? 1,
           }))
         : []
 
@@ -790,7 +793,7 @@ export function Pond({
         stampStone(
           target,
           { x: rock.x, y: screenY, radius: rock.radius, href: '', label: '' },
-          lit ? Math.min(1, s.stoneBrightness * 1.9) : s.stoneBrightness * 0.85,
+          Math.min(1, s.stoneBrightness * (lit ? 1.9 : 0.85) * rock.density),
           cw,
           ch,
         )

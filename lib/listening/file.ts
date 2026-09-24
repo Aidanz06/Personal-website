@@ -1,6 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { LISTENING_FILE } from './constants.ts'
 import type { ListeningFile } from './types.ts'
 
 /**
@@ -13,7 +12,14 @@ import type { ListeningFile } from './types.ts'
  * is a build nobody can reason about.
  */
 
-export const LISTENING_PATH = join(process.cwd(), LISTENING_FILE)
+/**
+ * Written out as literal segments rather than built from the LISTENING_FILE
+ * constant. Next's build traces filesystem access statically, and a path it
+ * cannot read at build time makes it trace and deploy the ENTIRE project as
+ * server code — public folder included. The constant is still what the
+ * covers script prints; this is the one place that has to be spelled out.
+ */
+export const LISTENING_PATH = join(process.cwd(), 'content', 'listening.json')
 
 /**
  * Read the file, at build time.

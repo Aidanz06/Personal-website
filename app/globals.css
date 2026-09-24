@@ -240,8 +240,14 @@
   }
 }
 
+/* `backwards`, not `both`. A held final keyframe of `transform: none` is
+   computed as an identity matrix — not `none` — so `both` left main as the
+   containing block for every position:fixed caption inside it, for good, and
+   the captions were placed against the top of the document instead of the
+   viewport. `backwards` falls back to the element's own style when the
+   animation ends, which is the last keyframe exactly. See lib/pageFlow.test.ts. */
 .page-flow > main {
-  animation: page-flow 480ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation: page-flow 480ms cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

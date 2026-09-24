@@ -2290,3 +2290,233 @@ matched everything because both its fields were blank would empty the pond, and
 the file ships with exactly that rule in it.
 
 94 new tests, 458 in total.
+
+## listening step 2 — the /listening page
+
+### what got built
+
+`/listening` is an inner page like /about: back link, theme control, the
+water behind it, and the page-change wave. Below the heading is a pond. The
+pebbles sit near the surface, sized by playcount. The label "the ones that
+never leave" sits below them, and the boulders sit at the bottom.
+
+| file | what it does |
+|---|---|
+| `app/listening/page.tsx` | Server: reads the data, static, revalidates every six hours. |
+| `components/ListeningPond.tsx` | Client: the pond, the rock buttons, the captions. |
+| `lib/listening/rocks.ts` | Pure: where every rock goes and how big it is. |
+| `lib/listening/coverless.ts` | An album with no cover, drawn as its own name. |
+| `lib/listening/fallback.ts` | The page with JavaScript off: a plain list. |
+| `lib/listening/format.ts` | "on repeat · last 30 days" and "as of september 23". |
+
+**It is the photo rocks, pointed at album covers.** `Pond` already knew how to
+take a list of rocks with an image each, stamp them into the field, and open
+one on hover into an ASCII stage, a duotone and a caption slot. `/listening`
+hands it album covers and nothing about that machinery changed. The rocks are
+`<button>`s over the canvas, positioned in CSS so they are server-rendered
+HTML, and the canvas is `aria-hidden`.
+
+**It sits outside the `(page)` route group.** That group's layout renders its
+own `<PondBackdrop>`, and this page needs a pond with rocks in it. Two ponds
+would mean two canvases doing twice the work. The group's chrome, a back link
+and the theme control, is a dozen lines, so `ListeningPond` renders it itself.
+
+### shared changes, and why each one was needed
+
+Three files outside this feature changed. Each one is the smallest change that
+does the job:
+
+| file | change | why |
+|---|---|---|
+| `lib/pond/photoStones.ts`, `components/Pond.tsx` | optional `density` on a rock, default 1 | Boulders need a heavier texture. It multiplies the stone's brightness, so every cell of the rock gets a denser character. Photo rocks leave it undefined, so they draw exactly as before. |
+| `next.config.ts` | `images.remotePatterns` for `lastfm.freetls.fastly.net` | Covers have to go through the image optimiser. See below. |
+| `app/globals.css` | page animation `both` → `backwards` | A bug on the homepage too. See below. |
+
+### the homepage's photo captions have been off-screen since step 7
+
+I found this by driving `/listening` in headless Chrome. The first opened
+cover's caption was at **y = −413**, above the top of the screen. The
+homepage had the same problem: a photo rock's caption was at **y = −609**. It
+has been this way since the step 7 fix, so every photo caption from step 3
+has been invisible.
+
+The step 7 fix moved the page animation from the wrapper onto `main`, so the
+fixed pond canvas was no longer inside it. That was correct. But the captions
+are `position: fixed` too, and they live inside `main`. The animation used
+`animation-fill-mode: both`, which holds the last keyframe forever. A held
+`transform: none` computes to `matrix(1, 0, 0, 1, 0, 0)`. That is an identity
+matrix, but it is not `none`, so `main` stayed the containing block for every
+fixed caption. Each caption was placed from the top of the document instead
+of the viewport, which put it above the screen by exactly `scrollY`.
+
+The fix is one word. `backwards` applies the first keyframe only before the
+animation starts. When it ends, the element goes back to its own style:
+opacity 1 and no transform, which is the same as the last keyframe. It looks
+identical and leaves nothing behind. Measured after the fix, the homepage
+caption is at y = 654 and the listening caption at y = 677, both in an 860px
+viewport and both right under their pictures.
+
+The test came first. `lib/pageFlow.test.ts` now asserts that no animation
+touching `transform` uses `both` or `forwards`. It failed on `both` and passes
+on `backwards`.
+
+`main` is still the containing block for the 480ms the animation runs after a
+navigation. Nothing can be open during that window, so it doesn't matter.
+
+### a page that was static until it had a key
+
+The build printed `/listening` as `○` (static) with the fixture. With
+credentials set, it printed **`ƒ`**, meaning rendered on every request. The
+cause was `cache: 'no-store'` on the last.fm request. In this caching model,
+that opts the whole route out of static rendering, which would have meant
+asking last.fm once per visitor. The fixture build hid it because no fetch
+ran.
+
+The fetch now carries no cache option. It runs whenever the page renders: at
+build time, then at most every six hours. A test asserts the request is never
+`no-store` and never `revalidate: 0`. It failed first. After the fix the
+build prints `○ /listening  6h` with credentials set.
+
+`export const revalidate = 21600` is a literal on purpose. Next reads it
+without running the module, and `60 * 60 * 6` is not something it can read.
+
+### covers go through the optimiser, and that matters for the canvas
+
+A cover is loaded as `/_next/image?url=<last.fm url>&w=640&q=75`, the same
+way the photographs are. It saves bytes, but the main reason is that the pond
+reads the pixels of every image it draws. A cross-origin image taints the
+canvas and makes `getImageData` throw, which would lose the ASCII stage, the
+duotone and the whole opening. Served from `/_next/image`, the cover is
+same-origin.
+
+It isn't the `<Image>` component, because the canvas loads by URL. It is the
+same optimiser.
+
+640 is the smallest width in Next's default `deviceSizes`. A width outside
+that list is a 400, not a slightly different file. That's the same trap the
+photographs hit with `q=72`.
+
+### an album with no cover opens as its name
+
+The pond can already open a picture, so a coverless album becomes one. Its
+title and artist are set in monospace, white on black, in a 600×600 SVG data
+URL. The pond decodes that, samples its brightness and opens it through the
+same ASCII stage and duotone as a real cover. The name rises out of the
+characters and resolves into type.
+
+It is white on black rather than a theme colour. The image is reduced to
+luminance and then duotoned, so the theme gets applied afterwards anyway.
+Using a theme colour here would apply it twice and flatten the contrast.
+
+A data URL is same-origin, so the canvas stays clean. The SVG uses generic
+monospace, because an SVG inside an `<img>` can't reach the page's web fonts.
+
+### the layout
+
+**Pebbles** go two to a row with the right-hand one slightly lower, like the
+photo rocks. Placement comes from rank alone, so the same data always gives
+the same layout and a reload never reshuffles it. When the ranking changes,
+the rocks change places. The radius is `0.062 × size` of the smaller screen
+dimension, with a **30px floor**, so the least-played album is still a 60px
+tap target on a phone.
+
+**Boulders** get a row each, alternating sides. They are twice a pebble's
+radius at every viewport and larger than any navigation stone. Their texture
+is `density: 1.6`: the same stone drawing, pushed harder, which lands on the
+`+` and `=` end of the ramp where pebbles draw `-` and `:`. They never move.
+
+**The first pebbles peek above the fold.** They start at 0.8 screens. Heading,
+intro and labels take about four tenths of a screen at 375. If the first rock
+were entirely below the fold, the page would look empty, not like a pond.
+
+**Depth follows the rock count.** A month with three albums makes a shorter
+page than one with eight. With no pebbles, the boulders move up to where the
+pebbles would start, so a dead API doesn't leave a screen of empty water.
+There is a 1.5-screen minimum.
+
+| | depth |
+|---|---|
+| 7 fixture pebbles, no boulders (today) | 2.96 screens |
+| 7 pebbles, 3 boulders | ~4.6 screens |
+| 8 pebbles, 6 boulders (the most it holds) | under 8, tested |
+
+A pebble shows its rank (`01`–`08`) because the ranking is the information. A
+boulder shows no number because it isn't ranked.
+
+### captions, and reduced motion
+
+A pebble's caption is `album · artist` in muted mono. A boulder's caption
+adds Aidan's line underneath in body colour. With a cover open, the caption
+sits under the picture, positioned from the rect the pond reports. On a phone
+it is held inside the 20px gutter, because the picture opens nearly full
+width and would otherwise push the caption against the edge of the screen.
+
+**Under reduced motion the cover never opens.** The pond never animates, so
+the picture never arrives and the pond never reports a rect. Reduced motion
+should cost the movement, not the words. So when a rock is active and no rect
+has arrived, the caption renders directly under the rock instead. That is
+measured: with reduced motion on and a boulder focused, the caption under the
+rock reads the album, the artist and the line.
+
+The same gap exists on the homepage. Under reduced motion, photo rocks never
+open. I haven't touched that; it's in the report.
+
+### keyboard, screen reader, no JavaScript
+
+Measured in headless Chrome at 375×667:
+
+| check | result |
+|---|---|
+| tab order | back link → theme → 7 pebbles in rank order → boulders |
+| accessible name | "Kid A, Radiohead": a comma, because "·" is read as "middle dot" |
+| boulder description | the line, via `aria-describedby`, so it is read on focus before anything opens |
+| Enter | pins the rock (`aria-pressed` goes true) |
+| Esc | closes an open rock, pinned or hovered |
+| overlaps at 375 | none, across 23 boxes: rocks, rank labels, section labels, header |
+| horizontal scroll | none |
+| JavaScript off | the rock layer is hidden and a plain list takes its place |
+
+**Esc is new here.** The brief described it as matching the photo rocks, but
+they have no Esc handler. This page listens on the window, not the button,
+because a rock pinned by a tap doesn't have focus. The homepage is unchanged.
+
+**With JavaScript off**, the buttons would be scattered over a canvas that
+never draws. That's worse than a list. A `<noscript>` block carries a
+stylesheet that hides the rock layer and collapses the pond's height, plus an
+ordered list of pebbles and a list of boulders with their lines. It is built
+as a string, like the slideshow's fallback, because a browser with JavaScript
+on reads `<noscript>` contents as text, and React's hydration would find text
+where it expects elements.
+
+### what the page says in each state
+
+| state | on the page |
+|---|---|
+| no env vars | fixture pebbles, "as of", and `[example data — last.fm not connected yet]` |
+| last.fm answering | real pebbles, "on repeat · last 30 days", "as of" |
+| last.fm failing, answer remembered | the remembered pebbles, with their **original** date |
+| last.fm failing, nothing remembered | no pebbles, no "on repeat" label, no date, no error text; boulders as normal |
+
+The last row is measured, not assumed. I built with a deliberately bad key and
+temporary boulders, then restored `content/listening.json` from git. The page
+had two boulders and the empty slot rendered nothing. The markup contained no
+error-like words. The bad key's value appeared in no file anywhere under
+`.next`.
+
+The "on repeat" label only appears when there are pebbles. Over empty water it
+would be a caption with nothing to caption.
+
+### verified in a real browser, for once
+
+Every step since step 2 ended with "none of this has been driven in a real
+browser". This one was: Chrome is installed, and a 60-line DevTools-protocol
+driver in the gitignored `Claude outputs/` folder was enough to scroll, hover,
+tab, press keys, emulate reduced motion, turn JavaScript off, take
+screenshots and measure boxes. That's how the caption bug above was found.
+Unit tests would never have caught it, because every number in them was
+right.
+
+One thing to know: port 3000 was Aidan's own `next dev`, so production checks
+ran on 3100. The server was left alone.
+
+514 tests.

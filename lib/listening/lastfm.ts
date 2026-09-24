@@ -143,9 +143,12 @@ async function requestTopAlbums(
   try {
     const response = await fetchImpl(topAlbumsUrl(credentials, period), {
       signal: controller.signal,
-      // The page's own revalidate governs how often this runs; caching the
-      // request on top of that would add a second, invisible staleness.
-      cache: 'no-store',
+      // No cache option, deliberately. `cache: 'no-store'` looks like the
+      // honest choice and is the wrong one: it opts the whole route into
+      // rendering on every request, so the page stops being static and
+      // last.fm is asked once per visitor. Left alone, the request runs when
+      // the page renders — at build, and every six hours after — which is
+      // the only schedule it should have.
     })
     if (!response.ok) return null
     const payload = await response.json()

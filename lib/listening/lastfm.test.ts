@@ -114,6 +114,20 @@ describe('loadPebbles with no key', () => {
 })
 
 describe('loadPebbles with a key', () => {
+  it('never asks for an uncached request, which would make the page dynamic', async () => {
+    // `cache: 'no-store'` on a fetch opts the whole route into rendering on
+    // every request — the build then prints the page as ƒ instead of static,
+    // and last.fm is asked once per visitor. The page's own revalidate is
+    // the only schedule this should run on.
+    setLastGood(null)
+    const fetchImpl = stubFetch(realAlbums)
+    await loadPebbles(options({ env: CREDENTIALS, fetchImpl }))
+    const init = (fetchImpl as unknown as { mock: { calls: [string, RequestInit?][] } }).mock
+      .calls[0]![1] as (RequestInit & { next?: { revalidate?: number } }) | undefined
+    expect(init?.cache).not.toBe('no-store')
+    expect(init?.next?.revalidate).not.toBe(0)
+  })
+
   it('uses the answer, and applies the hide list to it', async () => {
     setLastGood(null)
     const result = await loadPebbles(
