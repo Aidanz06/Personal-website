@@ -96,7 +96,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
   return (
     <>
       {/* Fixed behind everything. aria-hidden lives on the canvas inside. */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
+      <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-screen">
         <Pond
           className="h-full w-full"
           stoneSpecs={HOME_STONES}

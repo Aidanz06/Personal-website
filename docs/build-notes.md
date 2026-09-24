@@ -3209,3 +3209,33 @@ gallery heading at 375 (118 and 69 at 1280), no horizontal scroll, and the
 bubbles visibly rise between frames.
 
 601 tests.
+
+### the pond frame now matches the page's `vh` (phones)
+
+"Phone is still a bit buggy." There's one bug class that fits, and it
+was visible in the code rather than reproduced. Headless Chrome has no
+address bar to show and hide.
+
+A phone's address bar slides away as you scroll, changing the visible
+height. Two parts of the site measured height differently:
+- **The pond frame was `fixed inset-0`.** It follows the VISIBLE viewport,
+  so it resized as the bar showed and hid. Every resize triggered a rebuild
+  and repaint mid-scroll, which shows as a flicker or jump.
+- **Everything placed over it uses CSS `vh`**, which phones fix at the
+  LARGEST height. The canvas placed the same rocks from its own measured
+  height. While the bar was showing, drawn rocks sat above their tap targets
+  by roughly 80px for each screen of depth, which is hundreds of pixels
+  down in the gallery.
+
+All three pond frames (homepage, inner pages, /listening) are now
+`fixed inset-x-0 top-0 h-screen`: 100vh from the top, the same unit as
+everything else. They never resize on scroll. While the bar is showing, the
+bottom sliver of water sits under it, which is harmless. An opened photo is
+placed within the *visible* height (`window.innerHeight`), so it can't land
+under the bar. `lib/pondFrame.test.ts` pins the frame shape on all three
+pages. It failed first.
+
+Also: bubbles spread across the full width of the pond, not just the 640px
+text column. They're edge-anchored slots, clamped to 5–95%.
+
+607 tests.

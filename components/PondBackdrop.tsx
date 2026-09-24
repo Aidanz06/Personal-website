@@ -26,7 +26,7 @@ const QUIET = {
 
 export function PondBackdrop() {
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10">
+    <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-screen">
       <Pond className="h-full w-full" settings={QUIET} scrollDriven />
     </div>
   )

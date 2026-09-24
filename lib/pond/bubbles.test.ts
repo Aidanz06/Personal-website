@@ -13,10 +13,15 @@ describe('bubbleField', () => {
     expect(bubbleField()).toEqual(field)
   })
 
-  it('keeps every bubble well inside the column, clear of the edges', () => {
-    for (const bubble of field) {
-      expect(bubble.xFraction).toBeGreaterThan(0.1)
-      expect(bubble.xFraction).toBeLessThan(0.9)
+  it('spreads across most of the pond, clear of the edges', () => {
+    // Widened at Aidan's request: they used to stay inside the 640px text
+    // column, which left most of the water empty on a laptop.
+    const xs = field.map((b) => b.xFraction)
+    expect(Math.min(...xs)).toBeLessThan(0.15)
+    expect(Math.max(...xs)).toBeGreaterThan(0.85)
+    for (const x of xs) {
+      expect(x).toBeGreaterThanOrEqual(0.05)
+      expect(x).toBeLessThanOrEqual(0.95)
     }
   })
 

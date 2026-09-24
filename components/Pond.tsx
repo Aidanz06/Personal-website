@@ -1011,8 +1011,18 @@ export function Pond({
             rock.radius * 2,
             target.width,
             target.height,
-            // Short of the full viewport, so the caption below it has room.
-            { width, height: Math.max(target.height, height - CAPTION_SPACE) },
+            // Short of the full viewport, so the caption below it has room —
+            // and short of the VISIBLE viewport. The pond's frame is 100vh,
+            // which on a phone is the height with the address bar hidden;
+            // while the bar is showing, the bottom of the canvas sits under
+            // it, and a photograph placed there would be partly hidden.
+            {
+              width,
+              height: Math.max(
+                target.height,
+                Math.min(height, window.innerHeight || height) - CAPTION_SPACE,
+              ),
+            },
           )
 
           // Drift, as if the picture were suspended in the water. Two slow,

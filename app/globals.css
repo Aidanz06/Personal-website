@@ -234,7 +234,7 @@
    IT IS ON `main`, NOT ON THE WRAPPER, AND THAT MATTERS.
 
    Any transform other than `none` makes an element the containing block for
-   its position:fixed descendants. The pond is a `fixed inset-0` canvas, and
+   its position:fixed descendants. The pond is a fixed, full-viewport canvas, and
    the wrapper contains it — so animating the wrapper made `inset-0` resolve
    to a box 737 viewport-heights tall rather than to the viewport. The canvas
    then drew the stones at documentHeight * depthVh while the real links, in

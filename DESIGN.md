@@ -321,7 +321,8 @@ its own title drawn in characters.
 ### Bubbles
 Between the last navigation stone and the gallery, 0.45 of a screen of
 extra water (`GALLERY_GAP_VH`) holds nine bubbles: `o`, `°` and `.` in mono,
-in Drowned Grey, rising the height of the gap over 5–9 seconds each. Each
+in Drowned Grey, across the full width of the pond (not just the text
+column), rising the height of the gap over 5–9 seconds each. Each
 fades in, sways a few pixels at the midpoint, and "pops" at the top. The
 positions come from a seeded sequence, so they're identical on every visit
 and between server and browser. It's pure CSS (`.bubble`): it runs with

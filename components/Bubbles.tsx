@@ -16,7 +16,9 @@ export function Bubbles({ top, height }: { top: string; height: string }) {
   return (
     <div
       aria-hidden="true"
-      className="column pointer-events-none absolute inset-x-0"
+      // The full width of the pond, not the text column: bubbles are water,
+      // and on a laptop the column is a narrow strip of it.
+      className="pointer-events-none absolute inset-x-0"
       style={{ top, height }}
     >
       <div className="relative h-full">

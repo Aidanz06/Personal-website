@@ -18,7 +18,7 @@ export const BUBBLE_GLYPHS = ['o', '°', '.'] as const
 
 export type Bubble = {
   glyph: (typeof BUBBLE_GLYPHS)[number]
-  /** Across the gap, as a fraction of the column. */
+  /** Across the pond, as a fraction of its width. */
   xFraction: number
   /** Seconds before it first rises, so they never go up together. */
   delay: number
@@ -42,12 +42,12 @@ function seeded(seed: number): () => number {
 export function bubbleField(count = 9, seed = 7): Bubble[] {
   const next = seeded(seed)
   return Array.from({ length: count }, (_, i) => {
-    // Spread across the column in slots, jittered within each, so they cover
-    // the width without two stacking on one line.
-    const slot = (i + 0.5) / count
+    // Spread across the pond in slots from edge to edge, jittered within
+    // each, so they cover the width without two stacking on one line.
+    const slot = count === 1 ? 0.5 : i / (count - 1)
     return {
       glyph: BUBBLE_GLYPHS[Math.floor(next() * BUBBLE_GLYPHS.length)]!,
-      xFraction: 0.15 + 0.7 * slot + (next() - 0.5) * (0.6 / count),
+      xFraction: Math.min(0.95, Math.max(0.05, 0.08 + 0.84 * slot + (next() - 0.5) * (0.6 / count))),
       delay: i * 0.83 + next() * 0.5,
       duration: 5 + next() * 4,
       sway: (next() < 0.5 ? -1 : 1) * (4 + next() * 10),
