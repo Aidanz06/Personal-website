@@ -1463,3 +1463,112 @@ outside that scope still match and should:
   document.
 
 240 tests.
+
+## step 2 — tailor studio: a story, and a slideshow
+
+### the story
+
+The page was a case-study skeleton: "the problem", "key decisions",
+"limitations", "my role". That is the shape of a document written to be
+assessed. It is now a short first-person story in the same order a person
+would actually tell it — what it is, the slides, why, how it works, what came
+of it, how it got built.
+
+It is marked `{/* DRAFT — aidan to rewrite */}` at the top of the MDX and it
+is meant to be rewritten. It sticks to the facts it was given and invents
+none: the fifteen-to-twenty minutes, the four things the app does, the
+human-submits-every-listing rule, the accuracy tests and the model sweep, and
+the authorship — built with Claude, with Aidan finding the problem, scoping
+it, setting the bar and steering, and Claude writing most of the code. No
+verb in it implies he typed the code himself.
+
+### the slideshow
+
+`public/tailor-studio/slides/` is empty right now, so the page shows a
+bracketed placeholder saying exactly what to drop in there. No PDF turned up,
+so nothing needed converting and nothing needed installing.
+
+**Adding slides:** drop numbered images in that folder. That is the whole
+procedure. Order comes from the filename, so reordering is renaming. Nothing
+lists the slides anywhere, so nothing can fall out of step with the folder.
+
+| file | what it does |
+|---|---|
+| `lib/slides.ts` | Reads the folder, joins it to `slides.json`, at build time. |
+| `lib/imageSize.ts` | Intrinsic width and height, read out of the file header. |
+| `lib/slideshow/transition.ts` | The dissolve curve, paging, counter, swipe. All pure. |
+| `components/Slideshow.tsx` | Server: picks the viewer, the fallback or the placeholder. |
+| `components/SlideshowViewer.tsx` | Client: the interactive deck and the canvas. |
+
+### three things worth explaining
+
+**Dimensions are read from the file header, not configured.** `next/image`
+needs a width and a height to reserve the right box before the file lands.
+The usual way to get those is an image library; instead `lib/imageSize.ts`
+reads PNG's IHDR chunk and walks JPEG's segment chain to its start-of-frame
+marker. Roughly eighty lines, no install, build-time only. It returns `null`
+rather than guessing, and a slide it cannot size is skipped — a guessed
+aspect ratio is a layout shift with extra steps.
+
+The JPEG walk has one trap worth knowing: markers `0xc4`, `0xc8` and `0xcc`
+sit in the middle of the start-of-frame range but are Huffman tables and
+arithmetic-coding tables, not frames. Reading dimensions out of one returns
+whatever that table happens to contain. There is a test for exactly that.
+
+**Only three slides are ever in the DOM.** `loading="lazy"` defers on
+*viewport* position, not visibility — so twelve stacked slides, eleven of them
+at `opacity: 0`, all download the moment the section scrolls into view.
+Mounting a window of `index - 1`, `index`, `index + 1` is what makes "preload
+the next slide" actually true.
+
+**The dissolve really does go through the ASCII renderer.** The brief allowed
+a plain crossfade if the ASCII version was not cheap. It is cheap, because of
+how the characters are stored:
+
+Each slide is turned into **four transparent canvases**, characters only,
+with each cell assigned to one of the four by a hash of its position. During
+a transition the frame loop draws the source slide, veils it with an even
+wash of the ground colour, and then draws the four bands at staggered alpha —
+band *k* opens over its own quarter of the transition. That is one fill and
+four `drawImage` calls per frame, with no per-cell work at all, and the
+characters arrive in scattered waves rather than as one block fading in.
+
+The curve holds at **full characters for the middle 20%** of the transition,
+and the underlying image is swapped at the exact midpoint of that hold. So
+the swap happens while nothing but characters is visible, and the two halves
+read as one slide breaking apart and a different one resolving out of the
+pieces. A test asserts `ascii === 1` across the whole swap window, because
+the failure mode if it ever slips is a visible hard cut — the one thing the
+effect exists to prevent.
+
+The canvas is only on screen for the 760ms a transition lasts. The rest of
+the time the slide is a plain `<Image>`, because a slide is a picture of text
+and text has to be crisp.
+
+### what happens when things are missing
+
+- **No JavaScript.** The `<noscript>` block carries a stylesheet that hides
+  the interactive half and an ordered list of every slide, numbered, at full
+  width. Both are server-rendered, so the choice is made by the browser
+  before first paint rather than by a script. The fallback images still go
+  through the optimiser — `getImageProps()` returns the same `srcset`
+  `<Image>` would have rendered.
+- **Reduced motion.** Instant swap. No canvas, no fade.
+- **Canvas unavailable, or a slide that somehow became cross-origin.** The
+  dissolve bails out and the images underneath crossfade in CSS, which looks
+  like a plain crossfade rather than like a failure.
+- **A slide with no alt text.** The bracketed placeholder is both the `alt`
+  attribute and a visible line under the deck. Slides are pictures of text,
+  so a missing description is a content bug and it is shown, not buried in
+  the markup.
+- **Alt text that Claude drafted.** Marked `draft: true` in `slides.json` and
+  rendered as `[draft alt — aidan to check] …` until that is set to `false`.
+
+### one thing to flag
+
+None of the interaction has been driven in a real browser — there is no
+headless browser in this environment. Mouse, keys, swipe and reduced motion
+are correct by construction and their logic is unit-tested, but they have not
+been *watched*. First thing to check when the real slides land.
+
+277 tests.

@@ -1,54 +1,58 @@
+import { Slideshow } from '@/components/Slideshow'
+
 export const metadata = {
   title: 'tailor studio',
   description:
     'tailor studio — a desktop app that drafts my grailed listings, so a listing takes a few minutes instead of twenty.',
 }
 
+{/* DRAFT — aidan to rewrite */}
+
 # tailor studio
 
 ## what it is
 
-[two sentences, before anything else: what was built and why. a reader who
-stops after this paragraph should still know what tailor studio is —
-aidan to write]
+tailor studio is a desktop app that turns a folder of photos from a clothing
+shoot into finished grailed listings. it groups the shoot into items, reads
+each piece's attributes off the photos, drafts the listing, looks up what
+comparable pieces actually sold for, and fills in grailed's sell form.
 
-## the problem
+<Slideshow />
 
-[first person. selling clothing on grailed, 15–20 minutes of manual work per
-listing: photographing, writing the description, researching comparable
-prices, filling the form. what made it worth automating — aidan to write]
+## why
 
-## what it does
+i sell clothing on grailed, and every listing took me fifteen to twenty
+minutes. none of that time was the interesting part: sorting a shoot into
+piles by item, writing another description in the same shape as the last one,
+digging through sold listings to work out what to ask, then typing all of it
+into a form field by field. do that across a stack of pieces and the
+afternoon is gone.
 
-[photo clustering, attribute extraction, listing generation, comp pricing,
-form fill — with a human submitting every listing. expand each into a
-sentence — aidan to write]
+## how it works
 
-## key decisions
+i point it at a shoot. it groups the photos by item, so a shoot of several
+pieces comes back as one item per piece. for each item it reads what it can
+see in the photos — what the garment is, its colour, its condition — and
+drafts a title and a description from that. it looks up comparable pieces
+that have actually sold, so the price starts from real numbers rather than a
+guess. then it fills in grailed's sell form.
 
-[three or four decisions worth explaining. candidates from the prd:
-form-fill assistant rather than auto-poster; externalized DOM selector
-config; the cost-versus-accuracy model sweep; the clustering-accuracy
-regression gate. each one gets the decision, the alternative, and why —
-aidan to write]
+and it stops there. i read every listing, fix what's wrong, and submit it
+myself. that's deliberate: it's a form-filling assistant, not an
+auto-poster. i don't want something posting under my name while i'm not
+looking, and the last stretch — is this price right for this piece, is this
+description honest — is the part that actually needs me.
 
-## outcome
+## what came of it
 
-[15–20 minutes down to a few minutes. used by aidan plus friends and family.
-put real numbers here if they exist — aidan to write]
+a listing takes a few minutes now instead of fifteen to twenty. i use it
+every time i shoot, and a few close friends and family use it too. it makes
+no money and isn't meant to. it's a personal tool.
 
-## limitations
+## how i built it
 
-[personal-use tool, single account, no revenue metrics, comp data from a
-scraping provider. stating these unprompted reads as judgment, not weakness —
-aidan to write]
-
-## my role
-
-[how to describe scoping and directing the build rather than hand-writing it
-— aidan to write]
-
----
-
-[screenshots or a short screen recording go here — at least two. a wall of
-text describing a visual tool undersells it]
+i built it with claude. i found the problem, scoped it, set the bar for what
+counted as good enough, and steered the build; claude wrote most of the code.
+the parts i spent my own attention on were the accuracy tests for the ai
+steps, and a sweep across model configurations to find the cheapest setup
+that still cleared the accuracy targets i'd set.

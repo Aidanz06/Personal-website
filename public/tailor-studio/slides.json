@@ -1,0 +1,4 @@
+{
+  "_note": "One entry per file in slides/. `alt` is what a screen reader gets — the slides are pictures of text, so each needs a real one-sentence description. `draft: true` means Claude wrote it and Aidan has not checked it yet; set it to false once you have. A file with no entry here shows a visible bracketed placeholder on the page.",
+  "slides": {}
+}
