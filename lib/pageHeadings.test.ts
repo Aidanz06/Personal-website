@@ -14,6 +14,10 @@ const sources: Record<string, string> = {
   homepage: 'components/PondHome.tsx',
   listening: 'components/ListeningPond.tsx',
   'about and tailor studio': 'mdx-components.tsx',
+  // Critique of 2026-09-24 (second run): a mistyped link landed on Next's
+  // unstyled default, "404: This page could not be found", with no pond and
+  // no way home.
+  'not found': 'app/not-found.tsx',
 }
 
 describe('page titles', () => {
@@ -25,4 +29,12 @@ describe('page titles', () => {
       expect(h1).toMatch(/\btext-name\b/)
     })
   }
+})
+
+describe('the 404 page', () => {
+  it('is in the pond, with a way back to the surface', () => {
+    const source = readFileSync(join(process.cwd(), 'app/not-found.tsx'), 'utf8')
+    expect(source).toMatch(/<PondBackdrop \/>/)
+    expect(source).toMatch(/href="\/"/)
+  })
 })
