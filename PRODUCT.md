@@ -79,9 +79,10 @@ it, and the site is built so that everything is also real, accessible HTML.
 ## Brand Commitments
 
 - The name is written "aidan zheng".
-- Tailor Studio is described honestly: built with Claude, with Aidan finding
-  the problem, scoping it, setting the bar and steering, and Claude writing
-  most of the code. No copy implies otherwise.
+- Tailor Studio is described honestly. It was built with Claude: Aidan found
+  the problem, scoped it, set the bar and steered, and Claude wrote most of
+  the code. As of 2026-09-24 the page no longer states who built it
+  (Aidan's call). The copy still never claims he wrote the code by hand.
 - Unfinished content appears as a visible bracketed placeholder, never as
   plausible filler.
 

@@ -3478,3 +3478,22 @@ already say.
 
 Screen readers now hear a real description on the /about grid and as each
 homepage rock's description, instead of "[photograph — aidan to describe]".
+
+## tailor studio copy, slide descriptions, places
+
+- **The page, less like a generated case study.** The bold-lead bullet
+  lists (problem / approach / decisions / result) became plain first-person
+  paragraphs, using only facts already on the page. At Aidan's request the
+  authorship section is gone. PRODUCT.md records the change: the page no
+  longer says who built it, and nothing claims he wrote the code by hand.
+- **An eval-harness paragraph**, with a visible bracket for what it checks
+  and the bar it has to clear. Only Aidan knows those, and the page states
+  only what was already true: the ai steps are gated by accuracy tests, and
+  a model sweep picked the cheapest setup that passed. The unused
+  `{/* DRAFT */}` marker is removed.
+- **Slide descriptions are one short line each.** The page prose already
+  says the rest. Aidan asked for concise, so they're marked checked
+  (`draft: false`), which removes the visible "[draft alt — aidan to check]"
+  line under each slide. Screen readers still get the line.
+- **Places**: nine shoot dates filled from Aidan's confirmation.
+  2025-05-20 (the capybara) is still blank.

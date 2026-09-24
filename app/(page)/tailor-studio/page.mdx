@@ -6,54 +6,34 @@ export const metadata = {
     'tailor studio — a desktop app that drafts, prices and fills in grailed listings, taking a listing from twenty minutes to a few.',
 }
 
-{/* DRAFT — aidan to rewrite */}
-
 # tailor studio
 
-a desktop app that turns a folder of clothing photos into finished grailed
-listings: grouped, written, priced against sold comparables, typed into the
-sell form. i review and publish every one.
+i sell clothes on grailed, and every listing used to take fifteen to twenty
+minutes of the same work: sorting a shoot into items, writing a title and
+description, checking what similar pieces sold for, then typing it all into
+the form. tailor studio is a desktop app that does that part for me.
 
 <Slideshow />
 
-## problem
+## how it works
 
-fifteen to twenty minutes an item, all of it manual:
+i point it at a folder of photos. it groups them by garment, reads the
+brand, size, condition and colour off the pictures, and drafts a listing
+with a price range from recent sold comparables. anything it isn't sure
+about gets flagged for me to check rather than guessed. one click types the
+draft into grailed's sell form, and i look it over and press publish myself.
 
-- sorting a batch shoot into per-item groups
-- writing a title and description from scratch
-- pricing against recent sold listings
-- filling the form, field by field
+it never signs in and never submits anything, so the account stays mine. and
+it never calls something authentic, only a probable brand.
 
-## approach
+## testing the ai
 
-five stages, two of them mine:
+the ai steps have to pass an accuracy eval harness before they're used
+[what it checks, and the bar it has to clear — aidan to add]. a sweep across
+models picked the cheapest setup that still passed.
 
-- **import** — groups the shoot by garment; reads brand, category, size,
-  condition and colour off the photos
-- **draft** — title, description, and a price range from sold comparables,
-  with a confidence rating
-- **review** — mine: fix uncertain groups, confirm the key fields
-- **fill** — types the draft into the sell form in one click
-- **publish** — mine: nothing is submitted without me
+## where it's at
 
-## decisions
-
-- **a form-fill assistant, not an auto-poster** — it never signs in and never
-  submits; operating the account stays with me
-- **ambiguity is flagged, not guessed** — anything the vision step is unsure
-  of goes to review, not into a listing
-- **no authenticity claims** — brand is reported as probable, never confirmed
-- **accuracy tests gate the ai steps**, and a model sweep picked the cheapest
-  configuration that still cleared them
-
-## result
-
-- a few minutes an item instead of fifteen to twenty
-- used on every shoot, and by a few close friends and family
-- a personal tool: no revenue, and not built for any
-
-## authorship
-
-built with claude. i found the problem, scoped it, set the accuracy bar and
-steered the build; claude wrote most of the code.
+a few minutes an item now, instead of fifteen to twenty. i use it on every
+shoot, and so do a few friends and family. it's a personal tool: no revenue,
+and not built for any.
