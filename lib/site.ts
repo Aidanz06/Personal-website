@@ -16,7 +16,7 @@ export const site = {
   // A non-breaking space inside the name: on a phone the line has to wrap,
   // and "hi, i'm / aidan zheng," reads; "hi, i'm aidan / zheng," splits a name.
   greeting: "hi, i'm aidan\u00a0zheng,",
-  identity: 'a third year student at northeastern',
+  identity: 'a third year student at northeastern, interested in building and designing',
   description:
     'aidan zheng — a personal site: what i make, what i shoot, what i listen to.',
 } as const

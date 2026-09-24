@@ -3683,3 +3683,11 @@ answers in water.
   result without the movement (`themeChange`, tested). Checked in Chrome by
   emulating reduced motion: paper is fully applied at the first frame.
 - Focus returns to the theme control either way.
+
+## the intro line
+
+At Aidan's request, the homepage intro gains "interested in building and
+designing": `site.identity` now reads "a third year student at
+northeastern, interested in building and designing". It's one line at
+1280. At 375 it wraps cleanly after "northeastern," with no horizontal
+scroll.
