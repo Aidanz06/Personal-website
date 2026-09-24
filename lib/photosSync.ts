@@ -29,6 +29,8 @@ export type SyncResult = {
   missingPlace: string[]
   /** Photographs with no personal line. Optional — not every picture needs one. */
   missingLine: string[]
+  /** Photographs with no name, so no label under their rock on the homepage. */
+  missingName: string[]
   /**
    * Media with no date at all.
    *
@@ -60,9 +62,15 @@ export function mergeCaptions(
     if (!before) added.push(photo.file)
 
     photos[photo.file] = {
+      // Every field already there is carried over first, including any this
+      // script does not know about. It used to rebuild the entry from a
+      // fixed list, which silently dropped a field added later — `name` was
+      // the first casualty. Unknown is not the same as unwanted.
+      ...before,
       // Aidan's words, untouched. This is the whole contract of the script:
       // it fills in what the camera knows and never touches what he wrote.
       alt: before?.alt ?? '',
+      name: before?.name ?? '',
       line: before?.line ?? '',
       // EXIF fills a blank, and only a blank. The camera clock is on the
       // wrong timezone, so a date he corrected by hand has to survive — and
@@ -84,10 +92,12 @@ export function mergeCaptions(
 
   const missingAlt: string[] = []
   const missingLine: string[] = []
+  const missingName: string[] = []
   const missingDate: string[] = []
   for (const [file, entry] of Object.entries(photos)) {
     if (!(entry.alt ?? '').trim()) missingAlt.push(file)
     if (!(entry.line ?? '').trim()) missingLine.push(file)
+    if (!(entry.name ?? '').trim()) missingName.push(file)
     if (!(entry.date ?? '').trim()) missingDate.push(file)
   }
 
@@ -102,6 +112,7 @@ export function mergeCaptions(
     missingAlt: missingAlt.sort(),
     missingPlace: missingPlace.sort(),
     missingLine: missingLine.sort(),
+    missingName: missingName.sort(),
     missingDate: missingDate.sort(),
     orphans: orphans.sort(),
   }

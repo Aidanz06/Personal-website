@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BANNER_ROWS, asciiBanner, bannerSupports } from './banner'
+import { BANNER_ROWS, asciiBanner, asciiBannerLines, bannerSupports } from './banner'
 
 describe('asciiBanner', () => {
   it('draws every word on the same number of rows', () => {
@@ -67,6 +67,31 @@ describe('the full font', () => {
     // The ten original letters are unchanged, so "photo gallery" keeps its
     // shape while the font grows around it.
     expect(asciiBanner('photo gallery')[0]).toBe('###  #  #  ##  ###  ##      ###  ##  #   #   #### ###  #   #')
+  })
+})
+
+describe('asciiBannerLines', () => {
+  it('stacks one banner per line with a blank row between', () => {
+    const rows = asciiBannerLines(['ab', 'cd'])
+    expect(rows).toHaveLength(BANNER_ROWS * 2 + 1)
+    expect(rows[BANNER_ROWS]).toBe('')
+    expect(rows.slice(0, BANNER_ROWS)).toEqual(asciiBanner('ab'))
+  })
+
+  it('centres a shorter line under a longer one', () => {
+    // Labels sit centred under a rock; a short second line pushed to the left
+    // edge of the block reads as a mistake.
+    const rows = asciiBannerLines(['wwww', 'i'])
+    const widthOf = (block: string[]) => Math.max(...block.map((r) => r.length))
+    const top = rows.slice(0, BANNER_ROWS)
+    const bottom = rows.slice(BANNER_ROWS + 1)
+    const pad = Math.floor((widthOf(top) - widthOf(asciiBanner('i'))) / 2)
+    expect(bottom[0]!.startsWith(' '.repeat(pad) + '#')).toBe(true)
+  })
+
+  it('is one banner for one line, and nothing for none', () => {
+    expect(asciiBannerLines(['ab'])).toEqual(asciiBanner('ab'))
+    expect(asciiBannerLines([])).toEqual([])
   })
 })
 

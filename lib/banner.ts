@@ -89,3 +89,24 @@ export function asciiBanner(text: string, ink = '#'): string[] {
   }
   return rows
 }
+
+/**
+ * Several lines of text as one piece of ASCII art: a banner per line, with a
+ * blank row between them. For labels long enough to need wrapping. ASCII art
+ * can't reflow like text, so the caller decides where the lines break.
+ */
+export function asciiBannerLines(lines: readonly string[], ink = '#'): string[] {
+  const blocks = lines.map((line) => asciiBanner(line, ink))
+  const widthOf = (block: string[]) => Math.max(0, ...block.map((row) => row.length))
+  const widest = Math.max(0, ...blocks.map(widthOf))
+  const rows: string[] = []
+  blocks.forEach((block, index) => {
+    if (index > 0) rows.push('')
+    // Centred: labels sit under the middle of a rock, and a short line pushed
+    // to the block's left edge reads as a mistake.
+    const pad = ' '.repeat(Math.floor((widest - widthOf(block)) / 2))
+    rows.push(...block.map((row) => (row ? pad + row : row)))
+  })
+  return rows
+}
+

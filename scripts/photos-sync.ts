@@ -80,6 +80,7 @@ list(
   'no usable date — clips carry none, and an export with no camera EXIF has\n  only the date it was exported. Type the shoot date in',
   result.missingDate,
 )
+list('photographs with no name (no label under their rock)', result.missingName)
 list('photographs with no personal line (optional)', result.missingLine)
 list('entries whose file is gone — kept, delete by hand if you meant it', result.orphans)
 

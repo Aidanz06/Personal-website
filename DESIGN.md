@@ -291,9 +291,9 @@ A button, not a link: nothing navigates. The rock *is* the picture.
 - **Shape:** a smaller round character stone. At least 52px across for a
   photo, 60px for an album; album size scales with play count.
 - **Label:** below it, in Drowned Grey, or koi orange while open. A photo
-  rock's label is Water Text giving its place and month (`kyoto · may`, or
-  just `may` until the place is written), or `clip` for a clip; an undated
-  still has no label. An album rock shows its rank (`01`–`05`). Hidden while its own
+  rock's label is Water Text giving the name Aidan wrote for it
+  (`captions.json` → `name`). It wraps at 8 letters per line, centred, and
+  a rock with no name has no label. An album rock shows its rank (`01`–`05`). Hidden while its own
   picture is showing.
 - **Order and groups:** photo rocks run newest first, so going deeper goes
   back in time, grouped by year. Each group starts a new row under a year

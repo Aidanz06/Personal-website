@@ -7,19 +7,18 @@
  *
  * - **order is time**, newest first, so going deeper goes back, the same way
  *   /listening reads — and the undated come last, at the bottom;
- * - **each rock names its place and month** ("kyoto · may"), with the year
- *   said once, on its group's marker, instead of on fifteen rocks;
- * - **a clip says it is a clip**, since it is the rock where something moves;
+ * - **each rock carries Aidan's name for it**, and nothing until he writes
+ *   one; the year is said once, on its group's marker;
  * - **a screen reader hears what is known** — the description once Aidan has
  *   written it, and until then "photograph, may 2025", never a filename.
  *
- * Places come from captions.json and are blank until written, so today the
- * labels are months. Filling in `places` upgrades every label at once.
+ * Names live in captions.json beside each photograph's description.
  *
  * Pure: it works on captions, not files.
  */
 
 import type { Caption } from '../captions'
+import { bannerSupports } from '../banner'
 
 type Kind = 'image' | 'video'
 
@@ -63,15 +62,34 @@ export function galleryGroup(caption: Caption): string {
   return caption.year || 'undated'
 }
 
+/** Longest label line, in letters. Past this it runs off a phone screen. */
+export const LABEL_LINE_CHARS = 8
+
 /**
- * The line under a rock. Place and month, then "clip" for a clip. Empty for an
- * undated still — the group marker already says "undated", and a bracketed
- * placeholder on the page would be noise on every one of them.
+ * The label under a rock: Aidan's name for the photograph, as lines ready to
+ * draw. Nothing at all until he names it. A month under every rock read "may"
+ * fourteen times in a row, and a placeholder would be noise on every rock.
+ *
+ * Lowercased, and stripped to what the banner font can draw. Wrapped at word
+ * boundaries to LABEL_LINE_CHARS, because ASCII art can't reflow like text,
+ * and a long line under a rock near the edge of a 375px screen runs off it.
+ * A single word longer than that stays whole rather than being cut.
  */
-export function rockLabel(caption: Caption, kind: Kind): string {
-  const parts = [caption.place, caption.month].filter(Boolean)
-  if (kind === 'video') parts.push('clip')
-  return parts.join(' · ')
+export function rockLabel(caption: Caption): string[] {
+  const drawable = [...caption.name.toLowerCase()].filter((char) => bannerSupports(char)).join('')
+  const words = drawable.split(/\s+/).filter(Boolean)
+  const lines: string[] = []
+  let current = ''
+  for (const word of words) {
+    if (!current) current = word
+    else if (`${current} ${word}`.length <= LABEL_LINE_CHARS) current = `${current} ${word}`
+    else {
+      lines.push(current)
+      current = word
+    }
+  }
+  if (current) lines.push(current)
+  return lines
 }
 
 /**
@@ -82,5 +100,5 @@ export function rockName(caption: Caption, kind: Kind): string {
   if (!caption.altMissing) return caption.alt
   const what = kind === 'video' ? 'clip' : 'photograph'
   const when = [caption.month, caption.year].filter(Boolean).join(' ') || 'undated'
-  return [what, caption.place, when].filter(Boolean).join(', ')
+  return [what, caption.name, caption.place, when].filter(Boolean).join(', ')
 }

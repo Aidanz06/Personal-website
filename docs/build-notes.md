@@ -3094,3 +3094,31 @@ Checked at 375 and 1280: no overlaps and no horizontal scroll. Screen
 readers are unchanged, since the rocks' names still carry the words.
 
 581 tests.
+
+### names instead of months
+
+Aidan's call: no months under the rocks. He'll write a unique name for each
+photograph, and that name is the label.
+
+- **Where:** `public/photos/captions.json`, a `name` field on each
+  photograph beside `alt` and `line`. `npm run photos:sync` scaffolded a
+  blank one on all 25 and lists the ones still unnamed. Checked by
+  comparing the file's data before and after: identical apart from the 25
+  blank `name` fields.
+- **A data-loss bug came first.** The sync rebuilt each entry from a fixed
+  list of fields, so any field it didn't know about was silently dropped on
+  the next run. A typed name would have been deleted by the very tool meant
+  to protect Aidan's words. It now carries every existing field forward
+  before filling blanks. The failing test came first, plus one for an
+  arbitrary unknown field.
+- **The label** is the name, lowercased, reduced to what the banner font can
+  draw, and wrapped at word boundaries to 8 letters per line (one banner per
+  line, centred), so it fits a phone from a rock near the edge. A single
+  longer word stays whole. No name means no label at all.
+- **Screen readers:** "photograph, *name*, may 2025" until there's a
+  description.
+
+Checked with two temporary names in a build, then restored: "test name"
+wraps to two centred lines, and a long name stays inside 375px as three.
+
+590 tests.

@@ -44,23 +44,36 @@ describe('galleryGroup', () => {
 })
 
 describe('rockLabel', () => {
-  it('reads place · month when the place is written', () => {
-    expect(rockLabel(photo('a.jpg').caption, 'image')).toBe('kyoto · may')
+  const named = (name: string) =>
+    resolveCaption('n.jpg', { photos: { 'n.jpg': { date: '2025-05-22', name } } })
+
+  it('is the name Aidan gave the photograph', () => {
+    expect(rockLabel(named('bikes'))).toEqual(['bikes'])
   })
 
-  it('falls back to the month alone until the place is written', () => {
-    // The year is already on the group's marker; repeating it on every rock
-    // would be fifteen identical labels.
-    expect(rockLabel(photo('b.jpg').caption, 'image')).toBe('june')
+  it('is nothing at all until he names it — no month, no placeholder', () => {
+    // Months under the rocks read "may" fourteen times in a row. A rock with
+    // no name simply has no label.
+    expect(rockLabel(photo('a.jpg').caption)).toEqual([])
+    expect(rockLabel(photo('e.mp4').caption)).toEqual([])
   })
 
-  it('says when a rock is a clip', () => {
-    expect(rockLabel(photo('c.mp4').caption, 'video')).toBe('june · clip')
-    expect(rockLabel(photo('e.mp4').caption, 'video')).toBe('clip')
+  it('wraps a long name onto more lines, so it stays on a phone screen', () => {
+    // ASCII art cannot reflow like text; the label is drawn one banner per
+    // line, and a line past about eight letters runs off a 375px screen from
+    // a rock near the edge.
+    expect(rockLabel(named('the tide was out'))).toEqual(['the tide', 'was out'])
+    for (const line of rockLabel(named('a long walk home through the rain'))) {
+      expect(line.length).toBeLessThanOrEqual(8)
+    }
   })
 
-  it('is empty for an undated still, rather than a placeholder on the page', () => {
-    expect(rockLabel(photo('d.jpg').caption, 'image')).toBe('')
+  it('keeps a single long word whole rather than cutting it', () => {
+    expect(rockLabel(named('kaleidoscope'))).toEqual(['kaleidoscope'])
+  })
+
+  it('draws only what the font can draw, lowercased', () => {
+    expect(rockLabel(named('Bikes!'))).toEqual(['bikes'])
   })
 })
 
@@ -79,6 +92,11 @@ describe('rockName', () => {
       const name = rockName(photo(f).caption, photo(f).kind)
       expect(name).not.toMatch(/\.jpg|\.mp4|\[/)
     }
+  })
+
+  it('uses the name while there is no description', () => {
+    const c = resolveCaption('n.jpg', { photos: { 'n.jpg': { date: '2025-05-22', name: 'bikes' } } })
+    expect(rockName(c, 'image')).toBe('photograph, bikes, may 2025')
   })
 
   it('adds the place when it is written', () => {

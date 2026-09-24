@@ -9,11 +9,12 @@ const scan: ScannedPhoto[] = [
 ]
 
 describe('mergeCaptions', () => {
-  it('scaffolds every photograph with blank alt and line', () => {
+  it('scaffolds every photograph with blank alt, name and line', () => {
     const { captions, added } = mergeCaptions({}, scan)
     expect(added).toEqual(['website-01.jpg', 'website-02.jpg', 'website-11.jpg'])
     expect(captions.photos!['website-01.jpg']).toEqual({
       alt: '',
+      name: '',
       line: '',
       date: '2025-05-22',
       settings: 'f/8 · 1/160 · iso 320',
@@ -136,8 +137,41 @@ describe('mergeCaptions', () => {
 
   it('handles a photograph whose EXIF carried nothing', () => {
     const { captions } = mergeCaptions({}, [{ file: 'scan.jpg', date: '', settings: '' }])
-    expect(captions.photos!['scan.jpg']).toEqual({ alt: '', line: '', date: '', settings: '' })
+    expect(captions.photos!['scan.jpg']).toEqual({ alt: '', name: '', line: '', date: '', settings: '' })
     // No date means no place entry to create — a blank key would be nonsense.
     expect(captions.places).toEqual({})
+  })
+})
+
+describe('names', () => {
+  const scanned: ScannedPhoto[] = [
+    { file: 'a.jpg', date: '2025-05-22', settings: 'f/8' },
+    { file: 'b.jpg', date: '', settings: '' },
+  ]
+
+  it('keeps a name Aidan typed, on every run', () => {
+    // The merge rebuilt each entry from a fixed list of fields, so a field it
+    // did not know about was silently dropped on the next sync. A name is
+    // Aidan's own words; losing it is exactly what this script must not do.
+    const existing: CaptionsFile = { photos: { 'a.jpg': { name: 'two bikes' } } }
+    let result = mergeCaptions(existing, scanned)
+    result = mergeCaptions(result.captions, scanned)
+    expect(result.captions.photos!['a.jpg']!.name).toBe('two bikes')
+  })
+
+  it('scaffolds a blank name for every photograph, ready to type into', () => {
+    const result = mergeCaptions({}, scanned)
+    expect(result.captions.photos!['b.jpg']!.name).toBe('')
+  })
+
+  it('lists the photographs that still need a name', () => {
+    const result = mergeCaptions({ photos: { 'a.jpg': { name: 'two bikes' } } }, scanned)
+    expect(result.missingName).toEqual(['b.jpg'])
+  })
+
+  it('keeps any other field it does not know about, too', () => {
+    const existing = { photos: { 'a.jpg': { note: 'keep me' } } } as unknown as CaptionsFile
+    const result = mergeCaptions(existing, scanned)
+    expect((result.captions.photos!['a.jpg'] as Record<string, unknown>).note).toBe('keep me')
   })
 })

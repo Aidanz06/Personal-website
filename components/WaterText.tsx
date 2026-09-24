@@ -1,4 +1,4 @@
-import { asciiBanner } from '@/lib/banner'
+import { asciiBanner, asciiBannerLines } from '@/lib/banner'
 
 /**
  * Words drawn in characters, seen through moving water.
@@ -44,7 +44,8 @@ export function WaterText({
   size,
   className = 'text-muted',
 }: {
-  text: string
+  /** One line, or several for a label that wraps. */
+  text: string | readonly string[]
   size: WaterSize
   className?: string
 }) {
@@ -53,7 +54,7 @@ export function WaterText({
       aria-hidden="true"
       className={`block w-max font-mono leading-[0.62] whitespace-pre ${SIZE[size]} ${FILTER[size]} ${className}`}
     >
-      {asciiBanner(text).join('\n')}
+      {(typeof text === 'string' ? asciiBanner(text) : asciiBannerLines(text)).join('\n')}
     </span>
   )
 }

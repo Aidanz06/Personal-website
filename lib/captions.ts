@@ -15,6 +15,11 @@
  */
 
 export type CaptionEntry = {
+  /**
+   * A short name Aidan gives the photograph, shown under its rock on the
+   * homepage. Unique per photograph, and a few words at most.
+   */
+  name?: string
   /** Screen-reader description of the photograph. */
   alt?: string
   /** An optional line from Aidan. */
@@ -38,6 +43,8 @@ export type Caption = {
   altMissing: boolean
   /** Line one: "kamakura · may 2025". Blank if neither is known. */
   headline: string
+  /** Aidan's short name for it, shown under its rock. Blank until written. */
+  name: string
   /** Line two: Aidan's own line, if he wrote one. */
   line: string
   /** Line three: "f/8 · 1/160 · iso 320". */
@@ -110,6 +117,7 @@ export function resolveCaption(file: string, data: CaptionsFile): Caption {
   const entry = data.photos?.[file] ?? {}
   const alt = clean(entry.alt)
   const line = clean(entry.line)
+  const name = clean(entry.name)
   const settings = clean(entry.settings)
   const date = clean(entry.date)
   const place = clean(date ? data.places?.[date] : undefined)
@@ -129,6 +137,7 @@ export function resolveCaption(file: string, data: CaptionsFile): Caption {
     alt: alt || missingAltFor(file),
     altMissing: alt === '',
     headline,
+    name,
     line,
     settings,
     description,

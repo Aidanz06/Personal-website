@@ -242,10 +242,10 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               {/* Hidden while this rock's own photograph is showing: it
                   opens centred on the rock, and an orange number in the
                   middle of the picture is the first thing the eye lands on. */}
-              {!(isActive && photoOpen) && rockLabel(gallery[index]!.caption, gallery[index]!.kind) && (
+              {!(isActive && photoOpen) && rockLabel(gallery[index]!.caption).length > 0 && (
                 <span className="absolute top-full left-1/2 -translate-x-1/2 pt-1">
                   <WaterText
-                    text={rockLabel(gallery[index]!.caption, gallery[index]!.kind)}
+                    text={rockLabel(gallery[index]!.caption)}
                     size="label"
                     className={isActive ? 'text-accent' : 'text-muted'}
                   />
