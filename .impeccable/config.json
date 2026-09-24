@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "water-wobble",
+        "createdAt": "2026-09-24T09:27:26.993Z",
+        "reason": "Claude: ease-in-out skew of ±1.4deg with no overshoot, off under reduced motion; flagged only for the word 'wobble' (also judged a false positive in the 2026-09-24 critique's detector pass)"
+      }
+    ]
+  }
+}
