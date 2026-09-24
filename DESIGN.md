@@ -109,7 +109,7 @@ because every surface shows its making: the characters, the measured glyph
 ramp, captions and controls set in monospace like instrument labels. It's
 playful because of small rewards for attention: a koi that comes to the
 stone you focus, rings breathing off the listening stone, album covers
-rising as ASCII art, a heading that warps as if seen through water. And
+rising as ASCII art, bubbles rising above the gallery. And
 it's calm because motion is slow, most of the surface is empty water, and
 nothing competes for attention. Going deeper means going more personal: the
 name at the surface, then the navigation, then photographs and music in the
@@ -291,13 +291,12 @@ A button, not a link: nothing navigates. The rock *is* the picture.
 - **Shape:** a smaller round character stone. At least 52px across for a
   photo, 60px for an album; album size scales with play count.
 - **Label:** below it, in Drowned Grey, or koi orange while open. A photo
-  rock's label is Water Text giving the name Aidan wrote for it
-  (`captions.json` → `name`). It wraps at 8 letters per line, centred, and
-  a rock with no name has no label. An album rock shows its rank (`01`–`05`). Hidden while its own
+  rock's label is the name Aidan wrote for it (`captions.json` → `name`),
+  as swaying Gallery Text; a rock with no name has no label. An album rock shows its rank (`01`–`05`). Hidden while its own
   picture is showing.
 - **Order and groups:** photo rocks run newest first, so going deeper goes
   back in time, grouped by year. Each group starts a new row under a year
-  marker in Water Text (`2025`, `undated`), which fades while a photo is
+  marker (`2025`, `undated`) in Gallery Text, which fades while a photo is
   open.
 - **States:** hover or focus opens it, a click or tap pins it
   (`aria-pressed`), and a second click or tap closes it outright. Esc
@@ -347,21 +346,23 @@ wants, and a finger can still hit them.
 Koi orange, with a 1px underline offset 0.2em, thickening to 2px on hover
 (120ms). Focus is a 2px accent outline, offset 3px.
 
-### Water Text (signature)
-All text inside the gallery: its heading, the year markers, and the label
-under each rock. It's ASCII art in a hand-built five-row bitmap font
-(`lib/banner.ts`, the full alphabet, digits, `·` and `-`), drawn by
-`components/WaterText.tsx` with a 0.62 line height so each font pixel is
-square. It's distorted by an SVG turbulence and displacement filter with
-long, rolling horizontal waves and a drifting frequency (13s), so it bends
-like lettering seen through moving water.
-- **Sizes:** heading 7px (22px tall), markers 6px, labels 6px.
-- **Strength:** displacement 8 for the heading and markers, 3.5 for labels.
-  Labels are small enough that the stronger setting tears them apart.
-- **Colour:** Drowned Grey, or koi orange for the open rock's label.
-- **Reduced motion:** the same distortion, held still.
-- **Accessibility:** always `aria-hidden`. The words reach screen readers
-  some other way: the hidden `<h2>`, and each rock's accessible name.
+### Gallery Text
+The gallery's words, its heading, the year markers, and the name under each
+rock, are regular text that sways slowly as if seen through the water
+(`.water-wobble`: a 7s skew of ±1.4° and a 1px lift, each element on its own
+phase).
+- **Heading:** "photo gallery", a real `<h2>` in the headline serif, muted.
+- **Year markers:** mono label size, muted, `aria-hidden` (each rock's name
+  already carries its year).
+- **Photo names:** mono label size under the rock, muted (or koi orange
+  while open), capped at 9rem and centred so a long name wraps under its
+  rock.
+
+The sway is a transform, so the browser moves already-drawn text instead
+of re-drawing it. That keeps it crisp and cheap on phones, and it's held
+still under reduced motion. It replaced wavy ASCII art drawn through an
+animated SVG filter, which cost a redraw of every visible label on every
+frame.
 
 ## Do's and Don'ts
 

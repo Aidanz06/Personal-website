@@ -30,6 +30,9 @@ const LEAF_SELECTORS = [
   // A single rising bubble character in the gap above the gallery
   // (components/Bubbles.tsx). It holds one glyph and nothing else.
   '.bubble',
+  // A word of gallery text swaying underwater — the heading, a year, a
+  // photograph's name (components/PondHome.tsx). Text only, nothing inside.
+  '.water-wobble',
 ]
 
 describe('the page-change animation', () => {

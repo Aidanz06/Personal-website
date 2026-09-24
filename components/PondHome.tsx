@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useReducer, useState } from 'react'
+import { useEffect, useReducer, useState, type CSSProperties } from 'react'
 import { Pond, type PhotoRect } from '@/components/Pond'
 import { ThemeMenu } from '@/components/ThemeMenu'
 import { DEEPEST_STONE_VH, HOME_STONES, POND_DEPTH_VH } from '@/lib/pond/stones'
@@ -11,7 +11,6 @@ import { galleryGroup, orderGallery, rockLabel, rockName } from '@/lib/pond/gall
 import { isCaptionEmpty } from '@/lib/captions'
 import type { Photo } from '@/lib/photos'
 import { contacts, site } from '@/lib/site'
-import { WaterFilters, WaterText } from '@/components/WaterText'
 import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
 import { usePinDismissal } from '@/components/usePinDismissal'
 
@@ -109,7 +108,6 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
       </div>
 
       <main className="relative" style={{ minHeight: vh(depthVh) }}>
-        <WaterFilters />
         {/* --- the surface --- */}
         <section className="column pt-[22vh]">
           <div className="flex items-baseline gap-1.5">
@@ -184,18 +182,10 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
           />
         )}
 
-        {/* The gallery's heading: "photo gallery" as ASCII art, at about
-            the height of the one-line note it replaced, seen through the
-            water. An SVG filter displaces it by a slowly shifting turbulence
-            pattern, so the letters bend and waver the way anything under
-            moving water does. No script: it works with JavaScript off, and
-            costs nothing per frame on the page's side.
-
-            Under reduced motion it gets the same distortion held still — it
-            still looks like it is under water, it just does not move.
-
-            A screen reader gets the words from the hidden <h2>. The art is
-            hidden from it: read aloud, it is a minute of "number sign". */}
+        {/* The gallery's heading, in the site's heading serif, muted so the
+            photographs stay the thing, and swaying slowly as if seen through
+            the water (.water-wobble in globals.css). A real <h2>: it gives
+            the gallery a landmark a screen reader can jump to. */}
         {photoStones.length > 0 && (
           <div
             className={`column absolute inset-x-0 transition-opacity duration-500 ${
@@ -203,8 +193,9 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
             }`}
             style={{ top: vh(photoStones[0]!.depthVh - GALLERY_TITLE_LIFT_VH) }}
           >
-            <h2 className="sr-only">photo gallery</h2>
-            <WaterText text="photo gallery" size="heading" />
+            <h2 className="water-wobble font-display text-heading font-normal text-muted">
+              photo gallery
+            </h2>
           </div>
         )}
 
@@ -218,7 +209,13 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
             }`}
             style={{ top: vh(marker.depthVh) }}
           >
-            <WaterText text={marker.label} size="marker" />
+            <span
+              aria-hidden="true"
+              className="water-wobble font-mono text-small text-muted"
+              style={{ '--wobble-delay': `-${(marker.depthVh * 3) % 7}s` } as CSSProperties}
+            >
+              {marker.label}
+            </span>
           </div>
         ))}
 
@@ -262,12 +259,17 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
                   opens centred on the rock, and an orange number in the
                   middle of the picture is the first thing the eye lands on. */}
               {!(isActive && photoOpen) && rockLabel(gallery[index]!.caption).length > 0 && (
-                <span className="absolute top-full left-1/2 -translate-x-1/2 pt-1">
-                  <WaterText
-                    text={rockLabel(gallery[index]!.caption)}
-                    size="label"
-                    className={isActive ? 'text-accent' : 'text-muted'}
-                  />
+                <span className="absolute top-full left-1/2 w-[9rem] -translate-x-1/2 pt-0.5 text-center">
+                  {/* 9rem (144px), not w-36: this project's spacing unit is 8px, so
+                      w-36 is 288px and ran off a phone screen. Capped and
+                      centred, so a long name wraps under
+                      its rock instead of running off a phone screen. */}
+                  <span
+                    className={`water-wobble font-mono text-small ${isActive ? 'text-accent' : 'text-muted'}`}
+                    style={{ '--wobble-delay': `-${(index * 0.9) % 7}s` } as CSSProperties}
+                  >
+                    {rockLabel(gallery[index]!.caption)}
+                  </span>
                 </span>
               )}
               {!isCaptionEmpty(gallery[index]!.caption) && (

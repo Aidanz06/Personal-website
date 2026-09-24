@@ -3239,3 +3239,33 @@ Also: bubbles spread across the full width of the pond, not just the 640px
 text column. They're edge-anchored slots, clamped to 5–95%.
 
 607 tests.
+
+### back to regular text, swaying
+
+Aidan weighed ASCII against regular text for the gallery's words and chose
+regular text for all of it: the heading, the years, and the photo names.
+
+- **The heading** is a real `<h2>`, "photo gallery", in the headline serif,
+  muted. It's no longer a hidden heading behind aria-hidden art, so screen
+  readers get a landmark from the visible text.
+- **Years** are mono label text, muted, and `aria-hidden`, since the names
+  carry the year. **Names** are mono label text under the rock, exactly as
+  Aidan types them (no lowercasing, no stripping), capped at 9rem and centred
+  so long names wrap.
+- **The wobble is a transform now, not a filter** (`.water-wobble`): a 7s
+  skew of ±1.4° with a 1px lift, each element on its own phase, held still
+  under reduced motion. The animated SVG filter it replaces made the
+  browser redraw every visible label on every frame. That's graphics-chip
+  work headless Chrome can't measure (it reported 60fps and a similar
+  main-thread load either way, because it runs without a GPU), but it's the
+  likeliest cause of lag on a phone. A transform moves already-drawn text.
+  `.water-wobble` joins `.bubble` in the documented leaf allowance.
+- `components/WaterText.tsx` and the hand-made font (`lib/banner.ts`) are
+  deleted. They're in git history if the ASCII look ever comes back.
+
+**A bug caught before commit:** the name wrapper was `w-36`, which in this
+project is **288px**, not 144, because the spacing unit is 8px. A long name
+under a right-hand rock made the phone page 402px wide. It's `w-[9rem]` now,
+and 40 samples over 10 seconds showed no horizontal scroll.
+
+591 tests.

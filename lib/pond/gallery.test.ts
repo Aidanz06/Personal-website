@@ -47,33 +47,19 @@ describe('rockLabel', () => {
   const named = (name: string) =>
     resolveCaption('n.jpg', { photos: { 'n.jpg': { date: '2025-05-22', name } } })
 
-  it('is the name Aidan gave the photograph', () => {
-    expect(rockLabel(named('bikes'))).toEqual(['bikes'])
+  it('is the name Aidan gave the photograph, exactly as he wrote it', () => {
+    // Regular text now, not ASCII art, so nothing is lowercased or stripped:
+    // it's his words.
+    expect(rockLabel(named('Two Bikes!'))).toBe('Two Bikes!')
   })
 
-  it('is nothing at all until he names it — no month, no placeholder', () => {
-    // Months under the rocks read "may" fourteen times in a row. A rock with
-    // no name simply has no label.
-    expect(rockLabel(photo('a.jpg').caption)).toEqual([])
-    expect(rockLabel(photo('e.mp4').caption)).toEqual([])
+  it('is empty until he names it: no month, no placeholder', () => {
+    expect(rockLabel(photo('a.jpg').caption)).toBe('')
+    expect(rockLabel(photo('e.mp4').caption)).toBe('')
   })
 
-  it('wraps a long name onto more lines, so it stays on a phone screen', () => {
-    // ASCII art cannot reflow like text; the label is drawn one banner per
-    // line, and a line past about eight letters runs off a 375px screen from
-    // a rock near the edge.
-    expect(rockLabel(named('the tide was out'))).toEqual(['the tide', 'was out'])
-    for (const line of rockLabel(named('a long walk home through the rain'))) {
-      expect(line.length).toBeLessThanOrEqual(8)
-    }
-  })
-
-  it('keeps a single long word whole rather than cutting it', () => {
-    expect(rockLabel(named('kaleidoscope'))).toEqual(['kaleidoscope'])
-  })
-
-  it('draws only what the font can draw, lowercased', () => {
-    expect(rockLabel(named('Bikes!'))).toEqual(['bikes'])
+  it('trims stray whitespace', () => {
+    expect(rockLabel(named('  bikes  '))).toBe('bikes')
   })
 })
 

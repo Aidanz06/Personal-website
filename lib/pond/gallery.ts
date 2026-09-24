@@ -18,7 +18,6 @@
  */
 
 import type { Caption } from '../captions'
-import { bannerSupports } from '../banner'
 
 type Kind = 'image' | 'video'
 
@@ -62,34 +61,14 @@ export function galleryGroup(caption: Caption): string {
   return caption.year || 'undated'
 }
 
-/** Longest label line, in letters. Past this it runs off a phone screen. */
-export const LABEL_LINE_CHARS = 8
-
 /**
- * The label under a rock: Aidan's name for the photograph, as lines ready to
- * draw. Nothing at all until he names it. A month under every rock read "may"
+ * The label under a rock: Aidan's name for the photograph, exactly as he
+ * wrote it, or empty until he names it. A month under every rock read "may"
  * fourteen times in a row, and a placeholder would be noise on every rock.
- *
- * Lowercased, and stripped to what the banner font can draw. Wrapped at word
- * boundaries to LABEL_LINE_CHARS, because ASCII art can't reflow like text,
- * and a long line under a rock near the edge of a 375px screen runs off it.
- * A single word longer than that stays whole rather than being cut.
+ * Plain text, so it wraps by itself, the page caps its width, and zoom works.
  */
-export function rockLabel(caption: Caption): string[] {
-  const drawable = [...caption.name.toLowerCase()].filter((char) => bannerSupports(char)).join('')
-  const words = drawable.split(/\s+/).filter(Boolean)
-  const lines: string[] = []
-  let current = ''
-  for (const word of words) {
-    if (!current) current = word
-    else if (`${current} ${word}`.length <= LABEL_LINE_CHARS) current = `${current} ${word}`
-    else {
-      lines.push(current)
-      current = word
-    }
-  }
-  if (current) lines.push(current)
-  return lines
+export function rockLabel(caption: Caption): string {
+  return caption.name.trim()
 }
 
 /**

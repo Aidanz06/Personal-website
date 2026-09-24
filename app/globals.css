@@ -307,6 +307,36 @@
   }
 }
 
+/* Gallery text, swaying as if seen through water: the heading, the years,
+   the name under each rock. A slow skew and lift, nothing more.
+
+   It replaced wavy ASCII art drawn through an animated SVG filter, which
+   made the browser re-render every visible label on every frame: the kind
+   of drawing cost that shows up as lag on a phone and that nothing on the
+   main thread reveals. A transform is composited instead, so the text stays
+   crisp, readable and cheap. Each element gets its own --wobble-delay so
+   they don't sway in step. Held still under reduced motion. */
+@keyframes water-wobble {
+  0%,
+  100% {
+    transform: skewX(-1.4deg) translateY(0);
+  }
+  50% {
+    transform: skewX(1.4deg) translateY(-1px);
+  }
+}
+
+.water-wobble {
+  display: inline-block;
+  animation: water-wobble 7s ease-in-out var(--wobble-delay, 0s) infinite backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .water-wobble {
+    animation: none;
+  }
+}
+
 /* A tap target of at least 44x44, whatever the control looks like.
 
    The site's controls are words and single characters — the theme glyph is
