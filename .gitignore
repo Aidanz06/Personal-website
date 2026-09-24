@@ -4,8 +4,13 @@ out/
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
-.env*.local
+.env
+.env.*
+!.env.example
 .vercel
 
 # Scratch space, not part of the site.
 Claude outputs/
+
+# Local-only: history backup, photo originals, archived planning docs, unfinished list.
+_private/
