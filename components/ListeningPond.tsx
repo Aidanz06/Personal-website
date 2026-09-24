@@ -140,7 +140,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
             <ThemeMenu />
           </div>
 
-          <h1 className="mt-4 font-display text-heading font-normal">listening</h1>
+          <h1 className="mt-4 font-display text-name font-normal">listening</h1>
           <p className="mt-1 text-muted">my top 5 songs now</p>
 
           {/* Only when there is something on repeat. With last.fm down and
