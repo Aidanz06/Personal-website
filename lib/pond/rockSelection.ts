@@ -13,6 +13,11 @@
  * while `aria-pressed` said it wasn't. A click on the open rock now closes it
  * outright, whatever else is holding it.
  *
+ * A pin used to be let go of only by clicking that same rock again. Hover,
+ * then a natural click, left a photograph open that moving away and
+ * clicking elsewhere would not close. Now a click or tap anywhere that is not
+ * a rock dismisses it, and so does the pinned rock scrolling out of view.
+ *
  * Pure, so the whole touch sequence can be tested without a browser.
  */
 
@@ -26,6 +31,8 @@ export type RockSelection = {
 export type RockEvent =
   | { type: 'enter' | 'focus' | 'leave' | 'blur' | 'click'; index: number }
   | { type: 'escape' }
+  /** A click or tap outside every rock, or the pinned rock scrolling away. */
+  | { type: 'dismiss' }
 
 export const initialRockSelection: RockSelection = { hovered: null, pinned: null }
 
@@ -47,6 +54,11 @@ export function rockSelection(state: RockSelection, event: RockEvent): RockSelec
       return { ...state, pinned: event.index }
     case 'escape':
       return initialRockSelection
+    case 'dismiss':
+      // Only a pin needs letting go of; a rock the pointer is still over is
+      // the pointer's business. Clearing hover too takes the focus a tap left
+      // behind with it, or the picture would stay open on a phone.
+      return state.pinned === null ? state : initialRockSelection
   }
 }
 

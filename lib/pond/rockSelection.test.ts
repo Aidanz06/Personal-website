@@ -68,3 +68,25 @@ describe('rockSelection with a mouse and keyboard', () => {
     expect(activeRock(state) === 0).toBe(false)
   })
 })
+
+describe('rockSelection: letting go of a pinned rock', () => {
+  it('closes a pinned rock when the visitor clicks or taps the water', () => {
+    // The reported bug: hover opens a photo, a natural click pins it, and
+    // after that nothing but clicking that same rock again would close it —
+    // moving away didn't, and neither did clicking anywhere else.
+    const pinned = run([{ type: 'enter', index: 2 }, { type: 'click', index: 2 }, { type: 'leave', index: 2 }])
+    expect(activeRock(pinned)).toBe(2)
+    expect(activeRock(rockSelection(pinned, { type: 'dismiss' }))).toBeNull()
+  })
+
+  it('closes when its rock scrolls out of view, so no picture is left behind', () => {
+    const pinned = run([...tapOn(4)])
+    expect(activeRock(rockSelection(pinned, { type: 'dismiss' }))).toBeNull()
+  })
+
+  it('leaves a merely hovered rock to the pointer', () => {
+    // Dismiss is for pins. A rock the pointer is still over stays open.
+    const hovered = run([{ type: 'enter', index: 1 }])
+    expect(activeRock(rockSelection(hovered, { type: 'dismiss' }))).toBe(1)
+  })
+})

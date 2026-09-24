@@ -12,6 +12,7 @@ import type { Photo } from '@/lib/photos'
 import { contacts, site } from '@/lib/site'
 import { WaterFilters, WaterText } from '@/components/WaterText'
 import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
+import { usePinDismissal } from '@/components/usePinDismissal'
 import { MAX_CUES, descentCue, requestDescentCue, shouldPlayCue } from '@/lib/pond/splash'
 
 /**
@@ -52,6 +53,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
   const [selection, select] = useReducer(rockSelection, initialRockSelection)
   const activePhoto = activeRock(selection)
   const pinnedPhoto = selection.pinned
+  usePinDismissal(pinnedPhoto, select)
 
   // The cue to descend: a stone sinking from under the name to the first
   // stone, a couple of seconds after arrival, then twice more at most. It
@@ -256,6 +258,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
                 height: size,
                 transform: 'translate(-50%, -50%)',
               }}
+              data-rock={index}
               onMouseEnter={() => select({ type: 'enter', index })}
               onMouseLeave={() => select({ type: 'leave', index })}
               onFocus={() => select({ type: 'focus', index })}

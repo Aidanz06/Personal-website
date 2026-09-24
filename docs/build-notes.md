@@ -3149,3 +3149,27 @@ The Tailor Studio stone's note is now Aidan's own "something i built", in
 place of "the thing i built".
 
 600 tests.
+
+### fix: a clicked photo wouldn't go away
+
+Reported: "when hovering to open photos the photo doesn't disappear." A
+plain hover-and-leave closed correctly, and so did scrolling or moving rock
+to rock. The failing path was **hover, then click**, which is natural,
+because you click the thing you're looking at. The click pinned the photo,
+and after that only clicking that same rock again closed it. Moving away
+didn't, and neither did clicking anywhere else.
+
+The reducer gained a `dismiss` event, test first. It only acts on a pin,
+leaving a merely hovered rock to the pointer, and it clears the pin plus the
+focus a tap leaves behind. `components/usePinDismissal.ts` sends it, while a
+rock is pinned, on two occasions:
+- a pointer-down anywhere that isn't a rock (rocks carry `data-rock`);
+- the pinned rock scrolling out of view.
+
+The second also fixes the critique's caption that "comes loose" on scroll:
+a pinned photo no longer stays open over a stretch of pond its rock has
+left. Both pages use it. Checked in Chrome: click-pin then click the water
+closes it, pin then scroll away closes it, and on a phone tapping the water
+closes it.
+
+603 tests.

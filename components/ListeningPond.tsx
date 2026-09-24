@@ -8,6 +8,7 @@ import { listeningFallbackMarkup } from '@/lib/listening/fallback'
 import { formatAsOf, onRepeatLabel } from '@/lib/listening/format'
 import { listeningLayout } from '@/lib/listening/rocks'
 import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
+import { usePinDismissal } from '@/components/usePinDismissal'
 import type { ListeningData } from '@/lib/listening/types'
 
 /**
@@ -86,6 +87,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
   const [selection, select] = useReducer(rockSelection, initialRockSelection)
   const active = activeRock(selection)
   const pinned = selection.pinned
+  usePinDismissal(pinned, select)
   // Where the open cover has settled, so the caption can sit under it. The
   // pond reports this twice per rock, not once per frame.
   const [rect, setRect] = useState<PhotoRect | null>(null)
@@ -182,7 +184,8 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                   height: rockSize(rock.radiusFraction, rock.minRadius),
                   transform: 'translate(-50%, -50%)',
                 }}
-                onMouseEnter={() => select({ type: 'enter', index })}
+                data-rock={index}
+              onMouseEnter={() => select({ type: 'enter', index })}
                 onMouseLeave={() => select({ type: 'leave', index })}
                 onFocus={() => select({ type: 'focus', index })}
                 onBlur={() => select({ type: 'blur', index })}
