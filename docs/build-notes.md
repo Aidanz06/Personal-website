@@ -3444,3 +3444,24 @@ and so on) and kept five as I wrote them (#3 hydrangea, #4 water lilies,
 into the blank `name` fields of `public/photos/captions.json` only. Nothing
 else in the file changed, which the diff confirms: 25 lines, every one a
 `name`.
+
+## /about: aidan's words in
+
+Aidan answered the questions for the three /about placeholders, and I
+shaped his answers without adding anything he didn't say:
+
+- **intro**: jogging, food, and building for fun. It links to
+  /tailor-studio, the building project the site already shows.
+- **photography**: he started with sports photography in high school, on
+  his dad's camera. Now he looks for interesting subjects and pictures that
+  bring back what it was like to be there.
+- **interests**: cars, running (just starting), food (Beli), building
+  things (apps, keyboards, lego), and fortnite (unreal). A short list,
+  chosen by him from the brief's longer placeholder list. Gaming sits here
+  rather than in the intro, where the rank gives it a detail.
+
+The note under the photo grid ("run `npm run photos:sync`…") was an
+instruction to Aidan that visitors could see. It's gone; the README in
+`public/photos` already says the same thing.
+
+One placeholder remains, visible and bracketed: the Beli profile link.
