@@ -7,6 +7,7 @@ import {
   revealRect,
   samplePhoto,
   type PhotoGrid,
+  stretchContrast,
 } from './photo'
 
 const grid: PhotoGrid = {
@@ -255,5 +256,48 @@ describe('photoMaxWidth', () => {
     for (const bad of [0, -100, NaN]) {
       expect(photoMaxWidth(bad)).toBe(0)
     }
+  })
+})
+
+describe('stretchContrast', () => {
+  const grid = (values: number[]) => ({
+    cols: values.length,
+    rows: 1,
+    luminance: new Float32Array(values),
+  })
+
+  it('spreads a narrow range across the whole ramp', () => {
+    // A pale sky with a thin kite in it: every value between 0.8 and 0.95.
+    // As characters that is a slab of the densest glyph and no kite.
+    const values = Array.from({ length: 100 }, (_, i) => 0.8 + (i / 99) * 0.15)
+    const out = stretchContrast(grid(values))
+    expect(Math.min(...out.luminance)).toBeLessThan(0.05)
+    expect(Math.max(...out.luminance)).toBeGreaterThan(0.95)
+  })
+
+  it('keeps the order of every value, so the picture is the same picture', () => {
+    const values = [0.81, 0.9, 0.84, 0.93, 0.86]
+    const out = Array.from(stretchContrast(grid(values)).luminance)
+    const rank = (a: number[]) => a.map((v) => [...a].sort((x, y) => x - y).indexOf(v))
+    expect(rank(out)).toEqual(rank(values))
+  })
+
+  it('ignores a few outliers rather than letting one pixel set the range', () => {
+    const values = [...Array.from({ length: 98 }, (_, i) => 0.4 + (i / 97) * 0.2), 0, 1]
+    const out = stretchContrast(grid(values))
+    // The bulk of the picture fills the range, not just the two outliers.
+    expect(out.luminance[0]!).toBeLessThan(0.1)
+    expect(out.luminance[97]!).toBeGreaterThan(0.9)
+  })
+
+  it('leaves a flat picture alone rather than dividing by zero', () => {
+    const out = stretchContrast(grid([0.5, 0.5, 0.5]))
+    expect(Array.from(out.luminance).every((v) => Number.isFinite(v))).toBe(true)
+  })
+
+  it('does not touch the grid it was given', () => {
+    const input = grid([0.2, 0.4])
+    stretchContrast(input)
+    expect(Array.from(input.luminance)).toEqual([0.2, 0.4].map((v) => Math.fround(v)))
   })
 })

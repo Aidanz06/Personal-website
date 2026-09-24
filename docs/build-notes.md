@@ -2619,3 +2619,76 @@ The step 2 table above still names the old host. It's left as written,
 because it records what was built at the time.
 
 529 tests.
+
+## listening step 4 — covers as ASCII art, smaller, floating
+
+Asked for after seeing real covers: open them smaller, let them drift, and
+keep them as ASCII art instead of resolving into the image.
+
+Every picture in the pond already passes through characters on its way
+open. A photograph then hands over to the real image, because a photograph
+has to be seeable. On `/listening` the characters are now the picture. It is
+one pond setting, `photoAscii`, plus `photoScale` and `photoFloat`. All three
+default to the old behaviour, so the homepage is unchanged:
+
+| setting | homepage | /listening |
+|---|---|---|
+| `photoScale` | 1 | **0.55**: about 300px on a laptop, 160px on a phone |
+| `photoFloat` | 0 | **8px** of slow drift, on two unrelated periods |
+| `photoAscii` | false | **true** |
+
+### what `photoAscii` does, and why each part was needed
+
+I found each of these by looking at a real cover in Chrome, not by
+reasoning about it:
+
+- **No hand-over to the real image.** That's what was asked for.
+- **Characters in ink, not koi orange.** The first attempt drew the whole
+  cover in the koi's head colour, because photo cells map to koi shade 0.
+  That was always the case, but it only showed for a second before the real
+  image took over. Held for good, it made every album read as part of the
+  fish. The palette now carries the page's `ink` as a separate field, and
+  the pond appends it to the atlas **after** the existing colours so no index
+  moves. That's also why it isn't in `colors`: the theme tests pin that list
+  and its order.
+- **Tones stretched per cover.** Your top album is a pale sky with a kite in
+  it. Every cell was between 0.8 and 0.95, which is the densest glyph
+  everywhere: a solid slab. `stretchContrast` maps each cover's own 2nd–98th
+  percentile to the full range, which is the first thing any ASCII-art tool
+  does. The percentiles keep one highlight pixel from setting the range. Order
+  is preserved, so it's the same picture with more contrast. Computed once per
+  cover at load.
+- **Edges feathered into the water.** A photograph gets a vignette from the
+  real image painted over its characters. ASCII art has nothing painted over
+  it, so it ended in a hard rectangle. `stampPhoto` takes an optional
+  `feather`, default 0. The first version still showed a hard line, because a
+  cell took the picture's colour only above half strength, so the colour
+  flipped from ink to water halfway through the fade. At a feathered edge, a
+  cell now stays the picture while the picture's own blend is over half, and
+  just thins out. That was a failing test first.
+
+### two things this can't do
+
+**Thin details don't survive.** The kite on the top cover is thinner than
+one character, and at 300px there are about 43 characters across. Covers
+with big shapes come through clearly; *The Worship Initiative, Vol. 10*'s
+figure and frame are recognisable even on a phone. Delicate covers become
+texture. Making the cover smaller costs detail, and that's the trade.
+
+**The float moves in character steps.** The characters sit on the pond's
+fixed grid, so an 8px drift moves the art one cell at a time rather than
+gliding. At this speed it reads as drifting. The caption doesn't move: the
+pond reports the settled position, and the caption leaves room below for
+the drift.
+
+### smaller things
+
+- The rock's orange rank number sat in the middle of the art while it was
+  open. It's hidden while that rock's cover is showing.
+- The caption is at least 240px wide, clamped inside the 20px gutters on
+  both sides. At the cover's own 160px on a phone, an album title wrapped
+  onto four lines. Measured at 375px: every caption between x = 20 and 355.
+- Reduced motion is unchanged. Covers never open there, and the caption
+  shows under the rock.
+
+539 tests.

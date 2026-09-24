@@ -41,6 +41,24 @@ const QUIET = {
   rippleStrength: 0.38,
 }
 
+/** How far an open cover drifts, in pixels. */
+const COVER_FLOAT = 8
+
+/**
+ * How a cover opens here, as distinct from a photograph on the homepage.
+ *
+ * Smaller, because an album cover is a small square thing surfacing, not a
+ * picture to study. Left as characters, because on this page the cover is
+ * part of the pond rather than a window out of it. And drifting slightly, as
+ * if it were floating rather than pinned to the glass.
+ */
+const COVERS = {
+  ...QUIET,
+  photoScale: 0.55,
+  photoAscii: true,
+  photoFloat: COVER_FLOAT,
+}
+
 /** Depths are derived, so they land on values like 2.3500000000000005. */
 function vh(value: number): string {
   return `${(value * 100).toFixed(4)}vh`
@@ -57,6 +75,11 @@ function rockSize(radiusFraction: number, minRadius: number): string {
 }
 
 const NEVER_LEAVE_LABEL = 'the ones that never leave'
+
+/** The caption's width, in CSS: the cover's, but never cramped or off-screen. */
+function captionWidth(coverWidth: number): string {
+  return `min(max(${coverWidth}px, 240px), calc(100vw - 40px))`
+}
 
 export function ListeningPond({ data }: { data: ListeningData }) {
   // Hover and focus open a rock; a tap pins it, which is the whole touch
@@ -108,7 +131,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
       <div className="pointer-events-none fixed inset-0 -z-10">
         <Pond
           className="h-full w-full"
-          settings={QUIET}
+          settings={COVERS}
           scrollDriven
           photoStones={rocks}
           activePhoto={active}
@@ -195,7 +218,10 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                 {/* A pebble carries its rank, because the ranking is the
                     information. A boulder has no rank — it is not in a
                     league table, it is just there. */}
-                {rock.rank > 0 && (
+                {/* Hidden while this rock's cover is showing: the cover opens
+                    centred on the rock, and an orange number in the middle of
+                    the art is the first thing the eye lands on. */}
+                {rock.rank > 0 && !(isActive && rectIsCurrent) && (
                   <span
                     className={
                       isActive
@@ -239,12 +265,15 @@ export function ListeningPond({ data }: { data: ListeningData }) {
               aria-hidden="true"
               className="pointer-events-none fixed"
               style={{
-                // Held to the page's 20px gutter. On a phone the cover opens
-                // nearly full width and is clamped against the edge of the
-                // screen, and the caption, following it, would touch the glass.
-                left: `max(20px, ${rect.x}px)`,
-                top: rect.y + rect.height + 8,
-                width: `min(${rect.width}px, calc(100vw - 40px))`,
+                // At least 240px wide, however small the cover: a phone opens
+                // it at about 160px, and a caption that narrow wraps an album
+                // title onto four lines. Then held inside the page's 20px
+                // gutters on both sides, so a wider caption under a cover near
+                // the edge slides inward rather than off the glass.
+                left: `clamp(20px, ${rect.x}px, calc(100vw - 20px - ${captionWidth(rect.width)}))`,
+                // Clear of the cover at the lowest point of its drift.
+                top: rect.y + rect.height + 8 + COVER_FLOAT,
+                width: captionWidth(rect.width),
               }}
             >
               {caption(rect.index)}

@@ -20,6 +20,13 @@ export type PondPalette = {
   ground: string
   /** Bright end of the photograph duotone: the koi's palest tone. */
   photoHighlight: string
+  /**
+   * The page's own text colour, for a picture that stays as characters.
+   *
+   * Kept out of `colors` so the atlas indices every other material relies on
+   * never move; the pond appends it to the atlas itself.
+   */
+  ink: string
   /** Dark end of the duotone: the water. */
   photoShadow: string
   /** The ramp, pointed the right way for this theme's ground. */
@@ -80,6 +87,7 @@ export function pondPalette(
   return {
     ground: ground.css,
     photoHighlight: koi[2]!.css,
+    ink: ink.css,
     photoShadow: water.css,
     ramp: orientRamp(
       baseRamp,

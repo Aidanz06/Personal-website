@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MATERIAL, clearField, createField, stampBlob, stampKoi, stampStone } from './field'
+import { MATERIAL, clearField, createField, stampBlob, stampKoi, stampPhoto, stampStone } from './field'
 import { DEFAULT_BODY_RADIUS, DEFAULT_SEGMENTS, createKoi } from './koi'
 
 const CELL_W = 9
@@ -148,5 +148,48 @@ describe('stampStone', () => {
     clearField(field, 0)
     stampStone(field, { x: 270, y: 270, radius: 40, href: '/about', label: 'about' }, 0.6, CELL_W, CELL_H)
     expect([...field.material].filter((m) => m === MATERIAL.stone).length).toBeGreaterThan(4)
+  })
+})
+
+describe('stampPhoto feathering', () => {
+  const bright = { cols: 4, rows: 4, luminance: new Float32Array(16).fill(1) }
+  const rect = { x: 0, y: 0, width: 200, height: 200 }
+
+  function stamped(feather?: number) {
+    const field = createField(20, 20)
+    clearField(field, 0)
+    stampPhoto(field, bright, rect, 1, 10, 10, feather)
+    return field
+  }
+
+  it('changes nothing when not asked for, so the homepage is untouched', () => {
+    expect(Array.from(stamped().luminance)).toEqual(Array.from(stamped(0).luminance))
+    // Unfeathered, the corner cell is the photograph at full strength.
+    expect(stamped().luminance[0]).toBeCloseTo(1, 6)
+  })
+
+  it('fades the edges into the water rather than ending at a hard rectangle', () => {
+    const field = stamped(0.25)
+    const corner = field.luminance[0]!
+    const centre = field.luminance[10 * 20 + 10]!
+    expect(centre).toBeCloseTo(1, 6)
+    expect(corner).toBeLessThan(0.3)
+  })
+
+  it('keeps a fading edge cell in the picture\u2019s colour, so the fade is seen', () => {
+    // Otherwise the edge is where the colour flips from the picture's to the
+    // water's, halfway through the fade — which draws exactly the hard line
+    // the feathering is there to remove.
+    const field = stamped(0.25)
+    const fading = 10 * 20 + 1 // 15px from the left edge: about a fifth in
+    expect(field.luminance[fading]!).toBeGreaterThan(0.1)
+    expect(field.luminance[fading]!).toBeLessThan(0.5)
+    expect(field.material[fading]).toBe(MATERIAL.photo)
+  })
+
+  it('only calls a cell a photograph where the picture actually wins', () => {
+    const field = stamped(0.25)
+    expect(field.material[0]).toBe(MATERIAL.water)
+    expect(field.material[10 * 20 + 10]).toBe(MATERIAL.photo)
   })
 })

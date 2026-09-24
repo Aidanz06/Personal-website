@@ -92,6 +92,17 @@ describe('pondPalette', () => {
     expect(palette.colors.at(-1)).toBe('rgb(247,239,226)') // koi-3, exactly
   })
 
+  it('carries the ink colour, for pictures that stay as characters', () => {
+    // An album cover on /listening is left as ASCII art. Drawn in the koi's
+    // colours it reads as part of the fish; drawn in ink it reads as part of
+    // the page. Separate from `colors`, so the atlas indices above never move.
+    const koi = pondPalette(reader(themeTokens('koi')), RAMP, SHADES)
+    const paper = pondPalette(reader(themeTokens('paper')), RAMP, SHADES)
+    expect(koi.ink).toBe('rgb(236,231,221)')
+    expect(paper.ink).toBe('rgb(26,26,26)')
+    expect(pondPalette(() => '', RAMP, SHADES).ink).not.toContain('NaN')
+  })
+
   it('falls back rather than painting with NaN when tokens are missing', () => {
     const palette = pondPalette(() => '', RAMP, SHADES)
     expect(palette.ground).toBe('#0b100f')

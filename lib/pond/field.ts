@@ -186,9 +186,19 @@ export function stampPhoto(
   blend: number,
   cellWidth: number,
   cellHeight: number,
+  /**
+   * Soften the edges into the water, over this fraction of the picture's
+   * shorter side. 0 — what the homepage uses — leaves a hard rectangle, which
+   * is fine there because the real photograph is painted over it with its own
+   * vignette. A picture that stays as characters has nothing painted over
+   * it, so its edge IS its edge, and a slab of dense characters ending in a
+   * straight line reads as a box dropped on the pond.
+   */
+  feather = 0,
 ): void {
   if (blend <= 0 || rect.width <= 0 || rect.height <= 0) return
   const strength = Math.min(1, Math.max(0, blend))
+  const featherPx = Math.max(0, feather) * Math.min(rect.width, rect.height)
 
   const fromCol = Math.max(0, Math.floor(rect.x / cellWidth))
   const toCol = Math.min(field.cols - 1, Math.ceil((rect.x + rect.width) / cellWidth))
@@ -209,11 +219,30 @@ export function stampPhoto(
       const value = samplePhoto(photo, u, v)
       const existing = field.luminance[index] ?? 0
 
-      field.luminance[index] = existing + (value - existing) * strength
+      let cellStrength = strength
+      let edgeFactor = 1
+      if (featherPx > 0) {
+        const edge = Math.min(
+          centreX - rect.x,
+          rect.x + rect.width - centreX,
+          centreY - rect.y,
+          rect.y + rect.height - centreY,
+        )
+        const t = Math.min(1, Math.max(0, edge / featherPx))
+        edgeFactor = t * t * (3 - 2 * t)
+        cellStrength *= edgeFactor
+      }
+
+      field.luminance[index] = existing + (value - existing) * cellStrength
       // The cell only calls itself a photograph once the picture is actually
       // the dominant contributor; before that it keeps the koi's colouring,
       // which is what makes the fish look like it is turning into the image.
-      if (strength > 0.5) {
+      //
+      // At a feathered edge the test is the picture's own blend, not the
+      // faded one: a fading cell is still the picture, thinning out. Testing
+      // the faded value flips the colour to the water's halfway through the
+      // fade, which draws the very line the feathering exists to remove.
+      if (strength > 0.5 && (featherPx === 0 ? cellStrength > 0.5 : edgeFactor > 0.1)) {
         field.material[index] = MATERIAL.photo
         field.tint[index] = 0
       }

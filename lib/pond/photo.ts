@@ -161,3 +161,32 @@ export function photoMaxWidth(viewportWidth: number): number {
   if (w < 1024) return w * 0.72
   return Math.min(w * 0.6, 640)
 }
+
+/**
+ * Stretch a picture's tones across the whole range, for ASCII art.
+ *
+ * A photograph survives having a narrow range because the real image is
+ * painted over its characters at the end. A picture that STAYS as characters
+ * does not: an album cover that is mostly pale sky sits between 0.8 and 0.95,
+ * which maps to the densest glyph everywhere and loses whatever is in the sky.
+ * Stretching the picture's own range to 0..1 is what every ASCII-art tool
+ * does first, because characters only have a handful of steps to spend.
+ *
+ * The range is taken from the 2nd and 98th percentiles rather than the
+ * extremes, so one specular highlight or one black border pixel cannot
+ * decide it. Order is preserved: it is the same picture with more contrast.
+ */
+export function stretchContrast(photo: PhotoGrid, low = 0.02, high = 0.98): PhotoGrid {
+  const count = photo.luminance.length
+  if (count === 0) return { ...photo, luminance: new Float32Array(0) }
+  const sorted = Float32Array.from(photo.luminance).sort()
+  const lo = sorted[Math.floor(low * (count - 1))]!
+  const hi = sorted[Math.round(high * (count - 1))]!
+  const span = hi - lo
+  const out = new Float32Array(count)
+  for (let i = 0; i < count; i++) {
+    const value = photo.luminance[i]!
+    out[i] = span > 1e-4 ? clamp01((value - lo) / span) : value
+  }
+  return { cols: photo.cols, rows: photo.rows, luminance: out }
+}

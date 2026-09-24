@@ -36,6 +36,7 @@ import {
   photoMaxWidth,
   photoOpacity,
   revealRect,
+  stretchContrast,
   type PhotoGrid,
   type Rect,
 } from '@/lib/pond/photo'
@@ -70,6 +71,28 @@ export type PondSettings = {
   attractRadius: number
   attractStrength: number
   stoneBrightness: number
+  /**
+   * How large an opened picture gets, as a fraction of the size it would
+   * otherwise open to. 1 everywhere but /listening, where an album cover is
+   * a small thing surfacing rather than a photograph to look at.
+   */
+  photoScale: number
+  /**
+   * Keep an opened picture as ASCII art for good.
+   *
+   * Every picture passes through characters on its way open; a photograph
+   * then hands over to the real image, because a photograph has to be
+   * seeable. With this on, the characters are the picture: no hand-over,
+   * drawn in the page's ink rather than the koi's colours (which would make
+   * it read as part of the fish), and feathered into the water at the edges,
+   * since there is no vignetted image painted over them to hide a hard one.
+   */
+  photoAscii: boolean
+  /**
+   * How far an opened picture drifts, in pixels, as if suspended in the
+   * water. 0 holds it still, which is what photographs do.
+   */
+  photoFloat: number
 }
 
 export const DEFAULT_POND_SETTINGS: PondSettings = {
@@ -93,6 +116,9 @@ export const DEFAULT_POND_SETTINGS: PondSettings = {
   attractRadius: DEFAULT_KOI_SETTINGS.attractRadius,
   attractStrength: DEFAULT_KOI_SETTINGS.attractStrength,
   stoneBrightness: 0.45,
+  photoScale: 1,
+  photoAscii: false,
+  photoFloat: 0,
 }
 
 /**
@@ -103,6 +129,10 @@ const STRUCTURAL_KEYS = ['cellSize', 'cellAspect', 'koiCount'] as const
 
 /** How many gradient steps the koi colours get in the atlas. */
 const KOI_SHADES = 6
+/** Atlas slot for the page's ink, appended after water, stone and the koi. */
+const INK_COLOR = 2 + KOI_SHADES
+/** How far in an ASCII picture's edges fade, as a fraction of its shorter side. */
+const PHOTO_FEATHER = 0.22
 
 /**
  * The pond's ramp has a BLANK at its sparse end, which the photograph ramp
@@ -256,6 +286,7 @@ export function Pond({
     let photoShadowCss = '#243230'
     let ramp = POND_RAMP
     let colors: string[] = []
+    let ink = '#ece7dd'
 
     let koi: Koi[] = []
     let ripples: Ripple[] = []
@@ -266,6 +297,11 @@ export function Pond({
       /** The photograph, filtered to belong to the pond. See stylise(). */
       styled: HTMLCanvasElement | null
       grid: PhotoGrid
+      /**
+       * The same grid with its tones stretched to the full range, for a
+       * picture that stays as characters. See stretchContrast().
+       */
+      asciiGrid: PhotoGrid
       aspect: number
       /**
        * A clip, if this rock holds one.
@@ -333,11 +369,13 @@ export function Pond({
       photoShadowCss = palette.photoShadow
       ramp = palette.ramp
       colors = palette.colors
+      ink = palette.ink
     }
 
     function colorIndexFor(material: number, tint: number): number {
       if (material === MATERIAL.water) return 0
       if (material === MATERIAL.stone) return 1
+      if (material === MATERIAL.photo && settingsRef.current.photoAscii) return INK_COLOR
       const step = Math.round(tint * (KOI_SHADES - 1))
       return 2 + Math.min(KOI_SHADES - 1, Math.max(0, step))
     }
@@ -403,10 +441,12 @@ export function Pond({
           video.load()
         }
 
+        const grid = { cols, rows, luminance: luminanceGrid(pixels, cols, rows) }
         loadedPhotos[index] = {
           image,
           styled: stylise(image),
-          grid: { cols, rows, luminance: luminanceGrid(pixels, cols, rows) },
+          grid,
+          asciiGrid: stretchContrast(grid),
           aspect: image.naturalWidth / image.naturalHeight,
           video,
           scratch: null,
@@ -541,7 +581,8 @@ export function Pond({
       const styles = getComputedStyle(container!)
       const fontFamily =
         styles.getPropertyValue('--font-mono').trim() || 'ui-monospace, monospace'
-      atlas = buildAtlas(ramp, colors, grid.cellWidth, grid.cellHeight, fontFamily, dpr)
+      // Ink goes last, so every index the other materials use stays put.
+      atlas = buildAtlas(ramp, [...colors, ink], grid.cellWidth, grid.cellHeight, fontFamily, dpr)
 
       // The filter's tints come from the theme, so a theme change invalidates
       // every stylised photograph.
@@ -829,8 +870,12 @@ export function Pond({
         if (photo && rock) {
           // Fits both dimensions: a portrait photograph sized on width alone
           // runs off the top and bottom of the screen.
-          const target = fitWithin(photo.aspect, photoMaxWidth(width), height * 0.7)
-          const rect = revealRect(
+          const target = fitWithin(
+            photo.aspect,
+            photoMaxWidth(width) * s.photoScale,
+            height * 0.7 * s.photoScale,
+          )
+          const settled = revealRect(
             rock.x,
             rock.worldY - worldY,
             photoReveal,
@@ -841,19 +886,32 @@ export function Pond({
             { width, height: Math.max(target.height, height - CAPTION_SPACE) },
           )
 
+          // Drift, as if the picture were suspended in the water. Two slow,
+          // unrelated periods so the path never visibly repeats. The rect
+          // reported to the page is the settled one — the caption holds still
+          // and the page leaves room for the drift instead.
+          const drift = s.photoFloat * Math.min(1, photoReveal)
+          const rect = drift > 0
+            ? {
+                ...settled,
+                x: settled.x + Math.sin(seconds * 0.53) * drift * 0.7,
+                y: settled.y + Math.sin(seconds * 0.37 + 1.3) * drift,
+              }
+            : settled
+
           if (photoReveal > CAPTION_THRESHOLD && reportedPhoto !== revealingIndex) {
             reportedPhoto = revealingIndex
             onPhotoRectRef.current?.({
               index: revealingIndex,
-              x: rect.x,
-              y: rect.y,
-              width: rect.width,
-              height: rect.height,
+              x: settled.x,
+              y: settled.y,
+              width: settled.width,
+              height: settled.height,
             })
           }
-          stampPhoto(field, photo.grid, rect, photoReveal, cw, ch)
+          stampPhoto(field, s.photoAscii ? photo.asciiGrid : photo.grid, rect, photoReveal, cw, ch, s.photoAscii ? PHOTO_FEATHER : 0)
 
-          const opacity = photoOpacity(photoReveal)
+          const opacity = s.photoAscii ? 0 : photoOpacity(photoReveal)
           if (opacity > 0.01) photoDraw = { photo, rect, opacity }
         }
       }
