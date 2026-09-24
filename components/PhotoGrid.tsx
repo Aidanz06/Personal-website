@@ -1,8 +1,7 @@
 import Image from 'next/image'
 import { LoopingClip } from '@/components/LoopingClip'
-import { isCaptionEmpty } from '@/lib/captions'
 import { listPhotos } from '@/lib/photos'
-import { orderGallery } from '@/lib/pond/gallery'
+import { galleryGroups, orderGallery, rockLabel } from '@/lib/pond/gallery'
 
 /**
  * The photography grid on /about.
@@ -32,48 +31,68 @@ export function PhotoGrid() {
     )
   }
 
+  // Grouped by shoot, the same groups as the pond: the place and date said
+  // once, over the shoot's photographs, and each tile captioned with its
+  // name. The place and date under every tile read "kamakura · may 2025"
+  // eleven times in a row.
+  const labels = galleryGroups(photos.map((photo) => photo.caption))
+  const groups: { label: string; photos: typeof photos }[] = []
+  photos.forEach((photo, index) => {
+    const label = labels[index]!
+    const last = groups[groups.length - 1]
+    if (last && last.label === label) last.photos.push(photo)
+    else groups.push({ label, photos: [photo] })
+  })
+
   return (
-    <ul className="my-3 grid grid-cols-2 gap-1 sm:grid-cols-3">
-      {photos.map((photo) => (
-        <li key={photo.file}>
-          <figure className="m-0">
-            <div className="relative aspect-square overflow-hidden">
-              {photo.video ? (
-                <LoopingClip
-                  src={photo.video}
-                  // The poster is the file the optimiser has already resized;
-                  // a clip tile should not pull a full-size still.
-                  poster={photo.src}
-                  alt={photo.caption.alt}
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              ) : (
-                <Image
-                  src={photo.original}
-                  alt={photo.caption.alt}
-                  fill
-                  sizes="(max-width: 640px) 50vw, 200px"
-                  className="object-cover"
-                />
-              )}
-            </div>
-            {!isCaptionEmpty(photo.caption) && (
-              <figcaption className="mt-0.5">
-                {photo.caption.headline && (
-                  <span className="block font-mono text-tiny text-muted">
-                    {photo.caption.headline}
-                  </span>
-                )}
-                {photo.caption.line && (
-                  <span className="block font-mono text-tiny text-ink">
-                    {photo.caption.line}
-                  </span>
-                )}
-              </figcaption>
-            )}
-          </figure>
-        </li>
+    <div className="my-3">
+      {groups.map((group) => (
+        <section key={group.label} className="mt-3 first:mt-0">
+          <h3 className="mb-1 font-mono text-small font-normal text-muted">{group.label}</h3>
+          <ul className="grid grid-cols-2 gap-1 sm:grid-cols-3">
+            {group.photos.map((photo) => (
+              <li key={photo.file}>
+                <figure className="m-0">
+                  <div className="relative aspect-square overflow-hidden">
+                    {photo.video ? (
+                      <LoopingClip
+                        src={photo.video}
+                        // The poster is the file the optimiser has already
+                        // resized; a clip tile should not pull a full-size still.
+                        poster={photo.src}
+                        alt={photo.caption.alt}
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src={photo.original}
+                        alt={photo.caption.alt}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 200px"
+                        className="object-cover"
+                      />
+                    )}
+                  </div>
+                  {(rockLabel(photo.caption) || photo.caption.line) && (
+                    <figcaption className="mt-0.5">
+                      {rockLabel(photo.caption) && (
+                        <span className="block font-mono text-tiny text-muted">
+                          {rockLabel(photo.caption)}
+                        </span>
+                      )}
+                      {photo.caption.line && (
+                        <span className="block font-mono text-tiny text-ink">
+                          {photo.caption.line}
+                        </span>
+                      )}
+                    </figcaption>
+                  )}
+                </figure>
+              </li>
+            ))}
+          </ul>
+        </section>
       ))}
-    </ul>
+    </div>
   )
 }

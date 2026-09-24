@@ -153,3 +153,15 @@ describe('the /about grid', () => {
     expect(grid).toMatch(/orderGallery\(listPhotos\(\)\)/)
   })
 })
+
+describe('the /about grid, grouped', () => {
+  it('uses the pond\'s shoot markers and names instead of repeating place and date under every tile', async () => {
+    // Polish, 2026-09-24: "kamakura · may 2025" appeared under eleven tiles
+    // in a row. The pond says it once per shoot and names each rock.
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const grid = readFileSync(join(process.cwd(), 'components/PhotoGrid.tsx'), 'utf8')
+    expect(grid).toMatch(/galleryGroups\(/)
+    expect(grid).toMatch(/rockLabel\(/)
+  })
+})

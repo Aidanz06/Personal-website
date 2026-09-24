@@ -3691,3 +3691,32 @@ designing": `site.identity` now reads "a third year student at
 northeastern, interested in building and designing". It's one line at
 1280. At 375 it wraps cleanly after "northeastern," with no horizontal
 scroll.
+
+## polish pass
+
+`/impeccable polish`, after the delight pass. The morning's critique
+snapshot had closed itself when PondHome changed, so this was an
+independent pass. It was one batched inspection round (every page plus the
+404, at 1280 and 375, in the koi and paper themes, with an opened photo and
+keyboard focus) and then one confirmation round.
+
+Holding up: no horizontal scroll anywhere, the grouped gallery, the new
+photo edges on a phone (which also fixed the critique's "photo runs to the
+screen edge while the caption stays in the gutter"), the 404, and the
+/listening title.
+
+Fixed, tests first:
+- **The focus ring was drawn in the middle of an open photograph.**
+  Arrowing to a rock opens its picture, and the square accent ring sat on
+  top of it. While that rock's picture (or /listening cover) is open, the
+  ring is transparent; the picture, its caption and the arrow-key hint
+  indicate focus. Measured: accent before the picture opens, transparent
+  once it has. `keyboardPath.test.ts`.
+- **/about repeated "kamakura · may 2025" under eleven tiles.** The grid
+  now uses the pond's groups: one `h3` marker per shoot over its tiles, and
+  each tile captioned with its name, as the rocks are.
+  `gallery.test.ts`.
+
+Left standing on purpose: the Tailor Studio deck's own visual style (those
+are the deck's slides), and the koi crossing text (Aidan's call). The
+detector is clean on the changed files.

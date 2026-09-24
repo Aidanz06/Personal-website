@@ -311,13 +311,16 @@ A button, not a link: nothing navigates. The rock *is* the picture.
   ("kamakura · may 2025", `undated`), which fades while a photo is open.
   Neighbouring single-photo shoots share one marker naming their places and
   span ("qianling, hawaii, kaua'i · 2025–2026"), so a lone photo never costs
-  a marker and a row of its own. /about's grid uses the same order.
+  a marker and a row of its own. /about's grid uses the same order and the same groups:
+  the marker once over each shoot's tiles, each tile captioned with its name.
 - **States:** hover or focus opens it, a click or tap pins it
   (`aria-pressed`), and a second click or tap closes it outright. Esc
   closes it on both pages. Opening takes about 2.5 seconds: characters
   first, then the picture handing over. While a picture is open, the
   stone labels and section heading fade out of its way.
-- **Keyboard:** the photo gallery is one Tab stop. The arrow keys move
+- **Keyboard:** the photo gallery is one Tab stop. While a rock's picture is
+  open, its focus ring steps aside; the picture is the indicator. The arrow
+  keys move
   between rocks (no wrapping), Home and End jump to the ends, and Tab
   returns to the rock last visited. While a rock has keyboard focus a mono
   hint sits at the bottom of the screen: "↑ ↓ between photographs · esc to

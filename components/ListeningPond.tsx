@@ -176,7 +176,11 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                 // a cover in place.
                 aria-label={rock.alt}
                 aria-pressed={pinned === index}
-                className="absolute block scroll-my-[25vh] cursor-pointer"
+                // While this rock's cover is open, the cover is the focus
+                // indicator: a ring drawn in the middle of the art is not.
+                className={`absolute block scroll-my-[25vh] cursor-pointer ${
+                  rectIsCurrent && isActive ? 'focus-visible:outline-transparent' : ''
+                }`}
                 style={{
                   top: vh(rock.depthVh),
                   left: `${rock.xFraction * 100}%`,

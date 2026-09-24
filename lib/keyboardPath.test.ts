@@ -42,4 +42,13 @@ describe('the keyboard path', () => {
     expect(home.match(/scroll-my-\[/g)?.length).toBeGreaterThanOrEqual(2)
     expect(listening).toMatch(/scroll-my-\[/)
   })
+
+  it('keeps the focus ring off a picture while it is open', () => {
+    // Polish, 2026-09-24: arrowing to a rock opened its photograph, and the
+    // square focus ring was drawn on top of the picture, in the middle of it.
+    // The open picture, its caption and the arrow-key hint already say which
+    // rock has focus; the ring steps aside only while that picture shows.
+    expect(home).toMatch(/focus-visible:outline-transparent/)
+    expect(listening).toMatch(/focus-visible:outline-transparent/)
+  })
 })

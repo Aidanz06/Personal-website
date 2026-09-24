@@ -288,7 +288,11 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               aria-pressed={pinnedPhoto === index}
               // One Tab stop for the whole gallery; see moveInGallery.
               tabIndex={index === roving ? 0 : -1}
-              className="absolute block scroll-my-[25vh] cursor-pointer"
+              // While this rock's picture is open, the picture is the focus
+              // indicator: a ring drawn in the middle of the photograph is not.
+              className={`absolute block scroll-my-[25vh] cursor-pointer ${
+                photoOpen && isActive ? 'focus-visible:outline-transparent' : ''
+              }`}
               style={{
                 top: vh(spec.depthVh),
                 left: `${spec.xFraction * 100}%`,
