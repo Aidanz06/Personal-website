@@ -15,10 +15,14 @@ const nextConfig: NextConfig = {
     // taints the canvas and makes getImageData throw — which would cost the
     // ASCII stage, the duotone and the whole opening effect. Served from
     // /_next/image the cover is same-origin, so the canvas stays clean.
+    //
+    // The host is `lastfm-img`, measured from a real account's covers. The
+    // first version had `lastfm.freetls.fastly.net`, from memory, and every
+    // real cover was a 400 — see lib/listening/imageHosts.test.ts.
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'lastfm.freetls.fastly.net',
+        hostname: 'lastfm-img.freetls.fastly.net',
         pathname: '/i/u/**',
       },
     ],

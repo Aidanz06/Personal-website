@@ -13,7 +13,7 @@ import { COVER_WIDTH, MAX_PEBBLES, MIN_PLAYCOUNT } from './constants.ts'
 import { FIXTURE_TOP_ALBUMS } from './fixture.ts'
 
 const PLACEHOLDER =
-  'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'
+  'https://lastfm-img.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'
 
 function album(name: string, artist: string, playcount: number, image = 'https://img/x.jpg') {
   return {
@@ -30,7 +30,7 @@ function payload(albums: unknown[]) {
 
 describe('isPlaceholderCover', () => {
   it('accepts a real last.fm url', () => {
-    expect(isPlaceholderCover('https://lastfm.freetls.fastly.net/i/u/300x300/abc.jpg')).toBe(false)
+    expect(isPlaceholderCover('https://lastfm-img.freetls.fastly.net/i/u/300x300/abc.jpg')).toBe(false)
   })
 
   it('rejects last.fm’s grey "no cover" star', () => {

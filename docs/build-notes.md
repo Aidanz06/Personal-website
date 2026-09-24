@@ -2593,3 +2593,29 @@ strength above 0.4, because a ring nobody can see is not subtle, it's absent.
 | `LASTFM` in any file under `.next/static` | none |
 
 527 tests.
+
+### fix — every real cover was a 400
+
+The first time real data flowed through, no pebble would open. The optimiser
+answered each cover with `"url" parameter is not allowed`.
+
+`images.remotePatterns` allowed `lastfm.freetls.fastly.net`, a host I wrote
+from memory. The fixture's URLs were written with the same host, so the
+fixture and the config agreed with each other and the tests passed while
+both were wrong. last.fm actually serves covers from
+**`lastfm-img.freetls.fastly.net`**, which is every one of 100 image URLs
+across three months of Aidan's account.
+
+A rock whose cover fails to load stays a rock, so this showed up as nothing
+at all: no error, no broken image, just pebbles that never opened.
+
+`lib/listening/imageHosts.test.ts` pins the real host, independent of the
+fixture. It also asserts that every host the fixture uses is allowed, so the
+fixture can't quietly drift away from the config again. It failed on the old
+host and passes on the new one. Watched in Chrome afterwards: the top
+album's cover rises out of the characters with its caption under it.
+
+The step 2 table above still names the old host. It's left as written,
+because it records what was built at the time.
+
+529 tests.

@@ -14,14 +14,14 @@
 
 /** last.fm's grey "no cover" star, so the coverless path is exercised too. */
 const PLACEHOLDER =
-  'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'
+  'https://lastfm-img.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'
 
 function images(id: string) {
   return [
-    { '#text': `https://lastfm.freetls.fastly.net/i/u/34s/${id}.jpg`, size: 'small' },
-    { '#text': `https://lastfm.freetls.fastly.net/i/u/64s/${id}.jpg`, size: 'medium' },
-    { '#text': `https://lastfm.freetls.fastly.net/i/u/174s/${id}.jpg`, size: 'large' },
-    { '#text': `https://lastfm.freetls.fastly.net/i/u/300x300/${id}.jpg`, size: 'extralarge' },
+    { '#text': `https://lastfm-img.freetls.fastly.net/i/u/34s/${id}.jpg`, size: 'small' },
+    { '#text': `https://lastfm-img.freetls.fastly.net/i/u/64s/${id}.jpg`, size: 'medium' },
+    { '#text': `https://lastfm-img.freetls.fastly.net/i/u/174s/${id}.jpg`, size: 'large' },
+    { '#text': `https://lastfm-img.freetls.fastly.net/i/u/300x300/${id}.jpg`, size: 'extralarge' },
   ]
 }
 
