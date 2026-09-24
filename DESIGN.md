@@ -365,6 +365,13 @@ no box. It opens a list of themes, each with a two-square swatch (ground and
 accent) framed in a hairline. It's hidden entirely when JavaScript is off,
 because it couldn't do anything.
 
+Choosing a theme is the pond changing, not a stylesheet swap. The new pond
+spreads out in a ring from the glyph over about 700ms, with an ease-out
+cubic (fast from the finger, slowing at the edges like a ring on water), and
+a ripple drops where it started. It's a view transition, a circle clipped
+over the old page. Under reduced motion, or in a browser without view
+transitions, the theme switches instantly.
+
 ### Text Controls
 Every other control is a word or a character in mono label size, Drowned
 Grey: `← aidan zheng`, slideshow previous and next, the slide counter.

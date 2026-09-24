@@ -55,6 +55,16 @@ export function requestPageSplash(): void {
   pending.push(...pageSplashWave())
 }
 
+/**
+ * One ripple at a spot, as fractions of the screen: a single splash, for
+ * something dropped in rather than a page moving past. The theme control
+ * uses it, so a new pond starts where it was chosen.
+ */
+export function requestSplashAt(xFraction: number, yFraction: number, strength: number): void {
+  const clamp = (value: number) => Math.min(1, Math.max(0, value))
+  pending.push({ xFraction: clamp(xFraction), yFraction: clamp(yFraction), delay: 0, strength })
+}
+
 /** Take whatever is queued. The pond calls this once per frame. */
 export function drainSplashes(): SplashPoint[] {
   if (pending.length === 0) return []

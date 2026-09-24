@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
+import { requestSplashAt } from '@/lib/pond/splash'
+import { THEME_RING_MS, themeChange, themeRingRadius } from '@/lib/pond/themeRing'
 import {
   DEFAULT_THEME,
   THEMES,
@@ -62,15 +65,58 @@ export function ThemeMenu({ className }: { className?: string }) {
   }
 
   function choose(next: ThemeId) {
-    document.documentElement.dataset.theme = next
-    setTheme(next)
     try {
       localStorage.setItem(THEME_STORAGE_KEY, next)
     } catch {
       // Private browsing can refuse storage. The theme still applies to this
       // page view; it just will not be remembered.
     }
-    setOpen(false)
+
+    // Synchronous, so a view transition captures the finished new page.
+    const apply = () => {
+      document.documentElement.dataset.theme = next
+      flushSync(() => {
+        setTheme(next)
+        setOpen(false)
+      })
+    }
+
+    // The new pond spreads out from the glyph that was pressed, as a ring,
+    // and a ripple drops there. See lib/pond/themeRing.ts.
+    const doc = document as Document & {
+      startViewTransition?: (update: () => void) => { ready: Promise<void> }
+    }
+    const mode = themeChange({
+      reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      supported: typeof doc.startViewTransition === 'function',
+    })
+    const box = triggerRef.current?.getBoundingClientRect()
+
+    if (mode === 'instant' || !box || !doc.startViewTransition) {
+      apply()
+    } else {
+      const x = box.left + box.width / 2
+      const y = box.top + box.height / 2
+      const radius = themeRingRadius(x, y, window.innerWidth, window.innerHeight)
+      requestSplashAt(x / window.innerWidth, y / window.innerHeight, 0.9)
+      doc
+        .startViewTransition(apply)
+        .ready.then(() => {
+          document.documentElement.animate(
+            { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+            {
+              duration: THEME_RING_MS,
+              // Exponential ease-out: fast from the finger, settling at the
+              // edges, the way a ring on water slows as it spreads.
+              easing: 'cubic-bezier(0.33, 1, 0.68, 1)',
+              pseudoElement: '::view-transition-new(root)',
+            },
+          )
+        })
+        .catch(() => {
+          // A skipped transition still applied the theme; nothing to undo.
+        })
+    }
     triggerRef.current?.focus()
   }
 

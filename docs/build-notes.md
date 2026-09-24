@@ -3658,3 +3658,28 @@ not a picture, and Aidan chose **C only**.
 
 Ran under `/impeccable layout`, whose layout-scoped detector was clean.
 Tested in `gallery.test.ts`, written before the code.
+
+## delight: a new pond spreads from where you chose it
+
+`/impeccable delight`. The thesis: choosing a theme should feel like the
+pond changing, not a stylesheet swapping. The theme was the one choice on
+the site with no response. The palette snapped from one set of colours to
+the next, while everything else (pointer, page changes, stones) already
+answers in water.
+
+- **The ring**: `ThemeMenu.choose` runs the change inside
+  `document.startViewTransition`, then animates
+  `::view-transition-new(root)` from `circle(0)` to a circle that covers the
+  farthest corner (`themeRingRadius`), centred on the ◐. The browser's
+  default cross-fade is switched off in `globals.css`, so only the clip moves.
+  The state updates in `flushSync`, so the new snapshot is the finished page.
+- **A splash where it started**: `requestSplashAt` queues one ripple at
+  the glyph, since a single ripple reads as something dropped in. The page
+  change keeps its travelling wave.
+- **Timing**: 700ms, ease-out cubic. The first attempt used an exponential
+  curve over 620ms and covered the screen in about 150ms, so the ring
+  barely registered. Checked by capturing frames mid-transition.
+- **Reduced motion or no view transitions**: an instant switch, the same
+  result without the movement (`themeChange`, tested). Checked in Chrome by
+  emulating reduced motion: paper is fully applied at the first frame.
+- Focus returns to the theme control either way.
