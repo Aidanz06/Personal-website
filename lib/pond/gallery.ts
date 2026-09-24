@@ -72,12 +72,17 @@ export function rockLabel(caption: Caption): string {
 }
 
 /**
- * The rock's accessible name. The written description wins; until there is
- * one, what is actually known, in the order a person would say it.
+ * The rock's accessible name, in the order a person would say it.
+ *
+ * It starts with the name under the rock whenever there is one, so what a
+ * sighted voice-control user reads is what they can say ("click qianling
+ * bridge"; WCAG 2.5.3, label in name). Then the written description, or
+ * until there is one, what is actually known.
  */
 export function rockName(caption: Caption, kind: Kind): string {
-  if (!caption.altMissing) return caption.alt
+  const name = caption.name.trim()
+  if (!caption.altMissing) return name ? `${name}: ${caption.alt}` : caption.alt
   const what = kind === 'video' ? 'clip' : 'photograph'
   const when = [caption.month, caption.year].filter(Boolean).join(' ') || 'undated'
-  return [what, caption.name, caption.place, when].filter(Boolean).join(', ')
+  return [name, what, caption.place, when].filter(Boolean).join(', ')
 }

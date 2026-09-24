@@ -80,9 +80,16 @@ describe('rockName', () => {
     }
   })
 
-  it('uses the name while there is no description', () => {
-    const c = resolveCaption('n.jpg', { photos: { 'n.jpg': { date: '2025-05-22', name: 'bikes' } } })
-    expect(rockName(c, 'image')).toBe('photograph, bikes, may 2025')
+  it('starts with the visible name, so what you see is what you can say (WCAG 2.5.3)', () => {
+    // The critique of 2026-09-24 (second run): "qianling bridge" was under
+    // the rock but not in its accessible name, so a voice-control user saying
+    // "click qianling bridge" got nothing.
+    const both = resolveCaption('q.jpg', {
+      photos: { 'q.jpg': { date: '2026-06-14', name: 'qianling bridge', alt: 'A stone arch bridge over a lake.' } },
+    })
+    expect(rockName(both, 'image')).toBe('qianling bridge: A stone arch bridge over a lake.')
+    const nameOnly = resolveCaption('n.jpg', { photos: { 'n.jpg': { date: '2025-05-22', name: 'bikes' } } })
+    expect(rockName(nameOnly, 'image')).toBe('bikes, photograph, may 2025')
   })
 
   it('adds the place when it is written', () => {
