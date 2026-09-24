@@ -3363,3 +3363,30 @@ and a dense blue koi, photos and covers are positive, and the default theme
 is unchanged.
 
 601 tests.
+
+## harden: the keyboard and screen-reader path
+
+Three findings from the critique and polish, each measured in headless
+Chrome before the fix and pinned by `lib/keyboardPath.test.ts`:
+
+- **A focused rock could sit half off-screen.** The browser scrolled only
+  far enough to show its top edge, so a photograph opened out of sight.
+  Stones and rocks (both pages) now carry `scroll-my-[25vh]`. Measured at
+  1280×800 and 375×667: every Tab stop lands fully on screen.
+- **The gallery was 25 Tab stops** between the last stone and the contact
+  links. It's now one (a roving tabindex, `lib/pond/roving.ts`, tested): the
+  arrow keys move between rocks in pond order, Home/End jump to the ends,
+  and there's no wrapping, because wrapping from the deepest rock would fling
+  the page up eight screens. An arrow move centres the rock, smoothly unless
+  reduced motion is on. Tabbing back in returns to the rock last visited.
+  Nobody finds a one-stop gallery unless they're told, so a mono hint shows
+  at the bottom of the screen while a rock has *keyboard* focus
+  (`:focus-visible`), never for a pointer. Screen readers get the same
+  sentence as an `sr-only` line under the heading.
+- **The stones had no landmark, and their notes were silent.** They're in
+  `<nav aria-label="pages">`, and each link's note ("what's on repeat") is
+  now its `aria-describedby`, because the `aria-label` had replaced it.
+
+/listening keeps its five rocks as five Tab stops, which is short enough.
+
+610 tests. Build output checked: the last.fm key is not in `.next/static`.

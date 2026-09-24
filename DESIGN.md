@@ -311,6 +311,12 @@ A button, not a link: nothing navigates. The rock *is* the picture.
   closes it on both pages. Opening takes about 2.5 seconds: characters
   first, then the picture handing over. While a picture is open, the
   stone labels and section heading fade out of its way.
+- **Keyboard:** the photo gallery is one Tab stop. The arrow keys move
+  between rocks (no wrapping), Home and End jump to the ends, and Tab
+  returns to the rock last visited. While a rock has keyboard focus a mono
+  hint sits at the bottom of the screen: "↑ ↓ between photographs · esc to
+  close". A focused stone or rock scrolls in with a quarter-screen margin,
+  and arrow moves centre it, so what it opens has room.
 - **Caption:** mono, under the opened picture. Place and date in Drowned
   Grey, then a personal line in ink, then exposure in Caption size. Album
   captions are "title · artist". A blank field is left out, never shown as

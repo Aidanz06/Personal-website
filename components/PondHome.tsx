@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useReducer, useState, type CSSProperties } from 'react'
+import { useEffect, useReducer, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Pond, type PhotoRect } from '@/components/Pond'
 import { ThemeMenu } from '@/components/ThemeMenu'
 import { DEEPEST_STONE_VH, HOME_STONES, POND_DEPTH_VH } from '@/lib/pond/stones'
@@ -13,6 +13,7 @@ import type { Photo } from '@/lib/photos'
 import { contacts, site } from '@/lib/site'
 import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
 import { usePinDismissal } from '@/components/usePinDismissal'
+import { rovingNext } from '@/lib/pond/roving'
 
 /**
  * The homepage: a pond you descend.
@@ -77,6 +78,26 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
   // so on a short screen — a phone turned sideways is 375px tall — they sit
   // on top of the picture unless they step aside while it is showing.
   const photoOpen = photoRect !== null && activePhoto === photoRect.index
+  // The one photo rock in the Tab order: the gallery is a single Tab stop,
+  // and the arrow keys move this. It stays on the rock last visited, so
+  // tabbing back into the gallery returns you where you were.
+  const [roving, setRoving] = useState(0)
+  // Whether a rock has keyboard focus, for the visible arrow-key hint.
+  const [keyboardInGallery, setKeyboardInGallery] = useState(false)
+
+  function moveInGallery(event: ReactKeyboardEvent, index: number) {
+    const next = rovingNext(index, event.key, photoStones.length)
+    if (next === null || next === index) return
+    event.preventDefault()
+    const rock = document.querySelector<HTMLElement>(`[data-rock="${next}"]`)
+    if (!rock) return
+    setRoving(next)
+    // Centred rather than the browser's nearest edge: the photograph opens
+    // around its rock and needs the screen above and below it.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    rock.focus({ preventScroll: true })
+    rock.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' })
+  }
 
   // Newest first, grouped by year: going deeper goes back in time. Every
   // lookup below reads `gallery`, never `photos`, so a rock, its hidden
@@ -118,6 +139,9 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
         </section>
 
         {/* --- the stones --- */}
+        {/* A landmark, so a screen reader can jump to the pages. It has no
+            box of its own: the stones are placed against <main>. */}
+        <nav aria-label="pages">
         {HOME_STONES.map((spec, index) => {
           // The same clamp placeStones() applies, expressed in CSS so it
           // needs no measurement. Keep the two in step.
@@ -127,7 +151,12 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               key={spec.href}
               href={spec.href}
               aria-label={spec.label}
-              className="absolute block no-underline"
+              // The note is a description, not part of the name, the same
+              // way a photo rock's caption is: the name alone replaced it.
+              aria-describedby={spec.note ? `stone-note-${index}` : undefined}
+              // A focused stone lands with its label and note on screen,
+              // not with only its top edge showing.
+              className="absolute block scroll-my-[25vh] no-underline"
               style={{
                 top: vh(spec.depthVh),
                 left: `${spec.xFraction * 100}%`,
@@ -164,7 +193,10 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
                   {spec.label}
                 </span>
                 {spec.note && (
-                  <span className="mt-0.5 block font-mono text-small text-muted">
+                  <span
+                    id={`stone-note-${index}`}
+                    className="mt-0.5 block font-mono text-small text-muted"
+                  >
                     {spec.note}
                   </span>
                 )}
@@ -172,6 +204,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
             </Link>
           )
         })}
+        </nav>
 
         {/* --- the photo rocks --- */}
         {/* --- between the pages and the photographs --- */}
@@ -196,6 +229,11 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
             <h2 className="water-wobble font-display text-heading font-normal text-muted">
               photo gallery
             </h2>
+            {/* For whoever tabs in without seeing the hint below. */}
+            <p className="sr-only">
+              one tab stop: the arrow keys move between photographs, and
+              escape closes one.
+            </p>
           </div>
         )}
 
@@ -240,7 +278,9 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
                   : `photo-caption-${index}`
               }
               aria-pressed={pinnedPhoto === index}
-              className="absolute block cursor-pointer"
+              // One Tab stop for the whole gallery; see moveInGallery.
+              tabIndex={index === roving ? 0 : -1}
+              className="absolute block scroll-my-[25vh] cursor-pointer"
               style={{
                 top: vh(spec.depthVh),
                 left: `${spec.xFraction * 100}%`,
@@ -251,9 +291,17 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               data-rock={index}
               onMouseEnter={() => select({ type: 'enter', index })}
               onMouseLeave={() => select({ type: 'leave', index })}
-              onFocus={() => select({ type: 'focus', index })}
-              onBlur={() => select({ type: 'blur', index })}
+              onFocus={(event) => {
+                select({ type: 'focus', index })
+                setRoving(index)
+                setKeyboardInGallery(event.currentTarget.matches(':focus-visible'))
+              }}
+              onBlur={() => {
+                select({ type: 'blur', index })
+                setKeyboardInGallery(false)
+              }}
               onClick={() => select({ type: 'click', index })}
+              onKeyDown={(event) => moveInGallery(event, index)}
             >
               {/* Every rock's name steps aside while a photograph is open —
                   not just this one's. Names are HTML over the canvas, so any
@@ -323,6 +371,18 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               )}
             </div>
           )}
+
+        {/* The gallery is one Tab stop, which is only discoverable if
+            someone says so. Shown while a rock has keyboard focus, and never
+            to a pointer. Screen readers get the sentence under the heading. */}
+        {keyboardInGallery && (
+          <p
+            aria-hidden="true"
+            className="over-water pointer-events-none fixed inset-x-0 bottom-3 text-center font-mono text-tiny text-muted"
+          >
+            ↑ ↓ between photographs · esc to close
+          </p>
+        )}
 
         {/* --- the bottom --- */}
         <footer

@@ -176,7 +176,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                 // a cover in place.
                 aria-label={rock.alt}
                 aria-pressed={pinned === index}
-                className="absolute block cursor-pointer"
+                className="absolute block scroll-my-[25vh] cursor-pointer"
                 style={{
                   top: vh(rock.depthVh),
                   left: `${rock.xFraction * 100}%`,
@@ -185,7 +185,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                   transform: 'translate(-50%, -50%)',
                 }}
                 data-rock={index}
-              onMouseEnter={() => select({ type: 'enter', index })}
+                onMouseEnter={() => select({ type: 'enter', index })}
                 onMouseLeave={() => select({ type: 'leave', index })}
                 onFocus={() => select({ type: 'focus', index })}
                 onBlur={() => select({ type: 'blur', index })}
