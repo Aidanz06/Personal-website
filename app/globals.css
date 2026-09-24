@@ -112,29 +112,28 @@
   --t-koi-3: #d4ee3c;
 }
 
-/* --- paper: white and blue ----------------------------------------------
-   Navy on a soft blue-white. The ground is deliberately NOT bright: the old
-   #fafaf8 measured 0.955 relative luminance, close enough to pure white to
-   glare on a laptop at night. This is 0.83 — still plainly white, with a
-   cool cast that the blue belongs to. The koi go blue with it, head to tail,
-   because colour on this site belongs to the living thing in the pond. */
+/* --- paper: sailcloth and blue --------------------------------------------
+   Navy on the colour of sailcloth: a warm, off-white canvas cream rather than
+   white. Deliberately not bright (0.79 relative luminance, against 0.955 for
+   the pure white it started as). The koi stay blue, head to tail. */
 [data-theme='paper'] {
   color-scheme: light;
 
-  --t-ground: #e6ecf3; /* soft blue-white, luminance 0.83 */
-  --t-ink: #15263f; /* navy                              12.79:1 */
-  /* 68% here. 62% — what this theme used on the old ground — measures 4.17:1
-     on this softer one and fails AA; a less bright ground leaves less room
-     for grey to recede into. */
-  --t-muted-mix: 68%; /*                                 ~5.0:1 */
+  --t-ground: #ece6d8; /* sailcloth, luminance 0.79 */
+  --t-ink: #15263f; /* navy                              12.22:1 */
+  /* 68%: a lighter ground leaves less room for grey to recede into, and 62%
+     would fail AA here. */
+  --t-muted-mix: 68%; /*                                  4.89:1 */
   --t-rule-mix: 14%;
-  --t-accent: #2459ad; /* blue                             5.68:1 */
+  --t-accent: #2459ad; /* blue                              5.43:1 */
 
-  --t-water: #d0d9e5; /* a shade under the ground: texture, not content */
+  /* Darker sand. The pond draws only quiet dots for still water now (see
+     presenceRamp), so its colour can be a touch stronger and stay quiet. */
+  --t-water: #cfc7b5;
 
-  --t-koi-1: #3a78c9; /* bright blue, head               3.75:1 */
-  --t-koi-2: #2159a8; /* blue, body                       5.77:1 */
-  --t-koi-3: #15325f; /* navy, tail                      10.68:1 */
+  --t-koi-1: #3a78c9; /* bright blue, head                3.58:1 */
+  --t-koi-2: #2159a8; /* blue, body                        5.52:1 */
+  --t-koi-3: #15325f; /* navy, tail                       10.21:1 */
 }
 
 /* ---------------------------------------------------------------------------

@@ -230,7 +230,7 @@
       },
       "paper-ground": {
         "role": "neutral",
-        "displayName": "Paper Ground",
+        "displayName": "Sailcloth",
         "theme": "paper",
         "canonical": "oklch(94.1% 0.011 252.1)",
         "tonalRamp": [

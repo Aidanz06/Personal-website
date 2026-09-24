@@ -196,6 +196,11 @@ export function stampPhoto(
    * straight line reads as a box dropped on the pond.
    */
   feather = 0,
+  /**
+   * Write the picture as presence on a light ground: 1 - luminance, so a
+   * dark pixel becomes dense ink. See photoPresence() in theme.ts.
+   */
+  invert = false,
 ): void {
   if (blend <= 0 || rect.width <= 0 || rect.height <= 0) return
   const strength = Math.min(1, Math.max(0, blend))
@@ -217,7 +222,8 @@ export function stampPhoto(
       if (u < 0 || u >= 1) continue
 
       const index = row * field.cols + col
-      const value = samplePhoto(photo, u, v)
+      const sampled = samplePhoto(photo, u, v)
+      const value = invert ? 1 - sampled : sampled
       const existing = field.luminance[index] ?? 0
 
       const edgeFactor = edgeFeather(centreX, centreY, rect, featherPx)

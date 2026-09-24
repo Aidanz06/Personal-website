@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { THEMES } from '../themes'
-import { pondPalette } from './theme'
+import { photoPresence, pondPalette, presenceRamp } from './theme'
+import { rampIndex } from '../ascii/ramp'
 
 const RAMP = ' .:-=+*#%@'
 const SHADES = 6
@@ -125,5 +126,64 @@ describe('pondPalette', () => {
     const palette = pondPalette(reader(themeTokens('koi')), RAMP, 1)
     expect(palette.colors).toHaveLength(3)
     expect(palette.colors[2]).not.toContain('NaN')
+  })
+})
+
+describe('the pond draws presence, the same way on every ground', () => {
+  // The paper theme's water drew as a busy texture of dense glyphs: the ramp
+  // is flipped on a light ground so PHOTOGRAPHS stay positive, and that flip
+  // also made the quietest water the densest character. The pond's own
+  // things are presence (more of it, denser), whatever the ground is.
+  // The test ramp already starts with the pond's blank.
+  const presence = presenceRamp(RAMP)
+
+  it('draws quiet water as nearly nothing', () => {
+    const char = presence[rampIndex(0.13, presence.length)]
+    expect([' ', '.']).toContain(char)
+  })
+
+  it('draws the koi dense', () => {
+    const char = presence[rampIndex(0.95, presence.length)]
+    expect(['@', '%', '#']).toContain(char)
+  })
+
+  it('knows which themes are a light ground', () => {
+    expect(pondPalette(reader(themeTokens('paper')), RAMP, SHADES).lightGround).toBe(true)
+    expect(pondPalette(reader(themeTokens('koi')), RAMP, SHADES).lightGround).toBe(false)
+    expect(pondPalette(reader(themeTokens('phosphor')), RAMP, SHADES).lightGround).toBe(false)
+  })
+
+  it('keeps a photograph positive on a light ground by inverting it', () => {
+    // A dark pixel on paper needs MORE ink: high presence, dense glyph.
+    expect(photoPresence(0.1, true)).toBeCloseTo(0.9, 6)
+    expect(photoPresence(0.1, false)).toBeCloseTo(0.1, 6)
+    const dark = presence[rampIndex(photoPresence(0.05, true), presence.length)]
+    expect(['@', '%', '#']).toContain(dark)
+  })
+})
+
+describe('the photograph duotone on a light ground', () => {
+  // On paper the duotone took the koi's tail (navy) as its LIGHT end and the
+  // water (pale sand) as its DARK end, so every photograph collapsed into a
+  // narrow band of beige: nearly invisible on sailcloth. On a light ground
+  // the dark end is the deep colour and the light end is the ground.
+  const lum = (css: string) => {
+    const [r, g, b] = css.match(/\d+/g)!.map(Number) as [number, number, number]
+    const f = (c: number) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+  }
+
+  it('maps a photograph from deep navy up to the sailcloth ground on paper', () => {
+    const paper = pondPalette(reader(themeTokens('paper')), RAMP, SHADES)
+    expect(paper.photoHighlight).toBe(paper.ground)
+    expect(lum(paper.photoShadow)).toBeLessThan(0.1)
+    // A real range: highlight far brighter than shadow.
+    expect(lum(paper.photoHighlight) / lum(paper.photoShadow)).toBeGreaterThan(5)
+  })
+
+  it('leaves the dark themes exactly as they were', () => {
+    const koi = pondPalette(reader(themeTokens('koi')), RAMP, SHADES)
+    expect(koi.photoHighlight).toBe('rgb(247,239,226)') // koi-3, the pale tail
+    expect(koi.photoShadow).toBe('rgb(36,50,48)') // the water
   })
 })

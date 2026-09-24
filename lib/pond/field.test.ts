@@ -193,3 +193,23 @@ describe('stampPhoto feathering', () => {
     expect(field.material[10 * 20 + 10]).toBe(MATERIAL.photo)
   })
 })
+
+describe('stampPhoto on a light ground', () => {
+  it('writes a picture as presence: dark pixels become dense on paper', () => {
+    const dark = { cols: 1, rows: 1, luminance: new Float32Array([0.1]) }
+    const field = createField(4, 4)
+    clearField(field, 0)
+    stampPhoto(field, dark, { x: 0, y: 0, width: 40, height: 40 }, 1, 10, 10, 0, true)
+    expect(field.luminance[5]).toBeCloseTo(0.9, 5)
+  })
+
+  it('changes nothing on a dark ground, so the homepage draws as before', () => {
+    const grid = { cols: 1, rows: 1, luminance: new Float32Array([0.1]) }
+    const a = createField(4, 4)
+    const b = createField(4, 4)
+    stampPhoto(a, grid, { x: 0, y: 0, width: 40, height: 40 }, 1, 10, 10)
+    stampPhoto(b, grid, { x: 0, y: 0, width: 40, height: 40 }, 1, 10, 10, 0, false)
+    expect(Array.from(a.luminance)).toEqual(Array.from(b.luminance))
+    expect(a.luminance[5]).toBeCloseTo(0.1, 5)
+  })
+})

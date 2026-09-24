@@ -3319,3 +3319,47 @@ The focus ring is square, solid and 2px on every stop.
   dark themes'. It predates this pass.
 
 593 tests.
+
+## paper: sailcloth, and water that's quiet again
+
+Aidan asked for the light theme to be "more of a sail colour rather than
+white", and for its water texture to be fixed.
+
+**The colour.** The ground is `#ece6d8`, a warm off-white canvas. Its
+luminance is 0.79, against 0.83 for the blue-white and 0.955 for the original
+white. Navy ink and blue accents stay. Every pairing clears the contrast
+test: ink 12.2:1, muted 4.89:1, links 5.43:1, the koi's head 3.58:1. Water is
+a darker sand, `#cfc7b5`. `lib/contrast.test.ts` now pins the theme as a warm
+ground with a blue accent.
+
+**The water was a real bug, not a colour.** The pond turned its field into
+glyphs through the theme's picture ramp, which flips on a light ground so
+photographs stay positive. That flip also turned the pond's own drawing
+upside down: the quietest water became the densest glyph, which showed up as
+a busy field of faint `@`s, and the koi came out lighter than the water
+around it. It has been this way since the themes landed in milestone 4, and
+the comment above `POND_RAMP` claimed the opposite.
+
+The fix separates the two ideas:
+- **`presenceRamp`**: the pond always draws presence. More of a thing means
+  a denser glyph, on every ground, so still water is nearly blank on paper as
+  it is at night.
+- **`photoPresence`**: a picture goes into the field as presence. On a light
+  ground its brightness is inverted, because a dark pixel is more ink, so it
+  stays positive. `stampPhoto` takes it as an optional `invert`, off on dark
+  themes, which draw exactly as before (tested).
+- The /listening fine art now chooses its direction from an explicit
+  `lightGround` flag instead of comparing ramps.
+
+**The photographs were washed out too, same root.** On paper the duotone
+took the koi's navy tail as its *light* end and pale sand as its *dark* end,
+so every photo collapsed into beige. On a light ground it now runs from the
+navy tail up to the ground itself. Measured: the same photo spans 47–143 in
+brightness on paper, like the dark theme, and it reads as a cyanotype. The
+dark themes' duotone is pinned unchanged by a test.
+
+Checked in Chrome at 375 in both themes: the paper homepage has quiet water
+and a dense blue koi, photos and covers are positive, and the default theme
+is unchanged.
+
+601 tests.

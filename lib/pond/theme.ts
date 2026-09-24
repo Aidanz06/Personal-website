@@ -29,8 +29,14 @@ export type PondPalette = {
   ink: string
   /** Dark end of the duotone: the water. */
   photoShadow: string
-  /** The ramp, pointed the right way for this theme's ground. */
+  /**
+   * The ramp pointed for PICTURES on this theme's ground: on a light ground
+   * a dark pixel needs a dense glyph. The pond's own drawing does not use
+   * this; see presenceRamp().
+   */
   ramp: string
+  /** True when the ink is darker than the ground, i.e. the paper theme. */
+  lightGround: boolean
   /** Index 0 water, index 1 stone, then the koi gradient. */
   colors: string[]
 }
@@ -84,11 +90,21 @@ export function pondPalette(
     gradient.push(`rgb(${channel(0)},${channel(1)},${channel(2)})`)
   }
 
+  const lightGround =
+    (ink.rgb ? luminance(...ink.rgb) : 1) < (ground.rgb ? luminance(...ground.rgb) : 0)
+
   return {
     ground: ground.css,
-    photoHighlight: koi[2]!.css,
+    // The duotone runs from photoShadow (a photo's darks) to photoHighlight
+    // (its lights). On a dark ground that's the water up to the koi's palest
+    // tone. On a light ground it has to run the other way round: the koi's
+    // deepest tone up to the ground itself. Taking the dark-theme choices
+    // there made the navy tail the "light" end and pale sand the "dark" end,
+    // and every photograph collapsed into a band of beige.
+    photoHighlight: lightGround ? ground.css : koi[2]!.css,
     ink: ink.css,
-    photoShadow: water.css,
+    photoShadow: lightGround ? koi[2]!.css : water.css,
+    lightGround,
     ramp: orientRamp(
       baseRamp,
       ground.rgb ? luminance(...ground.rgb) : 0,
@@ -97,3 +113,30 @@ export function pondPalette(
     colors: [water.css, stone.css, ...gradient],
   }
 }
+
+/**
+ * The ramp the pond draws its own field with: more presence, denser glyph,
+ * on EVERY ground.
+ *
+ * Water, stones and the koi are presence: quiet water is barely there, a koi
+ * is very there. On a dark ground a dense glyph is bright; on a light ground
+ * it's dark ink. Either way "more" should be "denser". The picture ramp
+ * (`palette.ramp`) flips on a light ground so photographs stay positive, and
+ * the pond used to share it. On paper, that made the quietest water the
+ * densest glyph: a busy texture of faint `@`s, with the fish lighter than the
+ * water around it. Pictures now go into the field as presence as well, via
+ * photoPresence(), so one ramp serves everything.
+ */
+export function presenceRamp(baseRamp: string): string {
+  return [...baseRamp].reverse().join('')
+}
+
+/**
+ * A picture's brightness as presence. On a dark ground a bright pixel is
+ * more light, so it's more presence. On a light ground a DARK pixel is more
+ * ink, so the value is inverted, which keeps the picture positive.
+ */
+export function photoPresence(luminance: number, lightGround: boolean): number {
+  return lightGround ? 1 - luminance : luminance
+}
+

@@ -16,10 +16,10 @@ colors:
   phosphor-water: "#1e2733"
   phosphor-teal: "#3fd9c0"
   phosphor-lime: "#d4ee3c"
-  paper-ground: "#e6ecf3"
+  paper-ground: "#ece6d8"
   paper-navy: "#15263f"
   paper-blue: "#2459ad"
-  paper-water: "#d0d9e5"
+  paper-water: "#cfc7b5"
   paper-sky: "#3a78c9"
   paper-deep: "#2159a8"
   paper-tail: "#15325f"
@@ -164,16 +164,24 @@ theme is active.
 - **Phosphor**: a CRT reading of the same pond. Violet-black ground
   (`phosphor-ground`), pale green ink, and a phosphor-green accent. The koi
   run teal → green → lime.
-- **Paper**: white and blue. A soft blue-white ground (`paper-ground`,
-  deliberately not bright), navy ink and a blue accent. The koi run
-  sky → blue → navy tail. Muted text here is a 68% mix, not 55%, because a
-  lighter ground leaves less room for grey to recede into.
+- **Paper**: sailcloth and blue. A warm off-white canvas ground
+  (`paper-ground`, deliberately not bright), navy ink and a blue accent. The
+  koi run sky → blue → navy tail. Muted text here is a 68% mix, not 55%,
+  because a lighter ground leaves less room for grey to recede into.
+  Photographs duotone from the navy tail up to the ground, like a cyanotype
+  print.
 
 ### Named Rules
 **The Living Colour Rule.** Colour belongs to living things. Water, stones,
 rules and text stay monochrome; the koi's colours are the single exception,
 and the accent is taken from the koi. Anything new that wants a colour has
 to be alive or be a link.
+
+**The Presence Rule.** The pond draws presence, the same way on every
+ground: more of a thing means a denser glyph (`presenceRamp`). Quiet water is
+nearly blank on paper exactly as it is at night. Pictures go into the field
+as presence too, inverted on a light ground (`photoPresence`), so they stay
+positive.
 
 **The Theme Slot Rule.** A colour is never written into a component. Every
 colour resolves through a `--t-*` slot, so a new theme is one CSS block, and

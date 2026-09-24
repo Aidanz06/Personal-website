@@ -81,15 +81,17 @@ describe.each(THEMES.map((theme) => theme.id))('theme %s', (id) => {
 })
 
 describe('the paper theme', () => {
-  it('is white and blue, and not glaring', () => {
+  it('is sailcloth and blue, and not glaring', () => {
+    // Was blue-white; Aidan asked for the colour of sailcloth instead: warm
+    // off-white canvas, keeping the navy and blue.
     const ground = rgb(token(block('paper'), 'ground'))
-    // Still plainly white…
-    expect(luminance(ground)).toBeGreaterThan(0.75)
-    // …but not the near-pure white it was (0.955).
-    expect(luminance(ground)).toBeLessThan(0.9)
-    // Blue is the largest channel of the ground's cast and of the accent.
+    // Still plainly light, but not the near-pure white it started as (0.955).
+    expect(luminance(ground)).toBeGreaterThan(0.72)
+    expect(luminance(ground)).toBeLessThan(0.85)
+    // Warm: a canvas cream has more red than blue in it.
+    expect(ground[0]).toBeGreaterThan(ground[2])
+    // The accent stays blue.
     const accent = rgb(token(block('paper'), 'accent'))
-    expect(ground[2]).toBeGreaterThan(ground[0])
     expect(accent[2]).toBeGreaterThan(accent[0])
   })
 })

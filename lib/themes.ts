@@ -8,7 +8,7 @@
 export const THEMES = [
   { id: 'koi', label: 'koi', note: 'a pond at night' },
   { id: 'phosphor', label: 'phosphor', note: 'crt green' },
-  { id: 'paper', label: 'paper', note: 'white and blue' },
+  { id: 'paper', label: 'paper', note: 'sailcloth and blue' },
 ] as const
 
 export type ThemeId = (typeof THEMES)[number]['id']

@@ -30,7 +30,7 @@ import {
 import { drainSplashes } from '@/lib/pond/splash'
 import { RING_STRENGTH, ringDue } from '@/lib/pond/rings'
 import { placeStones, type StoneSpec } from '@/lib/pond/stones'
-import { pondPalette } from '@/lib/pond/theme'
+import { pondPalette, presenceRamp } from '@/lib/pond/theme'
 import {
   ART_CANDIDATES,
   ART_RAMP_LEVELS,
@@ -153,10 +153,11 @@ const PHOTO_FEATHER = 0.22
  * the koi are the only bright thing in the frame. That emptiness is most of
  * why the reference image works.
  *
- * It survives orientRamp() in both directions: on a dark ground the ramp
- * reverses and the blank ends up on the dim end, on a light ground it stays
- * put and lands on the bright end. Either way the quietest water draws
- * nothing, and atlasTile() skips it without a blit.
+ * The pond draws with presenceRamp(POND_RAMP) on every theme, so the blank
+ * is always at the "no presence" end and the quietest water draws nothing,
+ * which atlasTile() skips without a blit. (It used to follow the picture ramp,
+ * which flips on a light ground; on paper that made quiet water the DENSEST
+ * glyph, a busy field of faint `@`s.)
  */
 const POND_RAMP = ` ${DEFAULT_RAMP}`
 
@@ -293,7 +294,12 @@ export function Pond({
     let ground = '#0b100f'
     let photoHighlightCss = '#f7efe2'
     let photoShadowCss = '#243230'
-    let ramp = POND_RAMP
+    // The pond draws presence on every ground: more of a thing, denser glyph.
+    // See presenceRamp() in lib/pond/theme.ts for why this is no longer the
+    // theme's picture ramp.
+    let ramp = presenceRamp(POND_RAMP)
+    /** Ink darker than ground (paper): pictures go in inverted, as presence. */
+    let lightGround = false
     let colors: string[] = []
     let ink = '#ece7dd'
 
@@ -382,7 +388,8 @@ export function Pond({
       ground = palette.ground
       photoHighlightCss = palette.photoHighlight
       photoShadowCss = palette.photoShadow
-      ramp = palette.ramp
+      ramp = presenceRamp(POND_RAMP)
+      lightGround = palette.lightGround
       colors = palette.colors
       ink = palette.ink
     }
@@ -615,7 +622,7 @@ export function Pond({
       artRamp ??= measureArtRamp()
       // The measured ramp runs sparse to dense; point it the way this theme
       // needs, exactly as the pond's own ramp was pointed in readTheme().
-      const oriented = ramp === POND_RAMP ? artRamp : [...artRamp].reverse().join('')
+      const oriented = lightGround ? artRamp : [...artRamp].reverse().join('')
 
       const grid = artGrid(width, height, settingsRef.current.cellAspect)
       const sampler = document.createElement('canvas')
@@ -1066,6 +1073,8 @@ export function Pond({
             cw,
             ch,
             s.photoAscii ? PHOTO_FEATHER : 0,
+            // Presence on a light ground: a dark pixel is more ink.
+            lightGround,
           )
 
           if (s.photoAscii) {
