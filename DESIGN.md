@@ -290,8 +290,15 @@ The site's navigation: a real link laid over a stone drawn in the canvas.
 A button, not a link: nothing navigates. The rock *is* the picture.
 - **Shape:** a smaller round character stone. At least 52px across for a
   photo, 60px for an album; album size scales with play count.
-- **Label:** a two-digit mono number below it, in Drowned Grey, or koi
-  orange while open. Hidden while an album cover is showing.
+- **Label:** mono, below it, in Drowned Grey, or koi orange while open.
+  A photo rock says its place and month (`kyoto · may`, or just `may`
+  until the place is written) and `clip` for a clip; an undated still has
+  no label. An album rock shows its rank (`01`–`05`). Hidden while its own
+  picture is showing.
+- **Order and groups:** photo rocks run newest first, so going deeper goes
+  back in time, grouped by year. Each group starts a new row under a mono
+  year marker (`2025`, `undated`) in the water, and the marker fades while
+  a photo is open.
 - **States:** hover or focus opens it, a click or tap pins it
   (`aria-pressed`), and a second click or tap closes it outright. Esc
   closes it on both pages. Opening takes about 2.5 seconds: characters

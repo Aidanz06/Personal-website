@@ -20,6 +20,11 @@ export type PhotoStoneSpec = {
   depthVh: number
   radiusFraction: number
   minRadius: number
+  /**
+   * The group this rock belongs to — its year, on the homepage. A new group
+   * starts a new row, after a little extra water, under a marker.
+   */
+  group?: string
 }
 
 /**
@@ -50,6 +55,15 @@ export const PHOTO_PAIR_OFFSET_VH = 0.106
 export const PHOTOS_TAIL_VH = 0.6
 /** Rocks per row. */
 export const PHOTOS_PER_ROW = 2
+/**
+ * Extra water before each new group, on top of the row step.
+ *
+ * Enough for the group's marker to sit clear of the previous row's labels
+ * and above its own first rock; measured at 375x667, the tightest case.
+ */
+export const GROUP_GAP_VH = 0.12
+/** How far above a group's first rock its marker sits. */
+export const GROUP_MARKER_LIFT_VH = 0.16
 
 /**
  * Lay the photographs out down the pond, two to a row.
@@ -64,11 +78,31 @@ export const PHOTOS_PER_ROW = 2
  * crowded as you descend past it.
  */
 export function placePhotoStones(
-  sources: readonly { src: string; original: string; alt?: string; video?: string }[],
+  sources: readonly {
+    src: string
+    original: string
+    alt?: string
+    video?: string
+    group?: string
+  }[],
 ): PhotoStoneSpec[] {
+  // Rows are counted as we go rather than derived from the index, because a
+  // new group starts a new row even when the last one had a free seat.
+  let row = -1
+  let seat = PHOTOS_PER_ROW
+  let groupsBefore = 0
+  let previousGroup: string | undefined
+
   return sources.map((photo, index) => {
-    const row = Math.floor(index / PHOTOS_PER_ROW)
-    const isRight = index % PHOTOS_PER_ROW === 1
+    const newGroup = index > 0 && photo.group !== previousGroup
+    if (newGroup) groupsBefore++
+    if (seat >= PHOTOS_PER_ROW || newGroup) {
+      row++
+      seat = 0
+    }
+    previousGroup = photo.group
+    const isRight = seat === 1
+    seat++
 
     // Drift per row, so the two columns are not perfectly straight either.
     const drift = ((row * 7) % 5) / 5
@@ -77,6 +111,7 @@ export function placePhotoStones(
     return {
       src: photo.src,
       ...(photo.video ? { video: photo.video } : {}),
+      ...(photo.group !== undefined ? { group: photo.group } : {}),
       // The real description when captions.json has one; the same bracketed
       // placeholder as before when it does not.
       alt:
@@ -84,13 +119,44 @@ export function placePhotoStones(
         `[photograph — aidan to describe: ${photo.original.split('/').pop()}]`,
       xFraction,
       depthVh:
-        PHOTOS_START_VH + row * PHOTO_STEP_VH + (isRight ? PHOTO_PAIR_OFFSET_VH : 0),
+        PHOTOS_START_VH +
+        row * PHOTO_STEP_VH +
+        groupsBefore * GROUP_GAP_VH +
+        (isRight ? PHOTO_PAIR_OFFSET_VH : 0),
       radiusFraction: 0.05,
       // Smaller than a navigation stone's floor: a photo rock is a pebble,
       // and it is never the thing a lost visitor needs to find.
       minRadius: 26,
     }
   })
+}
+
+/**
+ * One marker per group, just above the group's first rock. None at all when
+ * nothing is grouped, so an ungrouped gallery looks exactly as it did.
+ */
+export function photoGroupMarkers(
+  stones: readonly PhotoStoneSpec[],
+): { label: string; depthVh: number }[] {
+  const markers: { label: string; depthVh: number }[] = []
+  let previous: string | undefined
+  for (const stone of stones) {
+    if (stone.group === undefined || stone.group === previous) continue
+    previous = stone.group
+    markers.push({ label: stone.group, depthVh: stone.depthVh - GROUP_MARKER_LIFT_VH })
+  }
+  return markers
+}
+
+/**
+ * How deep the pond has to be for these rocks: the deepest one plus a tail of
+ * water. Measured from the placed rocks rather than computed from a count,
+ * because groups make the rows uneven.
+ */
+export function galleryDepthVh(stones: readonly PhotoStoneSpec[], baseDepthVh: number): number {
+  if (stones.length === 0) return baseDepthVh
+  const deepest = Math.max(...stones.map((stone) => stone.depthVh))
+  return Math.max(baseDepthVh, deepest + PHOTOS_TAIL_VH)
 }
 
 /**

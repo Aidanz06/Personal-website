@@ -44,6 +44,12 @@ export type Caption = {
   settings: string
   /** The same thing as one readable sentence, for a screen reader. */
   description: string
+  /** Where it was taken, from `places`. Blank until Aidan writes it. */
+  place: string
+  /** "may", or blank with no date. Month only: the camera clock is wrong. */
+  month: string
+  /** "2025", or blank with no date. */
+  year: string
 }
 
 const MONTHS = [
@@ -108,6 +114,7 @@ export function resolveCaption(file: string, data: CaptionsFile): Caption {
   const date = clean(entry.date)
   const place = clean(date ? data.places?.[date] : undefined)
   const when = formatMonthYear(date)
+  const [month = '', year = ''] = when.split(' ')
 
   // Both, either, or neither — and "neither" is an empty string, not " · ".
   const headline = place && when ? `${place} · ${when}` : place || when
@@ -125,6 +132,9 @@ export function resolveCaption(file: string, data: CaptionsFile): Caption {
     line,
     settings,
     description,
+    place,
+    month,
+    year,
   }
 }
 

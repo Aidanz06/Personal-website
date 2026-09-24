@@ -3018,3 +3018,51 @@ captions ("as of", photo dates) were left alone on purpose. They're the
 designed caption size for secondary metadata.
 
 559 tests.
+
+## gallery: rocks that say what they are (/impeccable clarify)
+
+The critique scored the gallery 1 of 4 for recognition. It was 25 rocks
+numbered 01–25, with nothing to choose between, and a screen reader heard
+`[photograph — aidan to describe: website-NN.jpg]` 25 times.
+
+The first idea was labels built from what's written about each photo. The
+data ruled that out for now: all 10 shoot places and all 25 descriptions are
+blank, and 15 of the photos share May 2025. A month label alone would have
+put "may 2025" on 15 rocks. Aidan chose place labels over a visual thumbnail
+in each rock, plus time order grouped by year. Each rock carries the
+structure, and filling in `places` upgrades every label at once.
+
+- **Newest first, grouped by year.** Deeper goes back in time, as on
+  /listening. Each year starts a new row after 0.12 of a screen of extra
+  water, under a mono marker (`2026`, `2025`, `2024`, `undated`). Undated
+  photos go last. Within a month, filename order is kept, because the
+  camera clock's timezone makes the day unreliable.
+- **Labels are place and month.** `kyoto · may` once places are written,
+  `may` until then. The year is said once, on the marker, not on 15 rocks.
+  Clips say `clip`. Undated stills have no label, because the marker already
+  says `undated` and a bracket on every rock would be noise.
+- **Screen readers hear what is known.** They get the written description
+  when there is one, and otherwise "photograph, may 2025" or "clip,
+  undated". Never a filename. The markers are `aria-hidden`, since every
+  name already carries its year.
+- **One order everywhere on the homepage.** The page orders the photos
+  once, and the rock, its hidden description and its open caption all read
+  from that one list, so they can't come apart.
+
+Pure logic lives in `lib/pond/gallery.ts` (order, group, label, name).
+`placePhotoStones` gained optional groups (a new row per group, and
+`photoGroupMarkers`, `galleryDepthVh`). An ungrouped gallery is laid out
+exactly as before, and every existing layout test passes untouched.
+Captions gained `place`, `month` and `year` as separate fields.
+
+**The trade is depth.** The page went from 7.93 to **8.57 screens**. A new
+test holds the real 25-photo split under 9. The one-photo 2026 group is the
+costliest part: a whole row and a gap for one rock.
+
+Checked in Chrome at 375 and 1280: no overlaps between rocks, labels,
+markers, the heading or stone labels, and no horizontal scroll. Today the
+2025 group reads "may" 14 times in a row. Only the places can fix that.
+
+The /about grid keeps filename order.
+
+577 tests.

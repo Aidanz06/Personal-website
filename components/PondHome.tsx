@@ -5,7 +5,8 @@ import { useEffect, useReducer, useState } from 'react'
 import { Pond, type PhotoRect } from '@/components/Pond'
 import { ThemeMenu } from '@/components/ThemeMenu'
 import { HOME_STONES, POND_DEPTH_VH } from '@/lib/pond/stones'
-import { placePhotoStones, pondDepthVh } from '@/lib/pond/photoStones'
+import { galleryDepthVh, photoGroupMarkers, placePhotoStones } from '@/lib/pond/photoStones'
+import { galleryGroup, orderGallery, rockLabel, rockName } from '@/lib/pond/gallery'
 import { isCaptionEmpty } from '@/lib/captions'
 import type { Photo } from '@/lib/photos'
 import { contacts, site } from '@/lib/site'
@@ -76,10 +77,19 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
   // on top of the picture unless they step aside while it is showing.
   const photoOpen = photoRect !== null && activePhoto === photoRect.index
 
+  // Newest first, grouped by year: going deeper goes back in time. Every
+  // lookup below reads `gallery`, never `photos`, so a rock, its hidden
+  // description and its open caption are always the same photograph.
+  const gallery = orderGallery(photos)
   const photoStones = placePhotoStones(
-    photos.map((photo) => ({ ...photo, alt: photo.caption.alt })),
+    gallery.map((photo) => ({
+      ...photo,
+      alt: rockName(photo.caption, photo.kind),
+      group: galleryGroup(photo.caption),
+    })),
   )
-  const depthVh = pondDepthVh(photoStones.length, POND_DEPTH_VH)
+  const groupMarkers = photoGroupMarkers(photoStones)
+  const depthVh = galleryDepthVh(photoStones, POND_DEPTH_VH)
 
   return (
     <>
@@ -214,6 +224,21 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
           </div>
         )}
 
+        {/* One year per group, in the water above its first rock. Hidden
+            from screen readers: every rock's name already says its year. */}
+        {groupMarkers.map((marker) => (
+          <p
+            key={marker.label}
+            aria-hidden="true"
+            className={`column absolute inset-x-0 font-mono text-small text-muted transition-opacity duration-500 ${
+              photoOpen ? 'opacity-0' : 'opacity-100'
+            }`}
+            style={{ top: vh(marker.depthVh) }}
+          >
+            {marker.label}
+          </p>
+        ))}
+
         {photoStones.map((spec, index) => {
           const size = `clamp(52px, min(100vw, 100vh) * ${(spec.radiusFraction * 2).toFixed(3)}, 240px)`
           const isActive = activePhoto === index
@@ -230,7 +255,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               // It is on the button rather than on the visible caption so it
               // is available on focus, before the picture has opened.
               aria-describedby={
-                isCaptionEmpty(photos[index]!.caption)
+                isCaptionEmpty(gallery[index]!.caption)
                   ? undefined
                   : `photo-caption-${index}`
               }
@@ -252,7 +277,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               {/* Hidden while this rock's own photograph is showing: it
                   opens centred on the rock, and an orange number in the
                   middle of the picture is the first thing the eye lands on. */}
-              {!(isActive && photoOpen) && (
+              {!(isActive && photoOpen) && rockLabel(gallery[index]!.caption, gallery[index]!.kind) && (
                 <span
                   className={
                     isActive
@@ -260,12 +285,12 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
                       : 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-muted'
                   }
                 >
-                  {String(index + 1).padStart(2, '0')}
+                  {rockLabel(gallery[index]!.caption, gallery[index]!.kind)}
                 </span>
               )}
-              {!isCaptionEmpty(photos[index]!.caption) && (
+              {!isCaptionEmpty(gallery[index]!.caption) && (
                 <span id={`photo-caption-${index}`} className="sr-only">
-                  {photos[index]!.caption.description}
+                  {gallery[index]!.caption.description}
                 </span>
               )}
             </button>
@@ -279,7 +304,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
             where they are reachable by keyboard before the picture opens. */}
         {photoRect &&
           activePhoto === photoRect.index &&
-          !isCaptionEmpty(photos[photoRect.index]!.caption) && (
+          !isCaptionEmpty(gallery[photoRect.index]!.caption) && (
             <div
               aria-hidden="true"
               className="pointer-events-none fixed"
@@ -293,19 +318,19 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
                 width: `min(${photoRect.width}px, calc(100vw - 40px))`,
               }}
             >
-              {photos[photoRect.index]!.caption.headline && (
+              {gallery[photoRect.index]!.caption.headline && (
                 <p className="font-mono text-small text-muted">
-                  {photos[photoRect.index]!.caption.headline}
+                  {gallery[photoRect.index]!.caption.headline}
                 </p>
               )}
-              {photos[photoRect.index]!.caption.line && (
+              {gallery[photoRect.index]!.caption.line && (
                 <p className="font-mono text-small text-ink">
-                  {photos[photoRect.index]!.caption.line}
+                  {gallery[photoRect.index]!.caption.line}
                 </p>
               )}
-              {photos[photoRect.index]!.caption.settings && (
+              {gallery[photoRect.index]!.caption.settings && (
                 <p className="font-mono text-tiny text-muted">
-                  {photos[photoRect.index]!.caption.settings}
+                  {gallery[photoRect.index]!.caption.settings}
                 </p>
               )}
             </div>

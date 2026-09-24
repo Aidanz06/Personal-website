@@ -3,6 +3,8 @@ import {
   PHOTOS_PER_ROW,
   PHOTO_PAIR_OFFSET_VH,
   PHOTO_STEP_VH,
+  galleryDepthVh,
+  photoGroupMarkers,
   placePhotoStones,
   pondDepthVh,
 } from './photoStones'
@@ -189,5 +191,83 @@ describe('spacing', () => {
 
   it('keeps twenty-five pieces of media inside eight screens', () => {
     expect(pondDepthVh(25, POND_DEPTH_VH)).toBeLessThan(8)
+  })
+})
+
+describe('groups', () => {
+  const grouped = [
+    { src: 's0', original: '/photos/a.jpg', group: '2026' },
+    { src: 's1', original: '/photos/b.jpg', group: '2025' },
+    { src: 's2', original: '/photos/c.jpg', group: '2025' },
+    { src: 's3', original: '/photos/d.jpg', group: '2025' },
+    { src: 's4', original: '/photos/e.jpg', group: '2024' },
+  ]
+
+  it('starts every group on a new row, left side', () => {
+    const placed = placePhotoStones(grouped)
+    // 2026 is alone on its row; 2025 starts left on the next.
+    expect(placed[1]!.xFraction).toBeLessThan(0.5)
+    expect(placed[4]!.xFraction).toBeLessThan(0.5)
+    expect(placed[1]!.depthVh).toBeGreaterThan(placed[0]!.depthVh + PHOTO_STEP_VH)
+  })
+
+  it('leaves extra water between groups', () => {
+    const placed = placePhotoStones(grouped)
+    const withinGroup = placed[3]!.depthVh - placed[1]!.depthVh
+    const betweenGroups = placed[1]!.depthVh - placed[0]!.depthVh
+    expect(betweenGroups).toBeGreaterThan(withinGroup)
+  })
+
+  it('marks the top of each group once, above its first rock', () => {
+    const placed = placePhotoStones(grouped)
+    const markers = photoGroupMarkers(placed)
+    expect(markers.map((m) => m.label)).toEqual(['2026', '2025', '2024'])
+    expect(markers[1]!.depthVh).toBeLessThan(placed[1]!.depthVh)
+    expect(markers[1]!.depthVh).toBeGreaterThan(placed[0]!.depthVh)
+  })
+
+  it('has no markers when nothing is grouped', () => {
+    expect(photoGroupMarkers(placePhotoStones(photos))).toEqual([])
+  })
+
+  it('never overlaps two rocks, with groups, at any viewport', () => {
+    const media = Array.from({ length: 25 }, (_, i) => ({
+      src: `s${i}`,
+      original: `/photos/p${i}.jpg`,
+      group: i < 1 ? '2026' : i < 18 ? '2025' : i < 20 ? '2024' : 'undated',
+    }))
+    for (const [width, height] of [[375, 667], [768, 1024], [1280, 860], [1440, 900]] as const) {
+      const placed = placeStones(placePhotoStones(media), width, height)
+      for (let i = 0; i < placed.length; i++) {
+        for (let j = i + 1; j < placed.length; j++) {
+          const a = placed[i]!
+          const b = placed[j]!
+          const gap = Math.hypot(a.x - b.x, a.worldY - b.worldY) - (a.radius + b.radius)
+          expect(gap, `${width}x${height} rocks ${i} and ${j}`).toBeGreaterThan(0)
+        }
+      }
+    }
+  })
+
+  it('fits the pond to the deepest rock, not to a count', () => {
+    const placed = placePhotoStones(grouped)
+    const deepest = Math.max(...placed.map((p) => p.depthVh))
+    expect(galleryDepthVh(placed, POND_DEPTH_VH)).toBeGreaterThan(deepest)
+    expect(galleryDepthVh([], POND_DEPTH_VH)).toBe(POND_DEPTH_VH)
+  })
+})
+
+describe('depth with groups', () => {
+  it('keeps the real gallery, grouped by year, inside nine screens', () => {
+    // Grouping costs depth: each new year starts a row and brings a little
+    // extra water. Twenty-five items in the real 1/17/2/5 split came to 7.93
+    // screens ungrouped and 8.57 grouped. This guards the new ceiling so the
+    // next photographs do not quietly push it past nine.
+    const media = Array.from({ length: 25 }, (_, i) => ({
+      src: `s${i}`,
+      original: `/photos/p${i}.jpg`,
+      group: i < 1 ? '2026' : i < 18 ? '2025' : i < 20 ? '2024' : 'undated',
+    }))
+    expect(galleryDepthVh(placePhotoStones(media), POND_DEPTH_VH)).toBeLessThan(9)
   })
 })
