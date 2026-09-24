@@ -322,6 +322,15 @@ A button, not a link: nothing navigates. The rock *is* the picture.
   captions are "title · artist". A blank field is left out, never shown as
   an empty bracket.
 
+### The Pond Floor
+Where the homepage ends: on the bottom of the page, 8vh above it, not
+partway up the last screen. The contact links in body Small (a real link
+in koi orange, an unknown one as a muted bracketed placeholder), then
+"↑ back to the surface" in mono Drowned Grey. That is a plain `#surface`
+link, so it works without JavaScript. With JavaScript it scrolls smoothly
+back up through the water, instantly under reduced motion, and hands focus
+to the greeting. The koi follows the reader down and back up.
+
 ### Surfacing Picture (signature)
 How any image appears in the pond. A photograph resolves from coarse pond
 characters into the real image, duotoned from Tancho Cream to the water's

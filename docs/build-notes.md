@@ -3390,3 +3390,35 @@ Chrome before the fix and pinned by `lib/keyboardPath.test.ts`:
 /listening keeps its five rocks as five Tab stops, which is short enough.
 
 610 tests. Build output checked: the last.fm key is not in `.next/static`.
+
+## delight: the bottom of the pond
+
+The homepage used to end on three bracketed placeholders floating in the
+middle of the last screen, with over half a screen of empty water under
+them. The only way back was to scroll the whole descent in reverse.
+
+The thesis: reaching the bottom should feel like arriving somewhere, and
+the pond should give you a way back up.
+
+- **The footer sits on the pond floor**: anchored to the bottom of the page
+  (`bottom-0 pb-[8vh]`) instead of 0.5 of a screen above it.
+- **github is a real link**, to `github.com/Aidanz06`, the account the site's
+  repo lives under. Email and LinkedIn stay bracketed placeholders; nothing
+  is guessed.
+- **"↑ back to the surface"**: a plain `#surface` link, so it works without
+  JavaScript. With JavaScript it smooth-scrolls back up through the water
+  (instantly under reduced motion). The koi swims up with you, because the
+  pond is scroll-driven. Focus goes to the greeting (`tabIndex -1`), so the
+  next Tab starts at the top instead of the floor.
+
+No ASCII seabed was added. In the screenshots, the koi resting near the
+contacts already reads as the floor, and more drawing there would compete
+with it.
+
+Tested in `lib/pondFloor.test.ts`: github has an href, email and LinkedIn
+don't, the footer is bottom-anchored, and `#surface` exists. Checked in
+Chrome at 1280 and 375: the footer ends flush with the page, there's no
+horizontal scroll, and the climb lands at `scrollY 0` with focus on the
+greeting.
+
+614 tests.

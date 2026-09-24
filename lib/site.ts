@@ -35,7 +35,7 @@ export type Contact = {
 
 export const contacts: readonly Contact[] = [
   { label: 'email', href: null, placeholder: '[email — aidan to add]' },
-  { label: 'github', href: null, placeholder: '[github url — aidan to add]' },
+  { label: 'github', href: 'https://github.com/Aidanz06', placeholder: '' },
   {
     label: 'linkedin',
     href: null,

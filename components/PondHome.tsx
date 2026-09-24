@@ -130,9 +130,14 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
 
       <main className="relative" style={{ minHeight: vh(depthVh) }}>
         {/* --- the surface --- */}
-        <section className="column pt-[22vh]">
+        {/* id="surface": where "back to the surface" at the bottom lands. */}
+        <section id="surface" className="column pt-[22vh]">
           <div className="flex items-baseline gap-1.5">
-            <h1 className="font-display text-name font-normal">{site.greeting}</h1>
+            {/* tabIndex -1 so the way back up can hand focus here, and the
+                next Tab starts from the top rather than the pond floor. */}
+            <h1 id="greeting" tabIndex={-1} className="font-display text-name font-normal">
+              {site.greeting}
+            </h1>
             <ThemeMenu />
           </div>
           <p className="mt-1 text-muted">{site.identity}</p>
@@ -385,10 +390,13 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
         )}
 
         {/* --- the bottom --- */}
-        <footer
-          className="column absolute inset-x-0"
-          style={{ top: vh(depthVh - 0.5) }}
-        >
+        {/* The pond floor: the page ends here, on the bottom of the pond
+            rather than partway up the last screen. Contacts, then the way
+            back up, which is a plain #surface link so it works with
+            JavaScript off; with it on, the climb is a smooth scroll back
+            through the water (the koi comes with you) and focus returns to
+            the greeting. */}
+        <footer className="column absolute inset-x-0 bottom-0 pb-[8vh]">
           <ul className="flex flex-wrap gap-x-2 gap-y-0.5 text-small">
             {contacts.map((contact) => (
               <li key={contact.label}>
@@ -402,6 +410,20 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               </li>
             ))}
           </ul>
+          <p className="mt-3 font-mono text-small">
+            <a
+              href="#surface"
+              className="hit-area text-muted"
+              onClick={(event) => {
+                event.preventDefault()
+                const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
+                document.getElementById('greeting')?.focus({ preventScroll: true })
+              }}
+            >
+              ↑ back to the surface
+            </a>
+          </p>
         </footer>
       </main>
     </>
