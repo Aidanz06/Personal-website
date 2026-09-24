@@ -383,6 +383,12 @@ frame.
   stay at least 44px.
 - **Do** feather, dissolve or distort edges in the pond rather than cutting
   them square.
+- **Do** set reading text over the moving pond with `over-water`: a soft
+  halo in the ground colour around every glyph, so the koi passing behind a
+  paragraph can't break its letters. No box, and it works in every theme.
+- **Do** let a picture have the stage: while one is open, every label near
+  it (rock names or ranks, the year markers, the section heading) fades out
+  of the way.
 
 ### Don't:
 - **Don't** add cards, boxes, rounded corners, drop shadows or filled

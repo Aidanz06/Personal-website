@@ -23,7 +23,7 @@ export default function PageLayout({
           <BackLink />
           <ThemeMenu />
         </div>
-        <article className="mt-4">{children}</article>
+        <article className="over-water mt-4">{children}</article>
       </main>
     </>
   )

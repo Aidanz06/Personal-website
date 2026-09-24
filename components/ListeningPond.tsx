@@ -192,21 +192,16 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                 onClick={() => select({ type: 'click', index })}
               >
                 {/* A pebble carries its rank, because the ranking is the
-                    information. */}
-                {/* Hidden while this rock's cover is showing: the cover opens
-                    centred on the rock, and an orange number in the middle of
-                    the art is the first thing the eye lands on. */}
-                {!(isActive && rectIsCurrent) && (
-                  <span
-                    className={
-                      isActive
-                        ? 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-accent'
-                        : 'absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small text-muted'
-                    }
-                  >
-                    {String(rock.rank).padStart(2, '0')}
-                  </span>
-                )}
+                    information. Every rank steps aside while a cover is open,
+                    not just this one's: ranks are HTML over the canvas, so any
+                    within the cover's reach are drawn on top of the art. */}
+                <span
+                  className={`absolute top-full left-1/2 w-max -translate-x-1/2 pt-0.5 font-mono text-small transition-opacity duration-500 ${
+                    isActive ? 'text-accent' : 'text-muted'
+                  } ${rectIsCurrent ? 'opacity-0' : 'opacity-100'}`}
+                >
+                  {String(rock.rank).padStart(2, '0')}
+                </span>
 
                 {/* The caption, when the cover has not opened — under reduced
                     motion the canvas never animates, so the picture never

@@ -255,15 +255,19 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               onBlur={() => select({ type: 'blur', index })}
               onClick={() => select({ type: 'click', index })}
             >
-              {/* Hidden while this rock's own photograph is showing: it
-                  opens centred on the rock, and an orange number in the
-                  middle of the picture is the first thing the eye lands on. */}
-              {!(isActive && photoOpen) && rockLabel(gallery[index]!.caption).length > 0 && (
-                <span className="absolute top-full left-1/2 w-[9rem] -translate-x-1/2 pt-0.5 text-center">
-                  {/* 9rem (144px), not w-36: this project's spacing unit is 8px, so
-                      w-36 is 288px and ran off a phone screen. Capped and
-                      centred, so a long name wraps under
-                      its rock instead of running off a phone screen. */}
+              {/* Every rock's name steps aside while a photograph is open —
+                  not just this one's. Names are HTML over the canvas, so any
+                  within the picture's reach are drawn on top of it; the
+                  picture gets the stage, the same as the heading and years.
+                  9rem (144px) wide, not w-36: this project's spacing unit is
+                  8px, so w-36 is 288px and ran off a phone screen. Centred,
+                  so a long name wraps under its rock. */}
+              {rockLabel(gallery[index]!.caption).length > 0 && (
+                <span
+                  className={`absolute top-full left-1/2 w-[9rem] -translate-x-1/2 pt-0.5 text-center transition-opacity duration-500 ${
+                    photoOpen ? 'opacity-0' : 'opacity-100'
+                  }`}
+                >
                   <span
                     className={`water-wobble font-mono text-small ${isActive ? 'text-accent' : 'text-muted'}`}
                     style={{ '--wobble-delay': `-${(index * 0.9) % 7}s` } as CSSProperties}

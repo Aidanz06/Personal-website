@@ -3284,3 +3284,38 @@ searching, the same lesson the `suppressHydrationWarning` and secrets tests
 learned.
 
 593 tests.
+
+## polish pass
+
+An independent walk of every page at 1280×860, 768×1024 and 375×667
+(touch), with keyboard. The critique's snapshot had closed itself because
+the homepage changed since the review, so its items served as input, not as
+a checklist.
+
+**Fixed:**
+- **Labels over an open picture.** Only the open rock's own label hid, so
+  neighbouring names (homepage) and ranks (/listening) were drawn on top of
+  the picture: they're HTML over the canvas. Every label now fades out over
+  500ms while a picture is open, matching the year markers and heading.
+  Measured: 0 of 4 names and 0 of 5 ranks visible while open, at every size.
+- **The koi through body text.** On /about at 375, the koi (already dimmed
+  to half on inner pages) ran straight through a paragraph, mixing its
+  characters into the letters. The inner pages' prose now carries
+  `over-water`: a triple text-shadow in the ground colour, a soft halo that
+  masks whatever passes behind the words, with no box. Checked in koi and
+  paper with the fish mid-paragraph: readable in both.
+
+**Checked and clean:** no horizontal scroll and no console errors on any of
+the four pages at any size. Captions stay inside the gutters at every width.
+The focus ring is square, solid and 2px on every stop.
+
+**Left for other steps, deliberately:**
+- One keyboard stop landed a rock partly off-screen. That's `scroll-margin`,
+  part of the critique's keyboard item for `/impeccable harden`.
+- The page still ends on the contact placeholders, which is
+  `/impeccable delight`.
+- The draft alt text on /tailor-studio is Aidan's to review.
+- **Observation:** the paper theme's water texture reads busier than the
+  dark themes'. It predates this pass.
+
+593 tests.
