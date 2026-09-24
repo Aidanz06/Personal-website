@@ -551,16 +551,40 @@ export function Pond({
       // Vignette, so the photograph fades into the water instead of ending at
       // a hard rectangle. The outer stop is inside the corners on purpose:
       // reach it only at the corners and the edges stay visibly straight.
-      c.globalCompositeOperation = 'source-over'
+      //
+      // A mask, not a fill: the picture fades to TRANSPARENT. It used to fade
+      // into an opaque fill of the ground colour, which is a rectangle of
+      // plain ground covering the water's dots, so the box showed exactly
+      // where the dots stopped (critique, 2026-09-24). Transparent, the
+      // feathered characters and the water carry on underneath.
+      c.globalCompositeOperation = 'destination-in'
       const gradient = c.createRadialGradient(
         w / 2, h / 2, Math.min(w, h) * 0.2,
         w / 2, h / 2, Math.max(w, h) * 0.56,
       )
-      gradient.addColorStop(0, 'rgba(0,0,0,0)')
-      gradient.addColorStop(0.62, 'rgba(0,0,0,0)')
-      gradient.addColorStop(1, ground)
+      gradient.addColorStop(0, 'rgba(0,0,0,1)')
+      gradient.addColorStop(0.62, 'rgba(0,0,0,1)')
+      gradient.addColorStop(1, 'rgba(0,0,0,0)')
       c.fillStyle = gradient
       c.fillRect(0, 0, w, h)
+
+      // And every side fades on its own. The radial alone never reaches the
+      // long sides of a landscape photograph, which stayed dead straight.
+      // Same width as the characters' feather underneath, so the picture and
+      // its characters thin out together.
+      const edge = PHOTO_FEATHER * Math.min(w, h)
+      for (const [x0, y0, x1, y1] of [
+        [0, 0, edge, 0],
+        [w, 0, w - edge, 0],
+        [0, 0, 0, edge],
+        [0, h, 0, h - edge],
+      ] as const) {
+        const side = c.createLinearGradient(x0, y0, x1, y1)
+        side.addColorStop(0, 'rgba(0,0,0,0)')
+        side.addColorStop(1, 'rgba(0,0,0,1)')
+        c.fillStyle = side
+        c.fillRect(0, 0, w, h)
+      }
 
       c.globalCompositeOperation = 'source-over'
       return out
@@ -1059,12 +1083,13 @@ export function Pond({
           // grid of 7px characters back and forth to follow the drift would
           // read as jitter; the fine art above it drifts smoothly instead.
           //
-          // For a picture kept as characters, the coarse stage also steps
-          // aside as its fine art arrives. The art fades out at its edges on
-          // purpose, and anything left underneath shows through there as a
-          // second, coarser border around it — so what is under the fade has
-          // to be plain water.
-          const handover = s.photoAscii && photo.art ? photoOpacity(photoReveal) : 0
+          // The coarse stage also steps aside as the finished picture
+          // arrives: the fine art for a picture kept as characters, the real
+          // image for a photograph (the same condition that draws it, below).
+          // Both fade out at their edges on purpose, and anything left
+          // underneath shows through there as a second, coarser border
+          // around them, so what is under the fade has to be plain water.
+          const handover = !s.photoAscii || photo.art ? photoOpacity(photoReveal) : 0
           stampPhoto(
             field,
             s.photoAscii ? photo.asciiGrid : photo.grid,
@@ -1072,7 +1097,11 @@ export function Pond({
             photoReveal * (1 - handover),
             cw,
             ch,
-            s.photoAscii ? PHOTO_FEATHER : 0,
+            // Feathered for every picture. A photograph used to leave its
+            // characters as a hard block, trusting an opaque vignette to
+            // cover them; the vignette is now transparent at its edge, so
+            // what shows through has to fade too.
+            PHOTO_FEATHER,
             // Presence on a light ground: a dark pixel is more ink.
             lightGround,
           )

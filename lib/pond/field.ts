@@ -189,11 +189,10 @@ export function stampPhoto(
   cellHeight: number,
   /**
    * Soften the edges into the water, over this fraction of the picture's
-   * shorter side. 0 — what the homepage uses — leaves a hard rectangle, which
-   * is fine there because the real photograph is painted over it with its own
-   * vignette. A picture that stays as characters has nothing painted over
-   * it, so its edge IS its edge, and a slab of dense characters ending in a
-   * straight line reads as a box dropped on the pond.
+   * shorter side. 0 leaves a hard rectangle: a slab of dense characters
+   * ending in a straight line reads as a box dropped on the pond. The pond
+   * feathers every picture. A photograph's own vignette fades to transparent,
+   * so the characters under its edge show through and have to fade as well.
    */
   feather = 0,
   /**

@@ -3569,3 +3569,48 @@ serving the new file (its hash matched the commit), but it was at the same
 URL, `/preview.png`, and link previews are cached by URL. It's now
 `/preview-koi.png`. The rule, noted in `PREVIEW_IMAGE`: a new picture gets
 a new file name.
+
+## second critique (22/32), and the fixes Aidan chose
+
+A fresh `/impeccable critique` ran as two independent agents: a design review
+and the detector. It scored 22/32 (from 20), with heuristics 7 and 10 n/a.
+The detector's five findings were all false positives: a template-string
+`<img>`, "wobble" read as bounce easing, zeroed margins counted as spacing,
+and the deck's hidden crossfade slides. Aidan's call on the rest:
+
+- **Recognisable rocks** (P1) comes first, as a brainstorm before building.
+- **The koi's behaviour and the first screen stay as they are.** That means
+  no steering around text and no raising the first stone.
+- **Everything else, now.**
+
+### rock names are in their accessible names
+
+The name under a rock ("qianling bridge") wasn't in the button's
+accessible name, which was just the description. A voice-control user
+couldn't say what they could see (WCAG 2.5.3, label in name). `rockName` now
+leads with the name: "qianling bridge: A stone arch bridge over a lake…".
+Tested in `gallery.test.ts`.
+
+### opened photographs dissolve instead of ending in a box
+
+Opened photos showed straight top and right edges. There were three causes,
+each pinned in `lib/photoEdge.test.ts`:
+
+1. **The vignette faded into an opaque fill of the ground colour.** That's
+   a rectangle of plain ground laid over the water dots, so the box showed
+   exactly where the dots stopped. It's now a mask (`destination-in`) that
+   fades to transparent.
+2. **The radial never reaches the long sides of a landscape photograph.**
+   Each side now also fades linearly over `PHOTO_FEATHER` of the short side,
+   the same width as the characters' feather.
+3. **With the edge transparent, the photo's own coarse characters showed
+   through** as a rectangle of koi-red dots. The fill had hidden them. The
+   homepage's characters now step aside as the real image arrives, exactly as
+   /listening's already did for its fine art, so what's under the fade is
+   plain water. `stampPhoto` is feathered for every picture, not only ASCII
+   ones.
+
+Checked in Chrome for koi, paper and phosphor, at 1280 and 375. The photo
+fades into the water on all four sides, and closing it leaves no residue. The
+second and third tests were written as each problem appeared in the browser.
+The third was red first; the second landed with its fix.
