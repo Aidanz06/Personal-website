@@ -3465,3 +3465,16 @@ instruction to Aidan that visitors could see. It's gone; the README in
 `public/photos` already says the same thing.
 
 One placeholder remains, visible and bracketed: the Beli profile link.
+
+## photo descriptions (alt text)
+
+Aidan didn't want to write 25 descriptions, which is reasonable: alt text
+only needs to say what's in the frame. I wrote one short sentence per photo
+from a contact sheet and put them in the blank `alt` fields of
+`captions.json` only. The diff is 25 lines, every one an `alt`. They say
+what's visible and nothing more. The one named landmark is the Golden Gate,
+which Aidan named himself. No places were added beyond what his photo names
+already say.
+
+Screen readers now hear a real description on the /about grid and as each
+homepage rock's description, instead of "[photograph — aidan to describe]".
