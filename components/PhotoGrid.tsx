@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { LoopingClip } from '@/components/LoopingClip'
 import { isCaptionEmpty } from '@/lib/captions'
 import { listPhotos } from '@/lib/photos'
+import { orderGallery } from '@/lib/pond/gallery'
 
 /**
  * The photography grid on /about.
@@ -18,7 +19,9 @@ import { listPhotos } from '@/lib/photos'
  * carry it, and it is still in every tile's screen-reader description.
  */
 export function PhotoGrid() {
-  const photos = listPhotos()
+  // Newest first, undated last: the same order the pond uses, so going
+  // down this grid goes back in time exactly as going down the pond does.
+  const photos = orderGallery(listPhotos())
 
   if (photos.length === 0) {
     return (

@@ -97,3 +97,14 @@ describe('rockName', () => {
     expect(rockName(noAlt, 'image')).toBe('photograph, kyoto, may 2025')
   })
 })
+
+describe('the /about grid', () => {
+  it('shows the photographs in the same order as the pond', async () => {
+    // Critique of 2026-09-24 (second run): the grid was in filename order, so
+    // june 2026 sat among may 2025 while the pond runs newest first.
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const grid = readFileSync(join(process.cwd(), 'components/PhotoGrid.tsx'), 'utf8')
+    expect(grid).toMatch(/orderGallery\(listPhotos\(\)\)/)
+  })
+})
