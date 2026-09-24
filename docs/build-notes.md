@@ -3539,3 +3539,27 @@ that the file really is 1200×630.
 Verified from the production build: each page has the right canonical,
 og:title and og:image; `/preview.png` serves; robots and the sitemap point
 at www; the last.fm key is not in `.next/static`. 626 tests.
+
+## the link preview becomes a mark
+
+Aidan asked for something closer to a logo: the koi and a couple of rocks,
+without his name. The preview's title already carries the name, so the
+picture doesn't need to.
+
+The homepage screenshot approach doesn't work for this. With the text
+hidden, a live frame at 1200×630 is mostly empty water with small, dim
+stones. At higher pixel density the characters get chunky enough, but the
+koi's pose is luck: most frames cut it off at an edge.
+
+So the mark is composed rather than captured, from the pond's own code:
+`stampKoi` with a hand-built spine (a 235° arc, so the fish curls), and
+`stampStone` for a stone inside the curl and a larger one beside it. Stones
+are at their hovered brightness, so they hold their own next to the fish.
+Water is the same wave field at base brightness. Cells go through
+`presenceRamp` exactly as the pond draws them (the first attempt skipped it
+and drew the water in dense `%`s). It's drawn in Chrome in the site's
+JetBrains Mono and koi-theme colours, 480×252 at 2.5×, giving 1200×630.
+
+`public/preview.png` is replaced and `PREVIEW_IMAGE.alt` describes the new
+picture. The composer is a scratch script in the gitignored
+`Claude outputs/verify/logo/` folder, not part of the site.

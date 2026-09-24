@@ -28,15 +28,17 @@ export function robotsRules(): MetadataRoute.Robots {
 }
 
 /**
- * The picture a shared link shows: the real homepage at 1200×630, captured
- * in headless Chrome from the production build, koi theme, with the koi
- * curving under the name rather than across it.
+ * The picture a shared link shows: a mark rather than a screenshot. One koi
+ * curled around a stone, with a second stone beside it, and no words: the
+ * preview's own title already carries the name. Composed with the pond's own
+ * code (stampKoi, stampStone, the presence ramp) in a fixed pose, and drawn
+ * in the site's mono font and koi-theme colours, at 1200×630.
  */
 export const PREVIEW_IMAGE = {
   url: '/preview.png',
   width: 1200,
   height: 630,
-  alt: "hi, i'm aidan zheng, a third year student at northeastern. an ascii koi swims through a dark pond of characters.",
+  alt: 'an ascii koi curled around a stone, with a second stone beside it, in a dark pond drawn in characters.',
 }
 
 /**
