@@ -30,3 +30,12 @@ describe('the pond floor', () => {
     expect(home).toMatch(/id="surface"/)
   })
 })
+
+describe('the bottom of /about', () => {
+  it('ends with the email, so a reader never has to go back to the homepage floor for it', () => {
+    // Critique of 2026-09-24 (third run): the inner pages had no contact;
+    // Aidan chose an email at the bottom of /about.
+    const about = readFileSync(join(process.cwd(), 'app/(page)/about/page.mdx'), 'utf8')
+    expect(about.trimEnd()).toMatch(/<Footer \/>$/)
+  })
+})

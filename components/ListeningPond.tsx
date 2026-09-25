@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useReducer, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { Pond, type PhotoRect } from '@/components/Pond'
 import { BackLink } from '@/components/BackLink'
 import { ThemeMenu } from '@/components/ThemeMenu'
@@ -9,6 +9,7 @@ import { formatAsOf, onRepeatLabel } from '@/lib/listening/format'
 import { listeningLayout } from '@/lib/listening/rocks'
 import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
 import { usePinDismissal } from '@/components/usePinDismissal'
+import { useHoverIntent } from '@/components/useHoverIntent'
 import type { ListeningData } from '@/lib/listening/types'
 
 /**
@@ -88,9 +89,24 @@ export function ListeningPond({ data }: { data: ListeningData }) {
   const active = activeRock(selection)
   const pinned = selection.pinned
   usePinDismissal(pinned, select)
+  // A rock scrolling under a still mouse is not a hover. See useHoverIntent.
+  const hoverIntended = useHoverIntent()
   // Where the open cover has settled, so the caption can sit under it. The
   // pond reports this twice per rock, not once per frame.
   const [rect, setRect] = useState<PhotoRect | null>(null)
+  // The caption's top in <main>'s coordinates, measured once when the cover
+  // settles, so the caption scrolls with its cover instead of staying where
+  // the cover first landed (the homepage's photo captions do the same).
+  const mainRef = useRef<HTMLElement | null>(null)
+  const [captionTop, setCaptionTop] = useState(0)
+  function onRect(next: PhotoRect | null) {
+    setRect(next)
+    const main = mainRef.current
+    if (next && main) {
+      // Clear of the cover at the lowest point of its drift.
+      setCaptionTop(next.y + next.height + 8 + COVER_FLOAT - main.getBoundingClientRect().top)
+    }
+  }
 
   // Esc closes whatever is open, pinned or not. On the window rather than the
   // button, because a rock pinned by a tap does not have focus — and a cover
@@ -129,11 +145,11 @@ export function ListeningPond({ data }: { data: ListeningData }) {
           scrollDriven
           photoStones={rocks}
           activePhoto={active}
-          onPhotoRect={setRect}
+          onPhotoRect={onRect}
         />
       </div>
 
-      <main className="listening-pond relative" style={{ minHeight: vh(depthVh) }}>
+      <main ref={mainRef} className="listening-pond relative" style={{ minHeight: vh(depthVh) }}>
         <div className="column py-3">
           <div className="flex items-baseline gap-2">
             <BackLink />
@@ -189,7 +205,11 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                   transform: 'translate(-50%, -50%)',
                 }}
                 data-rock={index}
-                onMouseEnter={() => select({ type: 'enter', index })}
+                onMouseEnter={() => hoverIntended() && select({ type: 'enter', index })}
+              // The pointer moving over a rock is always intended, including
+              // straight after a scroll, when mouseenter can arrive before the
+              // move that caused it has been recorded.
+              onMouseMove={() => active !== index && hoverIntended() && select({ type: 'enter', index })}
                 onMouseLeave={() => select({ type: 'leave', index })}
                 onFocus={() => select({ type: 'focus', index })}
                 onBlur={() => select({ type: 'blur', index })}
@@ -225,14 +245,15 @@ export function ListeningPond({ data }: { data: ListeningData }) {
           })}
 
           {/* --- the caption for whichever rock is open --- */}
-          {/* Fixed, because the cover is painted on a canvas fixed to the
-              viewport and the rect arrives in viewport coordinates. Hidden
+          {/* Placed in the page: the rect arrives in viewport coordinates
+              and is turned into <main>'s once (see onRect), so the caption
+              scrolls with its cover. Hidden
               from screen readers: the same words are already on the button,
               where they are reachable before the picture opens. */}
           {rectIsCurrent && rect && (
             <div
               aria-hidden="true"
-              className="pointer-events-none fixed"
+              className="pointer-events-none absolute"
               style={{
                 // At least 240px wide, however small the cover: a phone opens
                 // it at about 160px, and a caption that narrow wraps an album
@@ -240,8 +261,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                 // gutters on both sides, so a wider caption under a cover near
                 // the edge slides inward rather than off the glass.
                 left: `clamp(20px, ${rect.x}px, calc(100vw - 20px - ${captionWidth(rect.width)}))`,
-                // Clear of the cover at the lowest point of its drift.
-                top: rect.y + rect.height + 8 + COVER_FLOAT,
+                top: captionTop,
                 width: captionWidth(rect.width),
               }}
             >

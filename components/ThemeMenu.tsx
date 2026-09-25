@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { requestSplashAt } from '@/lib/pond/splash'
+import { menuSide } from '@/lib/themeMenu'
 import { THEME_RING_MS, themeChange, themeRingRadius } from '@/lib/pond/themeRing'
 import {
   DEFAULT_THEME,
@@ -40,6 +41,8 @@ export function ThemeMenu({ className }: { className?: string }) {
   // current until hydration caught up.
   const [theme, setTheme] = useState<ThemeId | null>(null)
   const [open, setOpen] = useState(false)
+  // Which way the menu opens; measured when it opens. See lib/themeMenu.ts.
+  const [side, setSide] = useState<'left' | 'right'>('left')
 
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const itemsRef = useRef<(HTMLButtonElement | null)[]>([])
@@ -53,6 +56,12 @@ export function ThemeMenu({ className }: { className?: string }) {
   useEffect(() => () => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
   }, [])
+
+  function openMenu() {
+    const box = triggerRef.current?.getBoundingClientRect()
+    if (box) setSide(menuSide(box, window.innerWidth))
+    setOpen(true)
+  }
 
   function cancelClose() {
     if (closeTimer.current) clearTimeout(closeTimer.current)
@@ -150,11 +159,18 @@ export function ThemeMenu({ className }: { className?: string }) {
   return (
     <span
       className={`theme-menu relative inline-block ${className ?? ''}`}
-      onMouseEnter={() => {
+      // Hover opens it for a mouse only. A tap also fires the compatibility
+      // mouse events, so hover-to-open plus click-to-toggle opened the menu
+      // and shut it again on the same tap (Android); on touch the click alone
+      // toggles it.
+      onPointerEnter={(event) => {
+        if (event.pointerType !== 'mouse') return
         cancelClose()
-        setOpen(true)
+        openMenu()
       }}
-      onMouseLeave={scheduleClose}
+      onPointerLeave={(event) => {
+        if (event.pointerType === 'mouse') scheduleClose()
+      }}
       // Tabbing out of the last option closes the menu, the same way moving
       // the pointer away does.
       onBlur={(event) => {
@@ -170,11 +186,11 @@ export function ThemeMenu({ className }: { className?: string }) {
         aria-expanded={open}
         aria-label={label ? `theme: ${label}` : 'theme'}
         className="hit-area cursor-pointer font-mono text-small text-muted"
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown') {
             event.preventDefault()
-            setOpen(true)
+            openMenu()
             // The menu may not be mounted yet on this tick.
             requestAnimationFrame(() => focusItem(0))
           } else if (event.key === 'Escape') {
@@ -189,7 +205,9 @@ export function ThemeMenu({ className }: { className?: string }) {
         <span
           role="menu"
           aria-label="theme"
-          className="absolute top-full left-0 z-20 mt-0.5 block w-max bg-ground py-0.5"
+          className={`absolute top-full z-20 mt-0.5 block w-max bg-ground py-0.5 ${
+            side === 'right' ? 'right-0' : 'left-0'
+          }`}
         >
           {THEMES.map((entry, index) => {
             const isCurrent = theme === entry.id

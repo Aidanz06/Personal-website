@@ -3720,3 +3720,45 @@ Fixed, tests first:
 Left standing on purpose: the Tailor Studio deck's own visual style (those
 are the deck's slides), and the koi crossing text (Aidan's call). The
 detector is clean on the changed files.
+
+## third critique (22/32), and the five fixes
+
+A third `/impeccable critique` ran as two independent agents, this time with
+touch emulation. It held at 22/32. Everything fixed that morning checked
+out, and the phone pass found two bugs the earlier runs never exercised. The
+detector's findings were the same false positives as before. Aidan chose
+all five fixes, with /about getting only an email as its floor. Each fix was
+reproduced first, with tests before the code, and verified in Chrome
+afterwards.
+
+1. **Theme menu on a phone** (`lib/themeMenu.ts`, `ThemeMenu.tsx`).
+   - Reproduced: at 375 the greeting wraps, ◐ lands at x≈350, and the menu
+     opened rightward off the screen. The labels were cut off and the page
+     widened to 452px.
+   - Separately: hover-to-open plus click-to-toggle means one tap opens and
+     shuts the menu wherever the browser fires both (Android Chrome). An
+     iPhone treats the first tap as the hover, which is why it looked fine
+     to Aidan.
+   - Now hover opens only for `pointerType === 'mouse'`, a tap is one clean
+     toggle, and `menuSide()` opens the menu leftward when rightward would
+     run off the screen.
+   - Verified: one tap opens it at x 250–355, with scrollWidth 375.
+2. **A pinned caption detached on scroll.**
+   - The picture follows its rock, but the caption was `position: fixed` at
+     the spot where the picture settled. Reproduced: after a 120px scroll it
+     floated in the water below the photo.
+   - Now the rect is converted once into `<main>`'s coordinates and the
+     caption is `absolute`, on the homepage and /listening.
+   - Verified: the caption's top moved 541 → 421 for a 120px scroll.
+3. **Labels and the ring stepped aside too late.** They waited for the
+   settled rect, up to ~3.5s after an arrow key. Now
+   `stepAside = photoOpen || (activePhoto !== null && !reducedMotion)`.
+   Under reduced motion the picture never animates open, so the labels stay
+   (`useReducedMotion`). Verified: both are gone at 0.7s.
+4. **A resting mouse opened pictures mid-scroll** (`hoverIntent`,
+   `useHoverIntent`). A hover counts only when the pointer has moved since
+   the last scroll. A mouse-move path on each rock catches the case where
+   mouseenter arrives before the move is recorded. Verified: a rock wheeled
+   under a still pointer stays shut, and pointing at it opens it.
+5. **/about ends with the email.** The previously unused `Footer` (email
+   above a hairline rule) closes the page, and its link now has `hit-area`.
