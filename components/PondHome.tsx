@@ -139,10 +139,12 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
 
   return (
     <>
-      {/* Fixed behind everything. aria-hidden lives on the canvas inside. */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-screen">
+      {/* Behind everything, as tall as the page, clipping the pond, which
+          moves itself to the scroll position as it draws (see Pond.tsx).
+          aria-hidden lives on the canvas inside. */}
+      <div className="still-water pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <Pond
-          className="h-full w-full"
+          className="h-screen w-full"
           stoneSpecs={HOME_STONES}
           scrollDriven
           highlight={highlight}

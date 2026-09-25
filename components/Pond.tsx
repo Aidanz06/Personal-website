@@ -788,6 +788,15 @@ export function Pond({
       // position, so sampling it at an offset costs nothing — descending is
       // literally just adding a number to y.
       const worldY = scrollDrivenRef.current ? window.scrollY : 0
+      // Move to where we are drawing. The pond sits in the page, not fixed to
+      // the viewport, so between frames the compositor scrolls it together
+      // with the text over it; each frame puts it back at the scroll position
+      // it is drawn for. A fixed canvas redrawn here lagged a busy phone's
+      // scroll and caught up in hops (lib/pondFrame.test.ts). Set before the
+      // box is measured below, so the pointer maths sees where it now is.
+      if (scrollDrivenRef.current) {
+        container!.style.transform = `translate3d(0, ${worldY}px, 0)`
+      }
       // The koi swims the whole document; the viewport is only the part of it
       // the reader happens to be looking at.
       const worldHeight = scrollDrivenRef.current
@@ -1287,8 +1296,15 @@ export function Pond({
 
     // Under reduced motion nothing repaints on its own, so a scroll would
     // leave a frozen frame from the wrong depth.
+    //
+    // And with the frame loop paused (the pond was out of view), nothing
+    // moves the pond to the new scroll position, so it would never come back
+    // into view to resume. Move it here; the observer then resumes it.
     const handleScroll = () => {
       if (reducedMotionQuery.matches) drawStill()
+      else if (!unsubscribe && scrollDrivenRef.current) {
+        container.style.transform = `translate3d(0, ${window.scrollY}px, 0)`
+      }
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
 

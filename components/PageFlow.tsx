@@ -26,6 +26,10 @@ import { requestPageSplash } from '@/lib/pond/splash'
  * pages are MDX files whose default export is the prose itself. Putting the
  * transition here keeps the content files free of it.
  *
+ * The wrapper is `relative` because it is the page-tall box each pond frame
+ * fills and clips to (lib/pondFrame.test.ts). `relative` does not make it a
+ * containing block for fixed descendants; only a transform would.
+ *
  * Nothing fires on first load. An animation on arrival is a page that looks
  * slow, and there is no previous page for the wave to be coming from.
  */
@@ -42,7 +46,7 @@ export function PageFlow({ children }: { children: React.ReactNode }) {
   }, [pathname])
 
   return (
-    <div key={pathname} className="page-flow">
+    <div key={pathname} className="page-flow relative min-h-screen">
       {children}
     </div>
   )

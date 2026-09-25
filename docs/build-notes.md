@@ -3762,3 +3762,51 @@ afterwards.
    under a still pointer stays shut, and pointing at it opens it.
 5. **/about ends with the email.** The previously unused `Footer` (email
    above a hairline rule) closes the page, and its link now has `hit-area`.
+
+## the pond moves with the page (phones)
+
+Aidan, on a real phone: "the fish and ui jumps around a bit as you scroll
+on mobile browser".
+
+**Measured before changing anything.**
+- **Row snapping: a small part.** I scrolled 2px at a time and measured
+  where the drawn stone sits inside its own link box. It wanders 3.8px,
+  because the character grid moves in rows.
+- **Lag: the real cause.** With the CPU throttled 6x and a touch-scroll
+  gesture, the drawn stones fell far behind their links: one 36px
+  off-centre, one entirely outside its box. The pond was a fixed canvas,
+  redrawn at `window.scrollY` each frame. The phone scrolls the page on its
+  compositor, while the canvas only updates when the main thread gets a
+  frame. So a busy phone lets the drawing lag the text and then catch up
+  in a hop.
+
+**The fix: the pond lives in the page instead of being fixed to the screen.**
+- Each frame (`frame` in `Pond.tsx`) moves the pond's own box to
+  `translate3d(0, scrollY, 0)` before drawing, and draws exactly as before.
+  Between frames the compositor scrolls the pond together with the text,
+  so they can't come apart however slow the main thread is.
+- Each page's frame is now `absolute inset-0 overflow-hidden` inside the
+  page wrapper. `PageFlow` is `relative min-h-screen`: page-tall, at least
+  a screen tall, and it clips the pond so it can never lengthen the page.
+- The pond's box stays `h-screen`, so it is still sized in vh like
+  everything placed on it (the earlier frame bug). `lib/pondFrame.test.ts`
+  was rewritten for the new structure and failed first.
+- With the frame loop paused, a scroll handler moves the pond back into
+  view, so the observer can resume it.
+
+**The trade-off, and its fix.** Mid-flick on the throttled CPU, the pond
+could now trail far enough to uncover a band of plain ground with a
+straight edge. The frames now carry `still-water`: faint dots at roughly
+the pond's cell pitch, in its water colour. Whatever the moving pond
+briefly uncovers reads as quiet water.
+
+**After.**
+- Stones sit centred on their links during the throttled flick.
+- The 2px-step spread fell to 2.7px.
+- Page heights are unchanged (7311 / 6096).
+- No horizontal scroll, the 404 is covered to the bottom, and photo
+  captions still land under their pictures.
+- All checked in koi and paper at 1280 and 375.
+
+Headless Chrome can't reproduce a real phone's scrolling, so this needs
+Aidan's phone to confirm.
