@@ -13,33 +13,31 @@ export const metadata = {
   ),
 }
 
-# tailor studio
+# Tailor *Studio*
 
 i sell clothes on grailed, and every listing used to take fifteen to twenty
 minutes of the same work: sorting a shoot into items, writing a title and
 description, checking what similar pieces sold for, then typing it all into
 the form. tailor studio is a desktop app that does that part for me.
 
-<Slideshow />
+<Slideshow project="tailor-studio" />
 
 ## how it works
 
 i point it at a folder of photos. it groups them by garment, reads the
-brand, size, condition and colour off the pictures, and drafts a listing
-with a price range from recent sold comparables. anything it isn't sure
-about gets flagged for me to check rather than guessed. one click types the
-draft into grailed's sell form, and i look it over and press publish myself.
+brand, size and condition off the pictures, and drafts a listing with a
+price from recent sold listings. anything it isn't sure about gets flagged
+for me to check instead of guessed. one click types the draft into grailed's
+sell form, and i look it over and press publish myself. it never signs in
+and never submits anything.
 
-it never signs in and never submits anything, so the account stays mine. and
-it never calls something authentic, only a probable brand.
+## testing it
 
-## testing the ai
-
-llm output is nondeterministic, so the vision and drafting steps are scored
-against fixed fixtures of hand-labelled photos. a regression gate fails the
-build if clustering accuracy drops below threshold, and a resumable
-cost-versus-accuracy sweep over models and batching strategies picked the
-cheapest configuration that meets the target.
+i tried three ways of grouping photos on the same test shoot. looking at
+every photo together got all 9 items right and cost about a quarter as much
+as going one photo at a time. moving the listing text to a smaller model
+made it 7× cheaper with about the same quality. all in, it's around 7 cents
+of ai per listing.
 
 ## where it's at
 

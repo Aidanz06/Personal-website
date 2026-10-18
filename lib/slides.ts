@@ -3,8 +3,7 @@ import { join } from 'node:path'
 import { imageSize } from './imageSize'
 
 /**
- * The tailor studio slideshow, read from public/tailor-studio/slides at build
- * time.
+ * A project's slideshow, read from public/<project>/slides at build time.
  *
  * Adding a slide is dropping a numbered image in that folder. Order comes
  * from the filename, so reordering is renaming — there is no list anywhere
@@ -13,8 +12,8 @@ import { imageSize } from './imageSize'
  * Server-only: it touches the filesystem.
  */
 
-const SLIDES_DIR = join(process.cwd(), 'public', 'tailor-studio', 'slides')
-const MANIFEST_PATH = join(process.cwd(), 'public', 'tailor-studio', 'slides.json')
+/** The projects with a deck; each is a folder in /public and a page route. */
+export type SlideProject = 'tailor-studio' | 'thousand'
 const SLIDE_EXTENSIONS = /\.(png|jpe?g|webp|avif)$/i
 
 export type Slide = {
@@ -118,7 +117,8 @@ export function readSlides(
   })
 }
 
-/** The real deck: public/tailor-studio/slides. */
-export function listSlides(): Slide[] {
-  return readSlides(SLIDES_DIR, MANIFEST_PATH, '/tailor-studio/slides')
+/** A project's real deck: public/<project>/slides. */
+export function listSlides(project: SlideProject): Slide[] {
+  const folder = join(process.cwd(), 'public', project)
+  return readSlides(join(folder, 'slides'), join(folder, 'slides.json'), `/${project}/slides`)
 }

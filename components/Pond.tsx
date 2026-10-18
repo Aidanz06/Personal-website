@@ -28,6 +28,16 @@ import {
   type Koi,
 } from '@/lib/pond/koi'
 import { drainSplashes } from '@/lib/pond/splash'
+import {
+  drainFeeds,
+  dropPellets,
+  eatPellets,
+  nearestPellet,
+  pelletPresence,
+  stepPellets,
+  type Pellet,
+} from '@/lib/pond/food'
+import { BUCKET_RING_INTERVAL, BUCKET_RING_STRENGTH } from '@/lib/pond/bucket'
 import { RING_STRENGTH, ringDue } from '@/lib/pond/rings'
 import { placeStones, type StoneSpec } from '@/lib/pond/stones'
 import { pondPalette, presenceRamp } from '@/lib/pond/theme'
@@ -53,6 +63,7 @@ import {
   MATERIAL,
   clearField,
   createField,
+  stampBlob,
   stampKoi,
   stampPhoto,
   stampStone,
@@ -213,6 +224,12 @@ export type PondProps = {
   scrollDriven?: boolean
   /** Index of the stone currently hovered or focused, if any. */
   highlight?: number | null
+  /**
+   * The bucket of koi food floating here, if there is one (see
+   * lib/pond/bucket.ts): the pond rings softly around it. Placed in
+   * fractions, like a stone.
+   */
+  bucket?: { xFraction: number; depthVh: number } | null
   /** Photo rocks, placed by the page. */
   photoStones?: readonly PhotoStoneSpec[]
   /** Index of the photo rock currently hovered, focused or pinned open. */
@@ -238,6 +255,7 @@ export function Pond({
   stoneSpecs,
   scrollDriven = false,
   highlight = null,
+  bucket = null,
   photoStones,
   activePhoto = null,
   onPhotoRect,
@@ -252,6 +270,8 @@ export function Pond({
 
   const stonesRef = useRef(stones)
   stonesRef.current = stones
+  const bucketRef = useRef(bucket)
+  bucketRef.current = bucket
 
   const stoneSpecsRef = useRef(stoneSpecs)
   stoneSpecsRef.current = stoneSpecs
@@ -305,6 +325,9 @@ export function Pond({
 
     let koi: Koi[] = []
     let ripples: Ripple[] = []
+    // Food in the water, in world coordinates. Kept out of the field, like
+    // the koi and the ripples, so a grid rebuild doesn't lose it.
+    let pellets: Pellet[] = []
 
     type LoadedPhoto = {
       /** The still: a photograph, or a clip's poster frame. */
@@ -373,6 +396,8 @@ export function Pond({
     let lastRippleAt = 0
     /** When each ringing stone last rang, in seconds. Indexed like the stones. */
     const lastRingAt: (number | null)[] = []
+    /** When the floating bucket last rang, in seconds. */
+    let lastBucketRingAt: number | null = null
     let visible = true
     let unsubscribe: (() => void) | null = null
 
@@ -847,6 +872,13 @@ export function Pond({
         })
       }
 
+      // Food lands where the water was tapped, with a small splash.
+      for (const at of drainFeeds(width, height, worldY)) {
+        pellets = dropPellets(pellets, at, seconds, Math.random)
+        ripples.push({ x: at.x, y: at.y, startedAt: seconds, strength: s.rippleStrength * 0.8 })
+      }
+      pellets = stepPellets(pellets, seconds)
+
       ripples = ripples.filter((r) => !isRippleExpired(r, seconds, DEFAULT_RIPPLE_SETTINGS))
 
       // --- water + ripples into the field ---
@@ -900,6 +932,19 @@ export function Pond({
           lastRingAt[index] = seconds
           ripples.push({ x: stone.x, y: stone.worldY, startedAt: seconds, strength: RING_STRENGTH })
         })
+
+        // The bucket floats, and the water rings softly round it. On screen
+        // only, like the stone's rings.
+        const pail = bucketRef.current
+        if (pail) {
+          const x = width * pail.xFraction
+          const y = height * pail.depthVh
+          if (y - worldY < -60 || y - worldY > height + 60) lastBucketRingAt = null
+          else if (ringDue(lastBucketRingAt, seconds, BUCKET_RING_INTERVAL)) {
+            lastBucketRingAt = seconds
+            ripples.push({ x, y, startedAt: seconds, strength: BUCKET_RING_STRENGTH })
+          }
+        }
       }
 
       const visibleStones: { x: number; y: number; radius: number }[] = []
@@ -927,19 +972,40 @@ export function Pond({
         )
       })
 
-      // A focused stone pulls the fish, so keyboard users get the same
-      // response to their attention that a pointer gets.
-      let interest = pointer
+      // Food, monochrome like the stones (colour is for living things), and
+      // under the koi so the fish covers a pellet as it takes it. Big enough
+      // to always land on a cell centre, and fading as it sinks.
+      const pelletRadius = Math.max(cw, ch) * 0.9
+      for (const pellet of pellets) {
+        const screenY = pellet.y - worldY
+        if (screenY < -pelletRadius || screenY > height + pelletRadius) continue
+        stampBlob(
+          target,
+          pellet.x,
+          screenY,
+          pelletRadius,
+          0.65 * s.koiBrightness * pelletPresence(pellet, seconds),
+          MATERIAL.stone,
+          0,
+          cw,
+          ch,
+        )
+      }
+
+      // What the fish swims to. A focused stone pulls it, so keyboard users
+      // get the same response to their attention that a pointer gets; then
+      // food; then the pointer.
+      let stoneInterest: { x: number; y: number } | null = null
       if (highlighted !== null && visibleStones[highlighted]) {
         const stone = visibleStones[highlighted]!
-        interest = { x: stone.x, y: stone.y + worldY }
+        stoneInterest = { x: stone.x, y: stone.y + worldY }
       }
 
       koi = koi.map((fish) =>
         stepKoi(
           fish,
           koi,
-          interest,
+          stoneInterest ?? nearestPellet(fish.head, pellets) ?? pointer,
           { width, height: worldHeight },
           dt,
           {
@@ -953,6 +1019,16 @@ export function Pond({
           focusBand,
         ),
       )
+      // Whatever is within reach of a mouth is eaten, with a small ripple.
+      // The reach is wide because the fish circles food rather than landing
+      // on it (see eatPellets).
+      for (const fish of koi) {
+        const meal = eatPellets(pellets, fish.head, s.bodyRadius * 1.5)
+        pellets = meal.remaining
+        for (const bite of meal.eaten) {
+          ripples.push({ x: bite.x, y: bite.y, startedAt: seconds, strength: s.rippleStrength * 0.45 })
+        }
+      }
       for (const fish of koi) {
         stampKoi(field, fish, s.bodyRadius, s.koiBrightness, cw, ch, s.tailAmplitude, worldY)
       }

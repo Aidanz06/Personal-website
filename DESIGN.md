@@ -109,7 +109,8 @@ because every surface shows its making: the characters, the measured glyph
 ramp, captions and controls set in monospace like instrument labels. It's
 playful because of small rewards for attention: a koi that comes to the
 stone you focus, rings breathing off the listening stone, album covers
-rising as ASCII art, bubbles rising above the gallery. And
+rising as ASCII art, bubbles rising above the gallery, food you grab from
+a bucket and drop in the water, and the koi coming to eat it. And
 it's calm because motion is slow, most of the surface is empty water, and
 nothing competes for attention. Going deeper means going more personal: the
 name at the surface, then the navigation, then photographs and music in the
@@ -175,7 +176,8 @@ theme is active.
 **The Living Colour Rule.** Colour belongs to living things. Water, stones,
 rules and text stay monochrome; the koi's colours are the single exception,
 and the accent is taken from the koi. Anything new that wants a colour has
-to be alive or be a link.
+to be alive or be a link. Fish food is not alive: pellets are drawn in the
+stones' monochrome.
 
 **The Presence Rule.** The pond draws presence, the same way on every
 ground: more of a thing means a denser glyph (`presenceRamp`). Quiet water is
@@ -361,6 +363,30 @@ positions come from a seeded sequence, so they're identical on every visit
 and between server and browser. It's pure CSS (`.bubble`): it runs with
 JavaScript off, is hidden under reduced motion, and is `aria-hidden`. It
 tells the visitor the pond goes deeper, without an arrow or a word.
+
+### Food Bucket
+A small bucket of koi food floating in the water on the right, between the
+name and the first stone. It's a line drawing in the hairline: a thin bail
+handle, an oval rim with pellets heaped inside, a tapered body with a hoop,
+filled with the ground. It bobs and rocks slowly, and the pond rings softly
+around it (the rings are written into the field, so it sits in the water
+rather than on it). Muted at rest, ink when hovered or focused; the mono
+label below, `feed the koi` / `grab some food`, goes accent like a link.
+- **The hand:** the bucket's pair, the same hairline. Clicking the bucket
+  brings it down into the bucket (out of sight below the front of the rim),
+  the fingers curl one after another from the little finger, and it lifts a
+  pellet out. It is the cursor until the food is dropped. It follows on a
+  spring and swings from the wrist, so it has weight. A click on open water
+  opens it with a small flick, the pellet falls and shrinks into the water,
+  and the hand drifts up and fades. The bucket again, or Esc, takes the
+  food back to the bucket.
+- **Touch and keyboard:** on a phone the hand waits and glides to the tap;
+  from the keyboard it carries the food to the water by itself.
+- **Motion:** eased throughout, 200–800ms a move. Under reduced motion there
+  is no bucket and no feeding (the fish could never come).
+- **An exception, on purpose:** the bucket and hand are drawn over the pond,
+  not into its characters. Drawn in characters the bucket was a blob at any
+  size small enough to stay out of the way.
 
 ### Theme Control
 A single mono glyph (◐) in Drowned Grey beside the name, with no border and

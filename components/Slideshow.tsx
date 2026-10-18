@@ -1,9 +1,9 @@
 import { getImageProps } from 'next/image'
 import { SlideshowViewer } from '@/components/SlideshowViewer'
-import { listSlides, type Slide } from '@/lib/slides'
+import { listSlides, type Slide, type SlideProject } from '@/lib/slides'
 
 /**
- * The tailor studio slideshow.
+ * A project's slideshow (tailor studio, $1,000).
  *
  * A server component, so the deck is read from the folder at build time and
  * the page stays static. It renders two things: the interactive viewer, and a
@@ -65,15 +65,15 @@ function fallbackMarkup(slides: readonly Slide[]): string {
   return `<style>.slideshow-js{display:none!important}.ss-fallback{list-style:none;padding:0;margin:0}.ss-n{display:block;font-family:var(--font-mono);font-size:var(--text-small);color:var(--color-muted);margin:8px 0 4px}</style><ol class="ss-fallback breakout">${items}</ol>`
 }
 
-export function Slideshow() {
-  const slides = listSlides()
+export function Slideshow({ project }: { project: SlideProject }) {
+  const slides = listSlides(project)
 
   if (slides.length === 0) {
     return (
       <p className="my-3 font-mono text-small text-muted">
-        [the tailor studio presentation goes here — drop the slides into
-        public/tailor-studio/slides as 01.png, 02.png, … and add one line of
-        alt text each to public/tailor-studio/slides.json]
+        [the presentation goes here — drop the slides into
+        public/{project}/slides as 01.png, 02.png, … and add one line of
+        alt text each to public/{project}/slides.json]
       </p>
     )
   }

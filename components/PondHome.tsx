@@ -1,6 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { isProjectId } from '@/app/projectFonts'
+import { FeedCount } from '@/components/FeedCount'
+import { FoodBucket } from '@/components/FoodBucket'
+import { BUCKET } from '@/lib/pond/bucket'
+import { ProjectLogo } from '@/components/ProjectLogo'
 import { useEffect, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Pond, type PhotoRect } from '@/components/Pond'
 import { ThemeMenu } from '@/components/ThemeMenu'
@@ -150,6 +155,9 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
           stoneSpecs={HOME_STONES}
           scrollDriven
           highlight={highlight}
+          // No feeding under reduced motion: the pond is a still picture,
+          // and the fish could never come for the food.
+          bucket={reducedMotion ? null : BUCKET}
           photoStones={photoStones}
           activePhoto={activePhoto}
           onPhotoRect={onPhotoRect}
@@ -169,7 +177,11 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
             <ThemeMenu />
           </div>
           <p className="mt-1 text-muted">{site.identity}</p>
+          <FeedCount />
         </section>
+
+        {/* --- the bucket of koi food, between the name and the stones --- */}
+        {!reducedMotion && <FoodBucket depthVh={vh(BUCKET.depthVh)} />}
 
         {/* --- the stones --- */}
         {/* A landmark, so a screen reader can jump to the pages. It has no
@@ -179,6 +191,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
           // The same clamp placeStones() applies, expressed in CSS so it
           // needs no measurement. Keep the two in step.
           const size = `clamp(92px, min(100vw, 100vh) * ${(spec.radiusFraction * 2).toFixed(3)}, 240px)`
+          const project = spec.href.slice(1)
           return (
             <Link
               key={spec.href}
@@ -223,7 +236,13 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
                       : 'block font-display text-heading text-ink'
                   }
                 >
-                  {spec.label}
+                  {/* A project's stone is labelled with its logo, the same
+                      face and accent as its page's title. */}
+                  {isProjectId(project) ? (
+                    <ProjectLogo project={project} />
+                  ) : (
+                    spec.label
+                  )}
                 </span>
                 {spec.note && (
                   <span

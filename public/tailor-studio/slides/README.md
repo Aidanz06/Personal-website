@@ -2,8 +2,10 @@
 
 Numbered images, one per slide: `01.png`, `02.png`, `03.png`, …
 
-The twelve here were rendered from `docs/tailor-studio-design.pdf` in the
-[tailor-studio](https://github.com/Aidanz06/tailor-studio) repo.
+The nine here are screens of the real app, rendered with a real test shoot
+and its real drafts and prices, and supplied as finished 2000×1456 PNGs.
+(The earlier twelve were rendered from `docs/tailor-studio-design.pdf` in the
+[tailor-studio](https://github.com/Aidanz06/tailor-studio) repo, as below.)
 
 ## regenerating them from a new PDF
 

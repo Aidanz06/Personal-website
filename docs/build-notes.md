@@ -3810,3 +3810,106 @@ briefly uncovers reads as quiet water.
 
 Headless Chrome can't reproduce a real phone's scrolling, so this needs
 Aidan's phone to confirm.
+
+## feeding the fish
+
+A bucket of koi food sits in the water to the right, between the name and the
+first stone. Click it and a hand reaches in and closes round a pellet. The
+hand follows the pointer, and a click on open water opens it: the pellet
+falls, a few pellets land with a small splash, and the koi swims over and
+eats them, each bite leaving a ripple. A line under the name says how many
+times everyone has fed the koi today.
+
+(The first version fed on any tap of the water, everywhere. Aidan asked for
+the bucket instead, so food is something you go and get, one piece at a
+time, and only on the homepage.)
+
+**The bucket.**
+- First drawn into the pond's characters (a shade function: rim, food,
+  hoop, handle). At any size small enough to stay out of the way it read as
+  a blob, and hand-made ASCII buckets read as pots and bowls. So it's a line
+  drawing now, the hand's pair, about 48px. That's a deliberate exception to
+  the One Grid Rule, noted in DESIGN.md.
+- What keeps it in the water is the pond: soft rings every 3.4s while it's
+  on screen (`BUCKET_RING_INTERVAL`), a splash when the hand reaches in, and
+  a slow CSS bob and rock (`.bucket-float`, allowed in `pageFlow.test.ts`
+  because it holds nothing but its own drawing).
+- A real button in `components/FoodBucket.tsx`, placed from `BUCKET` in
+  `lib/pond/bucket.ts`.
+
+**The hand.**
+- An outline in the ink colour, filled with the ground so it's solid over
+  the water, and masked to fade out toward the wrist (no arm, no mitten
+  edge). `lib/pond/hand.ts` draws it from numbers: the same path commands at
+  every pose, so it closes and opens smoothly. The fingers curl one after
+  another from the little finger, with the thumb last, and open the other
+  way round; they fan as they open. A pellet peeks out of the fist.
+- `lib/pond/handMotion.ts` is the timing, pure. Grab (820ms): down into the
+  bucket, slowing as it goes in, fingers curling once among the food, the
+  bucket giving a little, straight up out of it, then over to the pointer.
+  Let go (720ms): open with a small flick of the wrist, the pellet falls
+  (speeding up, shrinking as it meets the water) and lands in the pond, the
+  hand drifts up and fades.
+- Below the front of the rim the hand is masked away, so it reaches *into*
+  the bucket instead of being drawn over it.
+- FoodBucket follows each pose on a critically damped spring, which gives
+  the hand weight without lagging, and swings it from the wrist on a looser,
+  under-damped one, so it leans into a move and settles past straight. Both
+  are written to the elements each frame; React never re-renders.
+- While carrying, the fingertips ride 22px above the pointer so the food
+  has a little way to fall. `html.holding-food` hides the cursor (mouse
+  only).
+- Portalled to `<body>`, because a page transition transforms the page and
+  a fixed element inside a transform isn't fixed to the screen.
+- On a phone the hand waits and glides to the tap. From the keyboard it
+  carries the food to the water beside the bucket by itself. Esc, or the
+  bucket again, takes the food back. A click on the water while it's still
+  lifting the food out is kept, and the food drops as soon as it's out.
+
+**In the pond.**
+- Pellets are pure logic in `lib/pond/food.ts`: drop, sink, nearest, eat.
+- They live in world coordinates beside the koi and the ripples, not in the
+  field, so a grid rebuild keeps them.
+- They are stamped into the one field in the stones' monochrome, under the
+  koi, so the fish covers a pellet as it takes it.
+- The fish's target is a focused stone first, then the nearest pellet, then
+  the pointer. `stepKoi` didn't change; food is just another position to
+  swim to.
+- The mouth's reach is 1.5× the body radius, because the fish circles a
+  target rather than landing on it.
+- Pellets last 30s, so none sinks before the fish can get there.
+
+**Where it can drop.**
+- The canvas takes no pointer events (DESIGN.md: no hit-testing), so the
+  bucket listens for `click` on the document while the hand is full.
+- A click counts as water unless it lands on something interactive, on
+  words or a picture (`isWaterTarget`). On words the hand just keeps
+  holding.
+- A tap that closes a pinned picture or the theme menu doesn't also drop.
+- No bucket under reduced motion, where the pond is still and food could
+  never be eaten.
+
+**The count.**
+- `/api/feed` keeps one number per New York day in Upstash Redis, over its
+  REST API with plain `fetch`, so there's no new dependency.
+- One visitor (a hash of their address) counts at most 20 times a minute.
+  Past that they still feed, uncounted.
+- The browser sends at most one count every 3s; feedings in between fold
+  into the next one.
+- With no store configured, or the store down, the route answers 503 and
+  the line stays empty.
+- The token's names are in `secrets.test.ts`, so they can never reach the
+  browser bundle.
+
+**Checked** in headless Chrome against an in-memory stand-in for the store:
+- Mouse: grab, carry, drop sends one count, the cursor comes back, the
+  label goes back to "grab some food". A click on the heading while holding
+  doesn't drop.
+- Phone (375 and 320): tap the bucket, tap the water, the hand glides there
+  and drops. The label stays on screen.
+- Keyboard: Enter on the bucket carries food to the water and counts once.
+  Esc puts it back.
+
+**Still to do (Aidan):** add Upstash Redis from the Vercel dashboard
+(Storage → Marketplace, free tier) and connect it to the project. Locally,
+`vercel env pull .env.local`.

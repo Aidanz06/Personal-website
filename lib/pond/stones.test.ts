@@ -15,6 +15,7 @@ describe('HOME_STONES', () => {
       '/about',
       '/listening',
       '/tailor-studio',
+      '/thousand',
     ])
   })
 
@@ -112,15 +113,15 @@ describe('placeStones', () => {
 describe('the listening stone', () => {
   const listening = HOME_STONES.find((s) => s.href === '/listening')!
 
-  it('is the third stone, below about', () => {
-    expect(HOME_STONES.map((s) => s.href)).toEqual(['/tailor-studio', '/about', '/listening'])
+  it('is the last stone, below about', () => {
+    expect(HOME_STONES.map((s) => s.href)).toEqual(['/tailor-studio', '/thousand', '/about', '/listening'])
     expect(listening.label).toBe('listening')
     expect(listening.note).toBe("what's on repeat")
   })
 
   it('got its depth from the list, not from a number typed in', () => {
     // The whole point of step 1's derivation: adding this stone was one entry.
-    expect(listening.depthVh).toBeCloseTo(FIRST_STONE_VH + 2 * STONE_STEP_VH, 10)
+    expect(listening.depthVh).toBeCloseTo(FIRST_STONE_VH + 3 * STONE_STEP_VH, 10)
     expect(DEEPEST_STONE_VH).toBe(listening.depthVh)
     expect(POND_DEPTH_VH).toBeCloseTo(listening.depthVh + STONE_TAIL_VH, 10)
   })

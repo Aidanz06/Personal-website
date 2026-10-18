@@ -1,0 +1,42 @@
+import { Slideshow } from '@/components/Slideshow'
+import { pageOpenGraph } from '@/lib/siteMeta'
+
+export const metadata = {
+  title: '$1,000',
+  description:
+    '$1,000 — a daily game: a date from the past, six things you could have bought then, and $1,000 to put on three of them.',
+  alternates: { canonical: '/thousand' },
+  openGraph: pageOpenGraph(
+    '$1,000',
+    '$1,000 — a daily game: a date from the past, six things you could have bought then, and $1,000 to put on three of them.',
+    '/thousand',
+  ),
+}
+
+# <em>$</em>1,000
+
+a daily game i've been making. you get a date from the past and six things
+you could have bought then, like zoom stock, a pound of flour or a gold fund.
+you put $500, $300 and $200 on three of them, then see what they turned into.
+
+<Slideshow project="thousand" />
+
+## how it works
+
+pick a shelf, tap an item and give it one of the three amounts. move them
+around until you're happy, then lock in. the reveal shows what $100 in each
+became and how your three did. you can tap any row to see both prices, their
+dates and where they came from.
+
+## where the prices come from
+
+only sec filings and us government data (bls, eia, usps, the federal
+reserve), since those are free to republish. no estimates. it keeps the
+shelves narrower than i'd like, so finding more things that fit is the main
+thing i'm working on.
+
+## where it's at
+
+six shelves, in a beta with friends. next up are rooms so friends can see
+each other's picks, more shelves, and a real name. "$1,000" is a working
+title.

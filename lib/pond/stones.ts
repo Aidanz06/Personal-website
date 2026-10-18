@@ -48,9 +48,10 @@ export const FIRST_STONE_VH = 0.95
  * Depth between consecutive stones. Also the gap before the photographs.
  *
  * Was 0.7; tightened 20% so the navigation reads as one group you descend
- * past rather than three separate screens.
+ * past rather than three separate screens. Then 0.5 for a fourth stone, so
+ * the last one still sits within the first three screens.
  */
-export const STONE_STEP_VH = 0.56
+export const STONE_STEP_VH = 0.5
 /** Empty water below the last stone, so the navigation does not end abruptly. */
 export const STONE_TAIL_VH = 0.6
 
@@ -71,19 +72,26 @@ export const HOME_STONE_DEFINITIONS: readonly StoneDefinition[] = [
     radiusFraction: 0.1,
   },
   {
+    href: '/thousand',
+    label: '$1,000',
+    note: 'a daily game',
+    xFraction: 0.62,
+    radiusFraction: 0.09,
+  },
+  {
     href: '/about',
     label: 'about',
     note: 'and photography',
-    xFraction: 0.66,
+    // Back left, then right again for listening: with four stones the path
+    // zig-zags all the way down instead of bunching on one side.
+    xFraction: 0.34,
     radiusFraction: 0.09,
   },
   {
     href: '/listening',
     label: 'listening',
     note: "what's on repeat",
-    // 0.24 from about's 0.66, so the path zig-zags back rather than running
-    // down the right-hand side.
-    xFraction: 0.42,
+    xFraction: 0.64,
     radiusFraction: 0.09,
     rings: true,
   },

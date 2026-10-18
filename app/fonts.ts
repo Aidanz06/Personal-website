@@ -1,9 +1,10 @@
 import { Newsreader, Inter, JetBrains_Mono } from 'next/font/google'
 
 /**
- * Typeface pairing. Swap a family here and the whole site follows — nothing
- * else in the codebase names a font, it all goes through the CSS variables
- * these expose (see the @theme block in globals.css).
+ * Typeface pairing. Swap a family here and the whole site follows — it all
+ * goes through the CSS variables these expose (see the @theme block in
+ * globals.css). The one exception is a project page's headings, which are in
+ * that project's own face; see components/ProjectHeadings.tsx.
  *
  * Current pairing (A): Newsreader / Inter / JetBrains Mono.
  *   - Newsreader is a *text* serif, so it stays readable at 48px lowercase

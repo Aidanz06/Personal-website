@@ -36,10 +36,18 @@ const CLIENT_ENTRIES = [
   'components/SlideshowViewer.tsx',
   'components/AsciiImage.tsx',
   'components/LoopingClip.tsx',
+  'components/FeedCount.tsx',
+  'components/FoodBucket.tsx',
 ]
 
 /** The names that must never be reachable from any of the above. */
-const SECRETS = ['LASTFM_API_KEY', 'LASTFM_USER']
+const SECRETS = [
+  'LASTFM_API_KEY',
+  'LASTFM_USER',
+  // The feeding count's store (lib/feedCount.ts).
+  'KV_REST_API_TOKEN',
+  'UPSTASH_REDIS_REST_TOKEN',
+]
 
 const EXTENSIONS = ['', '.ts', '.tsx', '.json', '/index.ts', '/index.tsx']
 

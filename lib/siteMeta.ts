@@ -5,7 +5,7 @@ import { site } from './site'
  * The pages a search engine should know about, in the order they sit in the
  * pond. /lab is a private workbench, marked noindex, and left out.
  */
-export const PUBLIC_ROUTES = ['/', '/tailor-studio', '/about', '/listening'] as const
+export const PUBLIC_ROUTES = ['/', '/tailor-studio', '/thousand', '/about', '/listening'] as const
 
 function absolute(path: string): string {
   return new URL(path, site.url).toString()

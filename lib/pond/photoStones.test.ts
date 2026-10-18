@@ -191,10 +191,11 @@ describe('spacing', () => {
     }
   })
 
-  it('keeps twenty-five pieces of media inside eight and a half screens', () => {
+  it('keeps twenty-five pieces of media inside nine screens', () => {
     // Was eight. The bubble gap between the navigation and the gallery added
-    // 0.45 of a screen, on purpose; this still catches growth nobody chose.
-    expect(pondDepthVh(25, POND_DEPTH_VH)).toBeLessThan(8.5)
+    // 0.45 of a screen, on purpose, and the $1,000 stone another half; this
+    // still catches growth nobody chose.
+    expect(pondDepthVh(25, POND_DEPTH_VH)).toBeLessThan(9)
   })
 })
 

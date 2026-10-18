@@ -409,3 +409,46 @@
   animation: none;
   mix-blend-mode: normal;
 }
+
+/* ---------------------------------------------------------------------------
+   Project logos. A project page's h1 and its stone's label in the pond are
+   the project's logo, and the emphasised part takes the logo's accent (see
+   app/projectFonts.ts). No synthesised italic: Silkscreen has no italic,
+   and a slanted pixel "$" is not the logo.
+--------------------------------------------------------------------------- */
+
+.project-logo h1 em,
+span.project-logo em {
+  color: var(--logo-accent);
+  font-synthesis: none;
+}
+
+[data-theme='paper'] .project-logo h1 em,
+[data-theme='paper'] span.project-logo em {
+  color: var(--logo-accent-paper);
+}
+
+/* Carrying food from the bucket (FoodBucket.tsx): the hand is the cursor,
+   so the pointer's own steps aside, links included. Mouse only; a finger
+   has no cursor to hide. */
+html.holding-food,
+html.holding-food * {
+  cursor: none !important;
+}
+
+/* The bucket of koi food floats (FoodBucket.tsx): a slow bob and a little
+   rock, like something light on water. FoodBucket isn't rendered at all
+   under reduced motion, so this needs no reduced-motion twin. */
+@keyframes bucket-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(2px) rotate(1.5deg);
+  }
+}
+.bucket-float {
+  animation: bucket-float 4.2s ease-in-out infinite;
+  transform-origin: 50% 70%;
+}

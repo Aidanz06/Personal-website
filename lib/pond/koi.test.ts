@@ -192,8 +192,10 @@ describe('stepKoi — attraction', () => {
     expect(Math.hypot(pointer.x - after.head.x, pointer.y - after.head.y)).toBeLessThan(far * 0.4)
   })
 
-  it('needs no click — a pointer position is the entire input', () => {
-    // There is no button, tap or key anywhere in the signature.
+  it('needs no click — a position to swim to is the entire input', () => {
+    // There is no button, tap or key anywhere in the signature. Food dropped
+    // in the water reaches the fish the same way, as a position to swim
+    // to (see food.ts); the fish itself never sees a click.
     const koi = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.5)
     const after = run(koi, { x: 200, y: 500 }, 200)
     expect(Math.hypot(200 - after.head.x, 500 - after.head.y)).toBeLessThan(

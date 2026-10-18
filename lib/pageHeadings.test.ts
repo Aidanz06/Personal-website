@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest'
 const sources: Record<string, string> = {
   homepage: 'components/PondHome.tsx',
   listening: 'components/ListeningPond.tsx',
-  'about and tailor studio': 'mdx-components.tsx',
+  'about, tailor studio and $1,000': 'mdx-components.tsx',
   // Critique of 2026-09-24 (second run): a mistyped link landed on Next's
   // unstyled default, "404: This page could not be found", with no pond and
   // no way home.
@@ -36,5 +36,39 @@ describe('the 404 page', () => {
     const source = readFileSync(join(process.cwd(), 'app/not-found.tsx'), 'utf8')
     expect(source).toMatch(/<PondBackdrop \/>/)
     expect(source).toMatch(/href="\/"/)
+  })
+})
+
+describe('project pages', () => {
+  // Each project's title, headings and stone label are its logo, in its own
+  // deck's display face: Instrument Serif for tailor studio, Silkscreen
+  // (pixel) for $1,000.
+  const fonts = readFileSync(join(process.cwd(), 'app/projectFonts.ts'), 'utf8')
+
+  it('loads each project face once, into --ff-project', () => {
+    expect(fonts).toMatch(/import \{ Instrument_Serif, Silkscreen \} from 'next\/font\/google'/)
+    expect(fonts.match(/variable: '--ff-project'/g)).toHaveLength(2)
+  })
+
+  for (const project of ['tailor-studio', 'thousand']) {
+    it(`/${project} sets its headings in the project's face`, () => {
+      const layout = readFileSync(join(process.cwd(), `app/(page)/${project}/layout.tsx`), 'utf8')
+      expect(layout).toContain(`<ProjectHeadings project="${project}">`)
+    })
+  }
+
+  it('gives every logo a paper-theme accent', () => {
+    expect(fonts.match(/accent: \{ dark: '#[0-9a-f]{6}', paper: '#[0-9a-f]{6}' \}/g)).toHaveLength(2)
+  })
+
+  it('redefines only --font-display, so body text stays in the site font', () => {
+    const source = readFileSync(join(process.cwd(), 'components/ProjectHeadings.tsx'), 'utf8')
+    expect(source).toMatch(/'--font-display': `var\(--ff-project\), \$\{logo\.fallback\}`/)
+    expect(source).not.toMatch(/--font-body|--font-mono/)
+  })
+
+  it("labels a project's stone in the pond with its logo", () => {
+    const home = readFileSync(join(process.cwd(), 'components/PondHome.tsx'), 'utf8')
+    expect(home).toMatch(/<ProjectLogo project=/)
   })
 })

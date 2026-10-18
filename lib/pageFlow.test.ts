@@ -33,6 +33,10 @@ const LEAF_SELECTORS = [
   // A word of gallery text swaying underwater — the heading, a year, a
   // photograph's name (components/PondHome.tsx). Text only, nothing inside.
   '.water-wobble',
+  // The floating bucket of koi food (components/FoodBucket.tsx). It holds
+  // the bucket's own drawing and nothing else; the hand that reaches into
+  // it is fixed, and portalled to <body> so it is never inside.
+  '.bucket-float',
 ]
 
 describe('the page-change animation', () => {

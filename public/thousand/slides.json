@@ -1,0 +1,34 @@
+{
+  "_note": "One entry per file in slides/. `alt` is what a screen reader gets — the slides are pictures of text, so each needs a real one-sentence description. `draft: true` means Claude wrote it and Aidan has not checked it yet; set it to false once you have. A file with no entry here shows a visible bracketed placeholder on the page.",
+  "_source": "Aidan's thousand-slides-v3 export, 2000×1456, with alt text from its page-copy.md.",
+  "slides": {
+    "01.png": {
+      "alt": "Title slide for $1,000, a daily game, next to the game's list of six shelves.",
+      "draft": false
+    },
+    "02.png": {
+      "alt": "Shelf 1, the end of 2020: Zoom, a pound of flour, Moderna, Kimberly-Clark, SPDR Gold Trust and DoorDash.",
+      "draft": false
+    },
+    "03.png": {
+      "alt": "A round in three screenshots: choosing an item, locking in three picks, and the reveal.",
+      "draft": false
+    },
+    "04.png": {
+      "alt": "The three amounts, $500, $300 and $200, next to the pick screen with Moderna, the gold fund and Zoom picked.",
+      "draft": false
+    },
+    "05.png": {
+      "alt": "The reveal: $100 in Zoom became $25. That pick's $1,000 became $810; the best possible was $1,752.",
+      "draft": false
+    },
+    "06.png": {
+      "alt": "Price sources for Zoom, SPDR Gold Trust and flour, each with both prices, dates and publisher.",
+      "draft": false
+    },
+    "07.png": {
+      "alt": "A timeline of the six shelves, from the end of 2004 to the end of 2020.",
+      "draft": false
+    }
+  }
+}
