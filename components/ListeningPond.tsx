@@ -90,7 +90,7 @@ export function ListeningPond({ data }: { data: ListeningData }) {
   const pinned = selection.pinned
   usePinDismissal(pinned, select)
   // A rock scrolling under a still mouse is not a hover. See useHoverIntent.
-  const hoverIntended = useHoverIntent()
+  const hover = useHoverIntent()
   // Where the open cover has settled, so the caption can sit under it. The
   // pond reports this twice per rock, not once per frame.
   const [rect, setRect] = useState<PhotoRect | null>(null)
@@ -207,12 +207,13 @@ export function ListeningPond({ data }: { data: ListeningData }) {
                   transform: 'translate(-50%, -50%)',
                 }}
                 data-rock={index}
-                onMouseEnter={() => hoverIntended() && select({ type: 'enter', index })}
-              // The pointer moving over a rock is always intended, including
-              // straight after a scroll, when mouseenter can arrive before the
-              // move that caused it has been recorded.
-              onMouseMove={() => active !== index && hoverIntended() && select({ type: 'enter', index })}
-                onMouseLeave={() => select({ type: 'leave', index })}
+                onMouseEnter={() => hover.enter(index) && select({ type: 'enter', index })}
+                // Opens a rock whose enter was turned away by a scroll; see hoverTracker.
+                onMouseMove={() => hover.move(index) && select({ type: 'enter', index })}
+                onMouseLeave={() => {
+                  hover.leave(index)
+                  select({ type: 'leave', index })
+                }}
                 onFocus={() => select({ type: 'focus', index })}
                 onBlur={() => select({ type: 'blur', index })}
                 onClick={() => select({ type: 'click', index })}

@@ -1,15 +1,17 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
-import { hoverIsIntended } from '@/lib/pond/hoverIntent'
+import { useEffect, useRef, useState } from 'react'
+import { hoverTracker, type HoverTracker } from '@/lib/pond/hoverIntent'
 
 /**
- * Returns a check for "did the visitor point at this, or did the page scroll
- * it under a still pointer?". Only the first opens a picture on hover.
- * Keyboard focus and taps don't go through this; they're always intended.
+ * Tells the rocks whether a mouse event over them is the visitor pointing,
+ * or the page scrolling a rock under a still pointer. Only the first opens a
+ * picture on hover. Keyboard focus and taps don't go through this; they're
+ * always intended. See hoverTracker.
  */
-export function useHoverIntent(): () => boolean {
+export function useHoverIntent(): HoverTracker {
   const times = useRef({ lastPointerMove: 0, lastScroll: 0 })
+  const [tracker] = useState(() => hoverTracker(times.current))
   useEffect(() => {
     const moved = () => (times.current.lastPointerMove = performance.now())
     const scrolled = () => (times.current.lastScroll = performance.now())
@@ -20,5 +22,5 @@ export function useHoverIntent(): () => boolean {
       window.removeEventListener('scroll', scrolled)
     }
   }, [])
-  return useCallback(() => hoverIsIntended(times.current), [])
+  return tracker
 }

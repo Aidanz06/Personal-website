@@ -30,4 +30,11 @@ describe('opening the theme menu', () => {
     expect(source).not.toMatch(/onMouseEnter=/)
     expect(source).toMatch(/pointerType === 'mouse'/)
   })
+
+  it('closes when a tap lands anywhere else', () => {
+    // Review, 2026-10-17: on iOS Safari a tapped button never takes focus,
+    // so blur never came, and touch ignores pointerleave; the menu only shut
+    // when ◐ itself was tapped again.
+    expect(source).toMatch(/addEventListener\('pointerdown', closeOutside\)/)
+  })
 })

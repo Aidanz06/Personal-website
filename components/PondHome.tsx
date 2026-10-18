@@ -64,7 +64,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
   const pinnedPhoto = selection.pinned
   usePinDismissal(pinnedPhoto, select)
   // A rock scrolling under a still mouse is not a hover. See useHoverIntent.
-  const hoverIntended = useHoverIntent()
+  const hover = useHoverIntent()
 
   // Esc closes whatever is open, the same as on /listening.
   useEffect(() => {
@@ -82,9 +82,11 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
   // so on a short screen — a phone turned sideways is 375px tall — they sit
   // on top of the picture unless they step aside while it is showing.
   const photoOpen = photoRect !== null && activePhoto === photoRect.index
-  // Labels and the focus ring step aside the moment a picture starts to
-  // open, not once it has settled: waiting for the settled rect left every
-  // name and the ring drawn over the surfacing picture for up to ~3.5s.
+  // Labels step aside the moment a picture starts to open, not once it has
+  // settled: waiting for the settled rect left every name drawn over the
+  // surfacing picture for up to ~3.5s. The focus ring waits for photoOpen
+  // instead: until the picture is there to show where focus is, the ring is
+  // the only thing that does.
   // Under reduced motion the picture never animates open and the rect never
   // comes, so there the labels stay until it has (which is never).
   const reducedMotion = useReducedMotion()
@@ -312,10 +314,10 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
               aria-pressed={pinnedPhoto === index}
               // One Tab stop for the whole gallery; see moveInGallery.
               tabIndex={index === roving ? 0 : -1}
-              // While this rock's picture is open, the picture is the focus
+              // Once this rock's picture is open, the picture is the focus
               // indicator: a ring drawn in the middle of the photograph is not.
               className={`absolute block scroll-my-[25vh] cursor-pointer ${
-                stepAside && isActive ? 'focus-visible:outline-transparent' : ''
+                photoOpen && isActive ? 'focus-visible:outline-transparent' : ''
               }`}
               style={{
                 top: vh(spec.depthVh),
@@ -325,12 +327,13 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
                 transform: 'translate(-50%, -50%)',
               }}
               data-rock={index}
-              onMouseEnter={() => hoverIntended() && select({ type: 'enter', index })}
-              // The pointer moving over a rock is always intended, including
-              // straight after a scroll, when mouseenter can arrive before the
-              // move that caused it has been recorded.
-              onMouseMove={() => activePhoto !== index && hoverIntended() && select({ type: 'enter', index })}
-              onMouseLeave={() => select({ type: 'leave', index })}
+              onMouseEnter={() => hover.enter(index) && select({ type: 'enter', index })}
+              // Opens a rock whose enter was turned away by a scroll; see hoverTracker.
+              onMouseMove={() => hover.move(index) && select({ type: 'enter', index })}
+              onMouseLeave={() => {
+                hover.leave(index)
+                select({ type: 'leave', index })
+              }}
               onFocus={(event) => {
                 select({ type: 'focus', index })
                 setRoving(index)

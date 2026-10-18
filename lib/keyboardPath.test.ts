@@ -48,7 +48,14 @@ describe('the keyboard path', () => {
     // square focus ring was drawn on top of the picture, in the middle of it.
     // The open picture, its caption and the arrow-key hint already say which
     // rock has focus; the ring steps aside only while that picture shows.
-    expect(home).toMatch(/focus-visible:outline-transparent/)
-    expect(listening).toMatch(/focus-visible:outline-transparent/)
+    expect(home).toMatch(/photoOpen && isActive \? 'focus-visible:outline-transparent'/)
+    expect(listening).toMatch(/rectIsCurrent && isActive \? 'focus-visible:outline-transparent'/)
+  })
+
+  it('keeps the focus ring until the picture is actually there', () => {
+    // Review, 2026-10-17: the ring stepped aside as soon as a rock became
+    // active, so while the picture surfaced (up to ~3.5s) nothing showed
+    // where keyboard focus was.
+    expect(home).not.toMatch(/stepAside && isActive \? 'focus-visible:outline-transparent'/)
   })
 })

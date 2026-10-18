@@ -44,6 +44,7 @@ export function ThemeMenu({ className }: { className?: string }) {
   // Which way the menu opens; measured when it opens. See lib/themeMenu.ts.
   const [side, setSide] = useState<'left' | 'right'>('left')
 
+  const rootRef = useRef<HTMLSpanElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const itemsRef = useRef<(HTMLButtonElement | null)[]>([])
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -56,6 +57,18 @@ export function ThemeMenu({ className }: { className?: string }) {
   useEffect(() => () => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
   }, [])
+
+  // A tap anywhere else closes it. On touch, pointerleave is ignored (see
+  // below) and iOS Safari never focuses a tapped button, so blur doesn't
+  // come either; without this the menu stayed open over the page.
+  useEffect(() => {
+    if (!open) return
+    function closeOutside(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOutside)
+    return () => document.removeEventListener('pointerdown', closeOutside)
+  }, [open])
 
   function openMenu() {
     const box = triggerRef.current?.getBoundingClientRect()
@@ -158,6 +171,7 @@ export function ThemeMenu({ className }: { className?: string }) {
 
   return (
     <span
+      ref={rootRef}
       className={`theme-menu relative inline-block ${className ?? ''}`}
       // Hover opens it for a mouse only. A tap also fires the compatibility
       // mouse events, so hover-to-open plus click-to-toggle opened the menu
