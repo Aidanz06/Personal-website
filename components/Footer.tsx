@@ -1,4 +1,5 @@
 import { contacts } from '@/lib/site'
+import { ContactLink } from '@/components/ContactLink'
 
 /**
  * Contact footer: the links in lib/site.ts (currently email only), at the
@@ -13,13 +14,7 @@ export function Footer() {
       <ul className="flex flex-wrap gap-x-2 gap-y-0.5 text-small">
         {contacts.map((contact) => (
           <li key={contact.label}>
-            {contact.href ? (
-              <a href={contact.href} className="hit-area">
-                {contact.label}
-              </a>
-            ) : (
-              <span className="text-muted">{contact.placeholder}</span>
-            )}
+            <ContactLink contact={contact} />
           </li>
         ))}
       </ul>

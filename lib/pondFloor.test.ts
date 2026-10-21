@@ -20,6 +20,18 @@ describe('the pond floor', () => {
     expect(contacts[0]?.href).toBe('mailto:zheng.ai@northeastern.edu')
   })
 
+  it('shows the address and copies it, for anyone mailto does nothing for', () => {
+    // A bare "email" mailto link did nothing in Arc, or with no mail app set
+    // up. Both footers go through ContactLink.
+    const link = readFileSync(join(process.cwd(), 'components/ContactLink.tsx'), 'utf8')
+    const footer = readFileSync(join(process.cwd(), 'components/Footer.tsx'), 'utf8')
+    expect(link).toMatch(/\{address\}/)
+    expect(link).toMatch(/clipboard\??\.writeText\(address\)/)
+    expect(link).not.toMatch(/preventDefault/)
+    expect(home).toMatch(/<ContactLink contact=\{contact\} \/>/)
+    expect(footer).toMatch(/<ContactLink contact=\{contact\} \/>/)
+  })
+
   it('sits the footer on the bottom of the page, not partway up the last screen', () => {
     expect(home).not.toMatch(/depthVh - 0\.5/)
     expect(home).toMatch(/<footer[\s\S]{0,200}\bbottom-0\b/)

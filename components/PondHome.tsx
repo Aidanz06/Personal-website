@@ -16,6 +16,7 @@ import { galleryGroups, orderGallery, rockLabel, rockName } from '@/lib/pond/gal
 import { isCaptionEmpty } from '@/lib/captions'
 import type { Photo } from '@/lib/photos'
 import { contacts, site } from '@/lib/site'
+import { ContactLink } from '@/components/ContactLink'
 import { activeRock, initialRockSelection, rockSelection } from '@/lib/pond/rockSelection'
 import { usePinDismissal } from '@/components/usePinDismissal'
 import { useHoverIntent } from '@/components/useHoverIntent'
@@ -458,13 +459,7 @@ export function PondHome({ photos }: { photos: readonly Photo[] }) {
           <ul className="flex flex-wrap gap-x-2 gap-y-0.5 text-small">
             {contacts.map((contact) => (
               <li key={contact.label}>
-                {contact.href ? (
-                  <a href={contact.href} className="hit-area">
-                    {contact.label}
-                  </a>
-                ) : (
-                  <span className="text-muted">{contact.placeholder}</span>
-                )}
+                <ContactLink contact={contact} />
               </li>
             ))}
           </ul>
