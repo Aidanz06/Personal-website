@@ -127,8 +127,9 @@ export function stampKoi(
   tailAmplitude?: number,
   /** Subtracted from every y, to turn world coordinates into screen ones. */
   offsetY = 0,
+  body = false,
 ): void {
-  for (const stamp of koiSilhouette(koi, bodyRadius, tailAmplitude)) {
+  for (const stamp of koiSilhouette(koi, bodyRadius, tailAmplitude, body)) {
     stampBlob(
       field,
       stamp.x,

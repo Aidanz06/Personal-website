@@ -26,6 +26,8 @@ import {
   createKoi,
   stepKoi,
   type Koi,
+  type KoiFeatures,
+  type KoiMood,
 } from '@/lib/pond/koi'
 import { drainSplashes } from '@/lib/pond/splash'
 import {
@@ -113,6 +115,8 @@ export type PondSettings = {
    * water. 0 holds it still, which is what photographs do.
    */
   photoFloat: number
+  /** Which behaviours the koi has on top of the basic swim. See KoiFeatures. */
+  koiFeatures: KoiFeatures
 }
 
 export const DEFAULT_POND_SETTINGS: PondSettings = {
@@ -139,6 +143,7 @@ export const DEFAULT_POND_SETTINGS: PondSettings = {
   photoScale: 1,
   photoAscii: false,
   photoFloat: 0,
+  koiFeatures: { moods: true, wander: true, body: true },
 }
 
 /**
@@ -245,7 +250,13 @@ export type PondProps = {
    */
   onPhotoRect?: (rect: PhotoRect | null) => void
   /** Reports the measured frame rate, for the lab readout. */
-  onStats?: (stats: { fps: number; cellsDrawn: number; cells: number }) => void
+  onStats?: (stats: {
+    fps: number
+    cellsDrawn: number
+    cells: number
+    /** The first fish, for the lab bench's readout. */
+    koi?: { mood: KoiMood; boredom: number }
+  }) => void
 }
 
 export function Pond({
@@ -848,9 +859,10 @@ export function Pond({
         lastRippleAt = now
         ripples.push({ x: pointer.x, y: pointer.y, startedAt: seconds, strength: s.rippleStrength })
       }
-      // Fish leave wakes.
+      // Fish leave wakes. With the body feature on, they come from the strokes
+      // instead (after the step, below).
       for (const fish of koi) {
-        if (Math.random() < 0.02) {
+        if (!s.koiFeatures.body && Math.random() < 0.02) {
           ripples.push({
             x: fish.spine[fish.spine.length - 1]?.x ?? fish.head.x,
             y: fish.spine[fish.spine.length - 1]?.y ?? fish.head.y,
@@ -1001,6 +1013,9 @@ export function Pond({
         stoneInterest = { x: stone.x, y: stone.y + worldY }
       }
 
+      const interest = stoneInterest ? 'stone' : pellets.length > 0 ? 'food' : 'pointer'
+      const landmarks = placed.map((stone) => ({ x: stone.x, y: stone.worldY }))
+      const before = koi
       koi = koi.map((fish) =>
         stepKoi(
           fish,
@@ -1014,11 +1029,38 @@ export function Pond({
             attractStrength: s.attractStrength,
             baseBeat: DEFAULT_KOI_SETTINGS.baseBeat * s.beatRate,
             dartBeat: DEFAULT_KOI_SETTINGS.dartBeat * s.beatRate,
+            features: s.koiFeatures,
           },
           Math.random,
           focusBand,
+          { interest, landmarks },
         ),
       )
+      koi.forEach((fish, index) => {
+        const previous = before[index]
+        if (s.koiFeatures.body && previous) {
+          // A wake at the tail on every stroke, harder when it is working
+          // harder: the water answers the tail rather than sparkling at random.
+          if (Math.floor(fish.tailPhase / Math.PI) !== Math.floor(previous.tailPhase / Math.PI)) {
+            const tail = fish.spine[fish.spine.length - 1] ?? fish.head
+            ripples.push({
+              x: tail.x,
+              y: tail.y,
+              startedAt: seconds,
+              strength: s.rippleStrength * (0.2 + 0.5 * fish.tailEnergy),
+            })
+          }
+          // And a bow wave pushed ahead of the nose when it is really moving.
+          if (fish.speed > 140 && Math.floor(fish.age * 4) !== Math.floor(previous.age * 4)) {
+            ripples.push({
+              x: fish.head.x + Math.cos(fish.heading) * s.bodyRadius * 0.6,
+              y: fish.head.y + Math.sin(fish.heading) * s.bodyRadius * 0.6,
+              startedAt: seconds,
+              strength: s.rippleStrength * 0.25,
+            })
+          }
+        }
+      })
       // Whatever is within reach of a mouth is eaten, with a small ripple.
       // The reach is wide because the fish circles food rather than landing
       // on it (see eatPellets).
@@ -1030,7 +1072,7 @@ export function Pond({
         }
       }
       for (const fish of koi) {
-        stampKoi(field, fish, s.bodyRadius, s.koiBrightness, cw, ch, s.tailAmplitude, worldY)
+        stampKoi(field, fish, s.bodyRadius, s.koiBrightness, cw, ch, s.tailAmplitude, worldY, s.koiFeatures.body)
       }
 
       // --- photo rocks ---
@@ -1295,7 +1337,13 @@ export function Pond({
         }
       }
 
-      onStatsRef.current?.({ fps, cellsDrawn: drawn, cells: grid.cols * grid.rows })
+      const first = koi[0]
+      onStatsRef.current?.({
+        fps,
+        cellsDrawn: drawn,
+        cells: grid.cols * grid.rows,
+        koi: first ? { mood: first.mood, boredom: first.boredom } : undefined,
+      })
 
       // Coarsen the grid if the page cannot keep up.
       const next = stepDegradation({ slowFrames, cellSize: activeCellSize }, fps, MAX_CELL_SIZE)

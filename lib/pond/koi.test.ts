@@ -9,6 +9,7 @@ import {
   flutterSpine,
   followSpine,
   koiSilhouette,
+  NO_KOI_FEATURES,
   spineWidth,
   stepKoi,
   turnToward,
@@ -644,5 +645,149 @@ describe('koiSilhouette', () => {
   it('survives a two-point spine without fins', () => {
     const stubby = { ...koi, spine: [{ x: 10, y: 10 }, { x: 0, y: 10 }] }
     expect(() => koiSilhouette(stubby, 20)).not.toThrow()
+  })
+})
+
+describe('reaching food', () => {
+  // Gliding, the fish's tightest circle used to be wider than its mouth's
+  // reach, so it orbited a pellet until the pellet sank. It brakes now.
+  it('gets its mouth to a target off to one side instead of circling it', () => {
+    for (let seed = 1; seed <= 8; seed++) {
+      let r = seed * 7919
+      const random = () => (r = (r * 16807) % 2147483647) / 2147483647
+      let fish = createKoi({ x: 300, y: 300 }, random() * Math.PI * 2, DEFAULT_SEGMENTS, 0.2)
+      const food = { x: 300 + (random() - 0.5) * 400, y: 300 + (random() - 0.5) * 300 }
+      let reached = false
+      for (let i = 0; i < 60 * 10 && !reached; i++) {
+        fish = stepKoi(fish, [fish], food, BOUNDS, 1 / 60, DEFAULT_KOI_SETTINGS, random, undefined, {
+          interest: 'food',
+        })
+        reached = Math.hypot(fish.head.x - food.x, fish.head.y - food.y) < DEFAULT_BODY_RADIUS * 1.5
+      }
+      expect(reached).toBe(true)
+    }
+  })
+})
+
+describe('moods', () => {
+  const MOODS = { ...DEFAULT_KOI_SETTINGS, features: { ...NO_KOI_FEATURES, moods: true } }
+
+  it('stays cruising when moods are off', () => {
+    let fish = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.2)
+    const random = seeded(3)
+    for (let i = 0; i < 60 * 30; i++) {
+      fish = stepKoi(fish, [fish], i % 120 < 60 ? { x: 500, y: 300 } : null, BOUNDS, 1 / 60, DEFAULT_KOI_SETTINGS, random)
+      expect(fish.mood).toBe('cruise')
+    }
+  })
+
+  it('stops to hover now and then, and nearly holds still while it does', () => {
+    let fish = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.2)
+    const random = seeded(11)
+    let slowest = Infinity
+    for (let i = 0; i < 60 * 90; i++) {
+      fish = stepKoi(fish, [fish], null, BOUNDS, 1 / 60, MOODS, random)
+      if (fish.mood === 'hover' && fish.moodTimer < 1) slowest = Math.min(slowest, fish.speed)
+    }
+    expect(slowest).toBeLessThan(30)
+  })
+
+  it('circles a still pointer, gets bored, and swims off', () => {
+    const pointer = { x: 500, y: 300 }
+    let fish = createKoi({ x: 420, y: 300 }, 0, DEFAULT_SEGMENTS, 0.2)
+    const random = seeded(5)
+    let boredAt = -1
+    let farthestAfter = 0
+    for (let i = 0; i < 60 * 30; i++) {
+      fish = stepKoi(fish, [fish], pointer, BOUNDS, 1 / 60, MOODS, random)
+      if (boredAt < 0 && fish.mood === 'bored') boredAt = i
+      if (boredAt >= 0 && fish.mood === 'bored') {
+        farthestAfter = Math.max(farthestAfter, Math.hypot(fish.head.x - pointer.x, fish.head.y - pointer.y))
+      }
+    }
+    expect(boredAt).toBeGreaterThan(0)
+    expect(farthestAfter).toBeGreaterThan(250)
+  })
+
+  it('bolts from a flick of the pointer right beside it', () => {
+    let fish = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.2)
+    const random = seeded(7)
+    fish = stepKoi(fish, [fish], { x: 560, y: 300 }, BOUNDS, 1 / 60, MOODS, random)
+    fish = stepKoi(fish, [fish], { x: 620, y: 300 }, BOUNDS, 1 / 60, MOODS, random)
+    expect(fish.mood).toBe('startle')
+    expect(fish.tailEnergy).toBeGreaterThan(0.9)
+  })
+
+  it('feeds, then glides off sated, without taking fright at the cursor', () => {
+    let fish = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.2)
+    const random = seeded(9)
+    fish = stepKoi(fish, [fish], { x: 600, y: 300 }, BOUNDS, 1 / 60, MOODS, random, undefined, { interest: 'food' })
+    expect(fish.mood).toBe('feed')
+    // The pellet is eaten and the target jumps back to the cursor, far off.
+    // That jump is not a flick.
+    fish = stepKoi(fish, [fish], { x: 100, y: 500 }, BOUNDS, 1 / 60, MOODS, random, undefined, { interest: 'pointer' })
+    fish = stepKoi(fish, [fish], { x: 100, y: 500 }, BOUNDS, 1 / 60, MOODS, random, undefined, { interest: 'pointer' })
+    expect(fish.mood).toBe('sated')
+  })
+})
+
+describe('wander', () => {
+  const WANDER = { ...DEFAULT_KOI_SETTINGS, features: { ...NO_KOI_FEATURES, wander: true } }
+
+  it('patrols the edges and visits the stones rather than crossing the middle', () => {
+    const random = seeded(13)
+    const stone = { x: 500, y: 300 }
+    let fish = createKoi({ x: 500, y: 300 }, 0, DEFAULT_SEGMENTS, 0.2)
+    const targets: { x: number; y: number }[] = []
+    for (let i = 0; i < 60 * 600; i++) {
+      const before = fish.wanderTarget
+      fish = stepKoi(fish, [fish], null, BOUNDS, 1 / 60, WANDER, random, undefined, { landmarks: [stone] })
+      if (fish.wanderTarget !== before) targets.push(fish.wanderTarget)
+    }
+    const nearEdge = targets.filter((t) => t.x < BOUNDS.width * 0.25 || t.x > BOUNDS.width * 0.75)
+    const nearStone = targets.filter((t) => Math.hypot(t.x - stone.x, t.y - stone.y) < 150)
+    expect(nearEdge.length / targets.length).toBeGreaterThan(0.35)
+    expect(nearStone.length / targets.length).toBeGreaterThan(0.2)
+  })
+
+  it('bends a glide instead of swimming dead straight', () => {
+    const steer = (settings: typeof DEFAULT_KOI_SETTINGS) => {
+      const ahead = (x: number) => ({ x: x + 5000, y: 50000 })
+      let fish = {
+        ...createKoi({ x: 1000, y: 50000 }, 0, DEFAULT_SEGMENTS, 0.2),
+        age: 0,
+        wanderTarget: ahead(1000),
+        wanderTimer: 99,
+      }
+      let turned = 0
+      for (let i = 0; i < 60 * 6; i++) {
+        const before = fish.heading
+        // A target kept dead ahead, so any turning is the meander's.
+        fish = stepKoi(fish, [fish], null, { width: 100000, height: 100000 }, 1 / 60, settings, () => 0.5)
+        fish = { ...fish, wanderTarget: ahead(fish.head.x), wanderTimer: 99 }
+        turned += Math.abs(wrapAngle(fish.heading - before))
+      }
+      return turned
+    }
+    expect(steer(WANDER)).toBeGreaterThan(steer(DEFAULT_KOI_SETTINGS) + 0.2)
+  })
+})
+
+describe('body extras', () => {
+  it('swings the head slightly against the stroke', () => {
+    const spine = Array.from({ length: DEFAULT_SEGMENTS }, (_, i) => ({ x: -i * 18, y: 0 }))
+    const plain = flutterSpine(spine, Math.PI / 2, 1, 15)
+    const recoiling = flutterSpine(spine, Math.PI / 2, 1, 15, undefined, { recoil: 0.35 })
+    expect(plain[0]!.y).toBe(0)
+    expect(Math.abs(recoiling[0]!.y)).toBeGreaterThan(2)
+  })
+
+  it('throws the tail to the outside of a turn', () => {
+    // Facing +x and turning clockwise on screen (right): the outside is -y.
+    const fish = { ...createKoi({ x: 0, y: 0 }, 0, DEFAULT_SEGMENTS, 0.2), tailPhase: 0, angularVelocity: 1.7 }
+    const plain = koiSilhouette(fish, DEFAULT_BODY_RADIUS, 15)
+    const bent = koiSilhouette(fish, DEFAULT_BODY_RADIUS, 15, true)
+    const tail = DEFAULT_SEGMENTS - 1
+    expect(bent[tail]!.y).toBeLessThan(plain[tail]!.y - 10)
   })
 })

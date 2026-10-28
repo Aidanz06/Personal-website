@@ -3,6 +3,15 @@
 import { useState } from 'react'
 import { Pond, DEFAULT_POND_SETTINGS, type PondSettings } from '@/components/Pond'
 import type { PondStone } from '@/components/Pond'
+import { requestFeedAt } from '@/lib/pond/food'
+import { NO_KOI_FEATURES, type KoiFeatures, type KoiMood } from '@/lib/pond/koi'
+
+/** The experimental behaviours, with what to look for when each is on. */
+const FEATURES: { key: keyof KoiFeatures; label: string; hint: string }[] = [
+  { key: 'moods', label: 'moods', hint: 'hovers; sudden dashes; circles the pointer, then gets bored and swims off; flick near it to startle; click to feed' },
+  { key: 'wander', label: 'wander', hint: 'curving paths; patrols the edges and visits the stones' },
+  { key: 'body', label: 'body', hint: 'head recoil, tail thrown wide on turns, a wake on every stroke' },
+]
 
 /**
  * Candidate stone layout. In the real homepage these become the routes, each
@@ -18,14 +27,48 @@ const STONES: PondStone[] = [
 export function PondBench() {
   const [settings, setSettings] = useState<PondSettings>(DEFAULT_POND_SETTINGS)
   const [showStones, setShowStones] = useState(true)
-  const [stats, setStats] = useState({ fps: 0, cellsDrawn: 0, cells: 0 })
+  const [stats, setStats] = useState<{
+    fps: number
+    cellsDrawn: number
+    cells: number
+    koi?: { mood: KoiMood; boredom: number }
+  }>({ fps: 0, cellsDrawn: 0, cells: 0 })
+  const features = settings.koiFeatures
+  const toggle = (key: keyof KoiFeatures) =>
+    set('koiFeatures', { ...features, [key]: !features[key] })
 
   const set = <K extends keyof PondSettings>(key: K, value: PondSettings[K]) =>
     setSettings((previous) => ({ ...previous, [key]: value }))
 
   return (
     <div>
-      <div className="h-[600px] w-full border border-rule">
+      <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+        {FEATURES.map((feature) => (
+          <label key={feature.key} className="flex items-center gap-1 font-mono text-small" title={feature.hint}>
+            <input type="checkbox" checked={features[feature.key]} onChange={() => toggle(feature.key)}
+              className="accent-[var(--color-accent)]" />
+            {feature.label}
+          </label>
+        ))}
+        <button type="button"
+          onClick={() => set('koiFeatures', DEFAULT_POND_SETTINGS.koiFeatures)}
+          className="font-mono text-small text-accent underline underline-offset-2">
+          as live
+        </button>
+        <button type="button"
+          onClick={() => set('koiFeatures', NO_KOI_FEATURES)}
+          className="font-mono text-small text-muted underline underline-offset-2">
+          plain swim
+        </button>
+      </div>
+      <ul className="mb-2 font-mono text-small text-muted">
+        {FEATURES.filter((f) => features[f.key]).map((f) => (
+          <li key={f.key}>{f.label}: {f.hint}</li>
+        ))}
+      </ul>
+
+      {/* Click the water to drop food, the way the bucket does on the real page. */}
+      <div className="h-[600px] w-full border border-rule" onClick={(e) => requestFeedAt(e.clientX, e.clientY)}>
         <Pond
           className="h-full w-full"
           settings={settings}
@@ -37,6 +80,9 @@ export function PondBench() {
       <p data-pond-stats className="mt-1 font-mono text-small text-muted">
         {stats.fps.toFixed(0)} fps · redrew {stats.cellsDrawn} of {stats.cells} cells
         last frame ({stats.cells > 0 ? ((stats.cellsDrawn / stats.cells) * 100).toFixed(0) : '0'}%)
+        {stats.koi && (
+          <> · koi: {stats.koi.mood} · boredom {stats.koi.boredom.toFixed(2)}</>
+        )}
       </p>
 
       <div className="mt-3 grid gap-x-4 gap-y-1 md:grid-cols-2">

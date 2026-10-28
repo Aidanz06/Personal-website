@@ -3944,3 +3944,42 @@ rendered with PDFKit to 2000×1456 PNGs, the same size as the other two
 decks. Covers the shared buttons and dialogs, the three directions (one used
 by day, one at night, one not used), the window that follows the day, and
 Home and To do merged. Alt text checked by Aidan.
+
+## the koi gets moods, curving paths and a working body
+
+The swim was good (bursts and glides, a travelling tail wave) but the
+behaviour wasn't: the fish only ever went to a random point or to the
+cursor, and never changed its mind. Four behaviours were built as switches
+in `/lab/pond` and judged one at a time. Three ship, on by default in
+`DEFAULT_POND_SETTINGS.koiFeatures`. A bare `stepKoi` leaves them off, so
+the swim itself is still tested on its own.
+
+**moods.** A small state machine in `stepKoi`. It sometimes stops and
+*hovers*, braking hard and paddling its pectoral fins; sometimes *dashes*
+across the pond for nothing. Near the cursor it *inspects*, circling at
+140px instead of parking on it, and gets *bored* after about five seconds
+(a moving cursor renews interest), turning away to the far side. A fast
+flick within 240px *startles* it into a bolt, then it is *wary* for a few
+seconds. Food sends it into a *feed* frenzy and then a *sated* glide.
+
+**wander.** Destinations favour the margins and the stones over random
+points, and two slow sines bend every glide into a curve. Never on the way
+to food.
+
+**body.** The head swings slightly against each stroke and the tail is
+thrown to the outside of a turn (render only, in `flutterSpine`). Wakes
+come from the strokes, harder when it works harder, plus a bow wave when
+it's fast, replacing the random 2%-a-frame wakes.
+
+**Left out: depth.** Sinking and fading, surfacing with a ring. Tried, not
+kept.
+
+**Feeding was broken, and had been all along.** Gliding near a pellet, the
+fish's tightest circle (speed over turn rate, about 90px) was wider than
+its mouth's reach of 60px, so it orbited the food until it sank. In a
+simulation the committed code missed in 4 of 8 drops. It now brakes when
+the target is close and off to one side, and eats every drop within 5s
+(48 of 48 across every combination of switches). A test checks it, and
+fails on the old code. A related bug: with moods on, the jump from an eaten
+pellet back to the cursor read as a flick and startled the fish mid-meal.
+The startle only watches the real cursor.

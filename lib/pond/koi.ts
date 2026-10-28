@@ -35,6 +35,65 @@ export type Koi = {
   tailEnergy: number
   /** Seconds until the next burst. */
   dartCooldown: number
+  /** What it is up to. Only ever 'cruise' unless `features.moods` is on. */
+  mood: KoiMood
+  /** Seconds left in the current mood, for the moods that end on their own. */
+  moodTimer: number
+  /** 0..1. Builds while it inspects the pointer; full means it loses interest. */
+  boredom: number
+  /** Where the pointer was last frame, to tell a flick from a hover. */
+  lastPointer: Vec | null
+  /** Seconds alive. Drives the meander, which needs a smooth clock. */
+  age: number
+}
+
+export type KoiMood =
+  | 'cruise'
+  /** Nearly still, holding position on its pectoral fins. */
+  | 'hover'
+  /** Close to the pointer, circling it. */
+  | 'inspect'
+  /** Has seen enough of the pointer and ignores it for a while. */
+  | 'bored'
+  /** A fast flick nearby: bolt away. */
+  | 'startle'
+  /** After a startle: keeps its distance until it settles. */
+  | 'wary'
+  /** Food in the water: hungry, quick and agile. */
+  | 'feed'
+  /** Just ate: a slow, lazy glide. */
+  | 'sated'
+  /** A sudden sprint somewhere for no reason, as koi do. */
+  | 'dash'
+
+/**
+ * Behaviours layered on the basic swim, each switchable on its own in
+ * /lab/pond. The pond turns all of them on (DEFAULT_POND_SETTINGS); a bare
+ * stepKoi leaves them off, so the swim itself can be tested on its own.
+ *
+ * A fourth, depth (sinking and dimming, surfacing with a ring), was tried
+ * and left out.
+ */
+export type KoiFeatures = {
+  /** Hover, inspect, boredom, startle, feeding frenzy and the glide after. */
+  moods: boolean
+  /** Curving paths, and visits to the edges and stones instead of random points. */
+  wander: boolean
+  /** Head recoil and a turn-biased tail (render), stroke wakes (pond). */
+  body: boolean
+}
+
+export const NO_KOI_FEATURES: KoiFeatures = {
+  moods: false,
+  wander: false,
+  body: false,
+}
+
+/** What the fish's point of interest actually is, so it can react in kind. */
+export type KoiContext = {
+  interest?: 'pointer' | 'food' | 'stone'
+  /** Stones, in world coordinates, for the wander to visit. */
+  landmarks?: readonly Vec[]
 }
 
 export type KoiSettings = {
@@ -71,6 +130,7 @@ export type KoiSettings = {
   dartBeat: number
   /** Seconds for a burst's tail energy to fade. */
   tailDecay: number
+  features?: KoiFeatures
 }
 
 export const DEFAULT_KOI_SETTINGS: KoiSettings = {
@@ -185,7 +245,9 @@ export function stepKoi(
   settings: KoiSettings = DEFAULT_KOI_SETTINGS,
   random: () => number = Math.random,
   focus?: FocusBand,
+  context: KoiContext = {},
 ): Koi {
+  const features = settings.features ?? NO_KOI_FEATURES
   // Guard against a huge dt after a stalled tab, which would otherwise
   // teleport the fish across the pond in a single frame.
   const step = Math.min(Math.max(dt, 0), 0.05)
@@ -230,13 +292,38 @@ export function stepKoi(
   const targetOutOfBand =
     wanderTarget.y < bandTop - slack || wanderTarget.y > bandBottom + slack
 
-  if (wanderTimer <= 0 || arrived || strandedAbove || strandedBelow || targetOutOfBand) {
-    // Keep away from the very edges so it does not spend its life in a corner.
-    wanderTarget = {
-      x: bounds.width * (0.12 + random() * 0.76),
-      y: bandTop + bandHeight * (0.15 + random() * 0.7),
+  let mood = koi.mood
+  let moodTimer = koi.moodTimer - step
+  let boredom = koi.boredom
+  const retarget =
+    wanderTimer <= 0 || arrived || strandedAbove || strandedBelow || targetOutOfBand
+
+  if (retarget) {
+    wanderTarget = features.wander
+      ? pickDestination(bounds, bandTop, bandHeight, context.landmarks ?? [], random)
+      : // Keep away from the very edges so it does not spend its life in a corner.
+        {
+          x: bounds.width * (0.12 + random() * 0.76),
+          y: bandTop + bandHeight * (0.15 + random() * 0.7),
+        }
+    wanderTimer = features.wander ? 3.5 + random() * 4 : 2.2 + random() * 3.4
+
+    // Now and then, instead of setting off somewhere new, it just stops —
+    // or bolts off across the pond for the fun of it.
+    if (features.moods && mood === 'cruise') {
+      const roll = random()
+      if (roll < 0.35) {
+        mood = 'hover'
+        moodTimer = 3 + random() * 3
+      } else if (roll < 0.5) {
+        mood = 'dash'
+        moodTimer = 1.4 + random() * 1
+        wanderTarget = {
+          x: koi.head.x < bounds.width / 2 ? bounds.width * 0.85 : bounds.width * 0.15,
+          y: bandTop + bandHeight * (0.2 + random() * 0.6),
+        }
+      }
     }
-    wanderTimer = 2.2 + random() * 3.4
   }
 
   // --- what is it interested in? ---
@@ -250,7 +337,115 @@ export function stepKoi(
     }
   }
 
+  const interest = context.interest ?? 'pointer'
+  // Only the cursor counts here. Food and stones are targets too, and the
+  // jump from an eaten pellet back to the cursor would read as a flick.
+  const cursor = interest === 'pointer' ? pointer : null
+  const pointerSpeed =
+    cursor && koi.lastPointer && step > 0
+      ? Math.hypot(cursor.x - koi.lastPointer.x, cursor.y - koi.lastPointer.y) / step
+      : 0
+
+  if (features.moods) {
+    const d = pointer ? Math.hypot(pointer.x - koi.head.x, pointer.y - koi.head.y) : Infinity
+
+    // A flick right beside it is a threat, whatever it was doing.
+    if (pointer && interest === 'pointer' && pointerSpeed > 1600 && d < 240 && mood !== 'startle') {
+      mood = 'startle'
+      moodTimer = 1.1
+      boredom = 0
+    } else if (chasing && interest === 'food' && mood !== 'startle') {
+      mood = 'feed'
+    } else if (mood === 'feed') {
+      // The food is gone, so it has eaten.
+      mood = 'sated'
+      moodTimer = 3 + random() * 2
+    } else if (moodTimer <= 0) {
+      if (mood === 'startle') {
+        mood = 'wary'
+        moodTimer = 2.5 + random() * 2
+      } else if (
+        mood === 'hover' || mood === 'bored' || mood === 'wary' || mood === 'sated' || mood === 'dash'
+      ) {
+        mood = 'cruise'
+        boredom = Math.min(boredom, 0.3)
+      }
+    }
+
+    if (chasing && interest === 'pointer') {
+      if (mood === 'cruise' || mood === 'hover') mood = d < 220 ? 'inspect' : 'cruise'
+      if (mood === 'inspect') {
+        if (d > 320) mood = 'cruise'
+        // Interest wears off while it looks, and a moving pointer renews it.
+        boredom += step / 5
+        if (pointerSpeed > 80) boredom -= step * 0.6
+        boredom = Math.min(1, Math.max(0, boredom))
+        if (boredom >= 1 && pointer) {
+          mood = 'bored'
+          moodTimer = 4 + random() * 4
+          // Turns its back and swims off to the far side, so losing interest
+          // is something you can see, not just a fish that stopped coming.
+          wanderTarget = {
+            x: pointer.x < bounds.width / 2 ? bounds.width * 0.82 : bounds.width * 0.18,
+            y: bandTop + bandHeight * (0.2 + random() * 0.6),
+          }
+          wanderTimer = moodTimer
+        }
+      }
+    }
+    if (mood === 'bored') {
+      boredom = Math.max(0, boredom - step / 8)
+      // Wave at it and it comes round sooner.
+      if (pointerSpeed > 500) moodTimer -= step * 2
+    }
+
+    // Moods that ignore the pointer go back to the wander.
+    if (interest === 'pointer' && (mood === 'bored' || mood === 'sated')) {
+      target = wanderTarget
+      chasing = false
+    }
+
+    if (mood === 'inspect' && pointer) {
+      // Circle rather than park on it: aim a little round the ring from where
+      // it is now, always the same way for a given fish.
+      const around = Math.atan2(koi.head.y - pointer.y, koi.head.x - pointer.x)
+      const direction = koi.hue < 0.5 ? 1 : -1
+      const ring = 140
+      target = {
+        x: pointer.x + Math.cos(around + 1.2 * direction) * ring,
+        y: pointer.y + Math.sin(around + 1.2 * direction) * ring,
+      }
+    } else if (mood === 'wary' && pointer && interest === 'pointer') {
+      // Keeps an eye on it from a distance.
+      const away = Math.atan2(koi.head.y - pointer.y, koi.head.x - pointer.x)
+      target = { x: pointer.x + Math.cos(away) * 260, y: pointer.y + Math.sin(away) * 260 }
+      chasing = false
+    } else if (mood === 'startle') {
+      const from = pointer ?? koi.lastPointer ?? target
+      const away = Math.atan2(koi.head.y - from.y, koi.head.x - from.x)
+      target = { x: koi.head.x + Math.cos(away) * 400, y: koi.head.y + Math.sin(away) * 400 }
+      chasing = false
+    } else if (mood === 'hover') {
+      // Holds its line: a target just off the nose.
+      target = {
+        x: koi.head.x + Math.cos(koi.heading) * 30,
+        y: koi.head.y + Math.sin(koi.heading) * 30,
+      }
+    }
+  }
+
   let desiredHeading = Math.atan2(target.y - koi.head.y, target.x - koi.head.x)
+
+  // A glide that is a dead straight line is a glide nobody believes. Two slow
+  // sines, out of step with each other, bend the path into lazy curves; the
+  // walls and neighbours below still win.
+  const age = koi.age + step
+  if (features.wander) {
+    const meander =
+      0.8 * Math.sin(age * 0.7 + koi.hue * 20) + 0.45 * Math.sin(age * 1.6 + koi.hue * 7)
+    // Never on the way to food: a bent approach is how it ends up orbiting.
+    if (interest !== 'food' || !chasing) desiredHeading += meander * (chasing ? 0.25 : 1)
+  }
 
   // --- turn away from neighbours ---
   for (const other of others) {
@@ -287,7 +482,8 @@ export function stepKoi(
   // A fish steers with its tail, so it is far more agile mid-burst than while
   // gliding — that is what produces a flick-and-glide arc instead of a
   // smooth circle.
-  const agility = 0.35 + 0.65 * koi.tailEnergy
+  let agility = 0.35 + 0.65 * koi.tailEnergy
+  if (mood === 'feed' || mood === 'startle' || mood === 'dash') agility = Math.min(1.4, agility + 0.4)
   const headingError = wrapAngle(desiredHeading - koi.heading)
 
   let angularVelocity =
@@ -309,13 +505,28 @@ export function stepKoi(
   // an instant impulse and a waving tail are two unrelated animations, and
   // the eye reads the tail as decoration. Driving speed from the stroke makes
   // the fish visibly push itself along.
-  if (dartCooldown <= 0) {
+  if (mood === 'startle' && koi.mood !== 'startle') {
+    // A bolt is one hard beat, at once.
+    tailEnergy = 1
+    dartCooldown = 0.5
+  } else if (mood === 'dash') {
+    tailEnergy = Math.max(tailEnergy, 0.95)
+  } else if (mood === 'hover') {
+    // No bursts while it holds still.
+    dartCooldown = Math.max(dartCooldown, 0.3)
+  } else if (dartCooldown <= 0) {
     // Ease off once it is basically there, so it settles rather than
     // overshooting back and forth across the target.
     const proximity = Math.min(1, distance / 140)
     tailEnergy = Math.min(1, 0.45 + 0.55 * proximity)
+    if (mood === 'sated') tailEnergy *= 0.6
     const [lo, hi] = settings.dartInterval
-    dartCooldown = (lo + random() * (hi - lo)) / (chasing ? settings.attractStrength : 1)
+    const eagerness =
+      mood === 'feed' ? settings.attractStrength * 1.6
+      : mood === 'sated' ? 0.55
+      : chasing ? settings.attractStrength
+      : 1
+    dartCooldown = (lo + random() * (hi - lo)) / eagerness
   }
 
   tailEnergy = Math.max(0, tailEnergy - step / settings.tailDecay)
@@ -338,8 +549,21 @@ export function stepKoi(
   const boost = boostPending
 
   let speed = koi.speed + settings.thrust * boost * stroke * effort * step
-  speed *= Math.exp(-settings.drag * step)
-  const ceiling = settings.maxSpeed * boost
+
+  // Close to what it wants but pointing past it, a fish brakes and turns
+  // rather than sweeping by. Without this it orbits food forever: gliding,
+  // its tightest circle (speed over turn rate, ~90px) is wider than its
+  // mouth's reach, so the pellet sits in the middle of a loop it can never
+  // close, and sinks.
+  if (chasing && distance < 180) {
+    const alignment = Math.cos(wrapAngle(desiredHeading - heading))
+    const closeness = 1 - distance / 180
+    speed *= Math.exp(-5 * closeness * Math.max(0, 0.9 - alignment) * step)
+  }
+  // Hovering, it brakes on its fins.
+  speed *= Math.exp(-settings.drag * (mood === 'hover' ? 3 : 1) * step)
+  const ceiling =
+    settings.maxSpeed * boost * (mood === 'startle' ? 1.5 : mood === 'dash' ? 1.3 : 1)
   if (speed > ceiling) speed = ceiling
 
   let head = {
@@ -369,6 +593,42 @@ export function stepKoi(
     wanderTarget,
     wanderTimer,
     spine: followSpine(head, koi.spine, settings.segmentLength),
+    mood,
+    moodTimer,
+    boredom,
+    lastPointer: cursor ? { x: cursor.x, y: cursor.y } : null,
+    age,
+  }
+}
+
+/**
+ * Somewhere worth swimming to. Koi patrol: they run the margins and drift
+ * round whatever sits in the water, and rarely cut straight across the open
+ * middle. A uniformly random point is exactly that straight cut.
+ */
+function pickDestination(
+  bounds: { width: number; height: number },
+  bandTop: number,
+  bandHeight: number,
+  landmarks: readonly Vec[],
+  random: () => number,
+): Vec {
+  const roll = random()
+  const inBand = landmarks.filter((l) => l.y > bandTop && l.y < bandTop + bandHeight)
+  if (roll < 0.35 && inBand.length > 0) {
+    const stone = inBand[Math.floor(random() * inBand.length)]!
+    const angle = random() * Math.PI * 2
+    const reach = 90 + random() * 50
+    return { x: stone.x + Math.cos(angle) * reach, y: stone.y + Math.sin(angle) * reach }
+  }
+  if (roll < 0.75) {
+    // Along one side.
+    const side = random() < 0.5 ? 0.1 + random() * 0.12 : 0.78 + random() * 0.12
+    return { x: bounds.width * side, y: bandTop + bandHeight * (0.12 + random() * 0.76) }
+  }
+  return {
+    x: bounds.width * (0.12 + random() * 0.76),
+    y: bandTop + bandHeight * (0.15 + random() * 0.7),
   }
 }
 
@@ -427,11 +687,19 @@ export function flutterSpine(
   // version used 0.55, packing 1.5 wavelengths on — so the body wiggled in
   // two places at once and read as buzzing rather than swimming.
   waveNumber = 0.3,
+  /**
+   * Opt-in extras. `recoil` lets the head swing slightly against each stroke,
+   * as a real one does; `turn` (-1..1) throws the tail toward the outside of
+   * a turn, so turning reads as something the fish does.
+   */
+  extras: { recoil?: number; turn?: number } = {},
 ): Vec[] {
   const n = spine.length
   if (n < 2) return [...spine]
 
   const effort = 0.3 + 0.7 * Math.min(1, Math.max(0, tailEnergy))
+  const recoil = extras.recoil ?? 0
+  const turn = extras.turn ?? 0
   const out: Vec[] = []
 
   for (let i = 0; i < n; i++) {
@@ -440,7 +708,9 @@ export function flutterSpine(
 
     // Cubic ramp: the head is effectively rigid, the tail does the work.
     const local = amplitude * Math.pow(t, 1.7) * effort
-    if (local < 0.01) {
+    const headSwing = t < 0.3 ? amplitude * recoil * effort * (1 - t / 0.3) : 0
+    const bend = amplitude * turn * t * t
+    if (local < 0.01 && headSwing < 0.01 && Math.abs(bend) < 0.01) {
       out.push({ x: point.x, y: point.y })
       continue
     }
@@ -456,7 +726,8 @@ export function flutterSpine(
     const px = -dy / len
     const py = dx / len
 
-    const offset = Math.sin(tailPhase - i * waveNumber) * local
+    const offset =
+      Math.sin(tailPhase - i * waveNumber) * local - Math.sin(tailPhase) * headSwing + bend
     out.push({ x: point.x + px * offset, y: point.y + py * offset })
   }
 
@@ -523,8 +794,22 @@ export function koiSilhouette(
   koi: Koi,
   bodyRadius: number,
   tailAmplitude = bodyRadius * 0.38,
+  /** The body extras from `KoiFeatures.body`. */
+  body = false,
 ): Stamp[] {
-  const display = flutterSpine(koi.spine, koi.tailPhase, koi.tailEnergy, tailAmplitude)
+  const display = flutterSpine(
+    koi.spine,
+    koi.tailPhase,
+    koi.tailEnergy,
+    tailAmplitude,
+    undefined,
+    body
+      ? {
+          recoil: 0.35,
+          turn: Math.max(-1, Math.min(1, koi.angularVelocity / DEFAULT_KOI_SETTINGS.turnRate)) * 2.5,
+        }
+      : {},
+  )
   const n = display.length
   const stamps: Stamp[] = []
   if (n === 0) return stamps
@@ -578,7 +863,9 @@ export function koiSilhouette(
   const shoulder = display[shoulderIndex]!
   const ahead = display[shoulderIndex - 1]!
   const bodyAngle = Math.atan2(shoulder.y - ahead.y, shoulder.x - ahead.x)
-  const sweep = Math.sin(koi.tailPhase * 0.8) * 0.3
+  // Hovering, the pectorals do the work: wider, quicker sculling.
+  const sweep =
+    koi.mood === 'hover' ? Math.sin(koi.tailPhase * 2.4) * 0.55 : Math.sin(koi.tailPhase * 0.8) * 0.3
 
   for (const side of [-1, 1]) {
     const angle = bodyAngle + side * (1.15 + sweep * side)
@@ -628,6 +915,11 @@ export function createKoi(
     tailPhase: Math.random() * Math.PI * 2,
     tailEnergy: 0.5,
     dartCooldown: 0,
+    mood: 'cruise',
+    moodTimer: 0,
+    boredom: 0,
+    lastPointer: null,
+    age: Math.random() * 100,
   }
 }
 
