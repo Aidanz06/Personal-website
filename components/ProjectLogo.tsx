@@ -1,4 +1,4 @@
-import { PROJECT_LOGOS, type ProjectId } from '@/app/projectFonts'
+import { PROJECT_LOGOS, type ProjectId, type ProjectLogoSpec } from '@/app/projectFonts'
 import { projectScope } from '@/components/ProjectHeadings'
 
 /**
@@ -8,9 +8,12 @@ import { projectScope } from '@/components/ProjectHeadings'
  */
 export function ProjectLogo({ project }: { project: ProjectId }) {
   const { className, style } = projectScope(project)
+  const logo: ProjectLogoSpec = PROJECT_LOGOS[project]
+  const Mark = logo.mark
   return (
     <span className={`${className} font-display`} style={style}>
-      {PROJECT_LOGOS[project].parts.map((part) =>
+      {Mark && <Mark />}
+      {logo.parts.map((part) =>
         part.accent ? <em key={part.text}>{part.text}</em> : part.text,
       )}
     </span>

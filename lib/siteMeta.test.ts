@@ -23,8 +23,9 @@ describe('the sitemap', () => {
   it('lists every public page at the www address', () => {
     expect(sitemapEntries().map((e) => e.url)).toEqual([
       'https://www.aidanzheng.me/',
-      'https://www.aidanzheng.me/tailor-studio',
+      'https://www.aidanzheng.me/secretariat',
       'https://www.aidanzheng.me/thousand',
+      'https://www.aidanzheng.me/tailor-studio',
       'https://www.aidanzheng.me/about',
       'https://www.aidanzheng.me/listening',
     ])
@@ -52,6 +53,7 @@ describe('canonical links', () => {
     'app/(page)/about/page.mdx': "'/about'",
     'app/(page)/tailor-studio/page.mdx': "'/tailor-studio'",
     'app/(page)/thousand/page.mdx': "'/thousand'",
+    'app/(page)/secretariat/page.mdx': "'/secretariat'",
   }
   for (const [file, path] of Object.entries(pages)) {
     it(`${file} declares its own canonical`, () => {

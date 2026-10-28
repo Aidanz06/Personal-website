@@ -3913,3 +3913,34 @@ time, and only on the homepage.)
 **Still to do (Aidan):** add Upstash Redis from the Vercel dashboard
 (Storage → Marketplace, free tier) and connect it to the project. Locally,
 `vercel env pull .env.local`.
+
+## secretariat gets a page and a stone
+
+Aidan does product consulting for Secretariat, a startup
+(getsecretariat.com). It gets a page and a stone, like the other two
+projects.
+
+**The stones run newest first.** secretariat, $1,000, tailor studio,
+then about and listening. Tailor Studio no longer leads. Five stones at
+the old 0.5 step would put the last one at 2.95 screens, past the
+2.5-screen cap in `stones.test.ts`. The step is now 0.38, which puts it
+at 2.47. The `xFraction`s zig-zag left and right, at least 0.15 apart,
+which a new test checks.
+
+**The logo.** The app's drawn S mark (`components/SecretariatMark.tsx`,
+copied from the app's `secretariat-mark-final.svg`, drawn in
+`currentColor`) standing in for the S, then "ecretariat" in Literata 500.
+A hidden "S" goes with the mark, so screen readers, search and copied text
+still get "Secretariat". `ProjectLogoSpec` gained an optional `mark`, so the stone's label and
+the page's h1 draw the same thing. The mark is in the lamp's amber,
+`#f2b878` (10.9:1 on koi); on paper a darker amber, `#94560f` (4.7:1).
+The drawing itself is `aria-hidden`.
+
+**The page.** Aidan's own copy, with a link to getsecretariat.com at the end
+of the first paragraph.
+
+**The deck.** Aidan's own five-page deck (`Secretariat slides.pdf`),
+rendered with PDFKit to 2000×1456 PNGs, the same size as the other two
+decks. Covers the shared buttons and dialogs, the three directions (one used
+by day, one at night, one not used), the window that follows the day, and
+Home and To do merged. Alt text checked by Aidan.

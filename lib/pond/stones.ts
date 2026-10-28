@@ -48,16 +48,15 @@ export const FIRST_STONE_VH = 0.95
  * Depth between consecutive stones. Also the gap before the photographs.
  *
  * Was 0.7; tightened 20% so the navigation reads as one group you descend
- * past rather than three separate screens. Then 0.5 for a fourth stone, so
- * the last one still sits within the first three screens.
+ * past rather than three separate screens. Then 0.5 for a fourth stone, and
+ * 0.38 for a fifth, so the last one still sits within two and a half screens.
  */
-export const STONE_STEP_VH = 0.5
+export const STONE_STEP_VH = 0.38
 /** Empty water below the last stone, so the navigation does not end abruptly. */
 export const STONE_TAIL_VH = 0.6
 
 /**
- * Ordered top to bottom. Tailor Studio comes first because it is the page
- * the rest of the site is arranged around.
+ * Ordered top to bottom: the work newest first, then about and listening.
  *
  * To add a stone: add an entry, pick an `xFraction` at least 0.15 away from
  * its neighbours' so the path still reads as a path, and stop. The depth,
@@ -65,9 +64,9 @@ export const STONE_TAIL_VH = 0.6
  */
 export const HOME_STONE_DEFINITIONS: readonly StoneDefinition[] = [
   {
-    href: '/tailor-studio',
-    label: 'tailor studio',
-    note: 'something i built',
+    href: '/secretariat',
+    label: 'secretariat',
+    note: 'product consulting',
     xFraction: 0.3,
     radiusFraction: 0.1,
   },
@@ -79,19 +78,26 @@ export const HOME_STONE_DEFINITIONS: readonly StoneDefinition[] = [
     radiusFraction: 0.09,
   },
   {
+    href: '/tailor-studio',
+    label: 'tailor studio',
+    note: 'something i built',
+    xFraction: 0.32,
+    radiusFraction: 0.09,
+  },
+  {
     href: '/about',
     label: 'about',
     note: 'and photography',
-    // Back left, then right again for listening: with four stones the path
-    // zig-zags all the way down instead of bunching on one side.
-    xFraction: 0.34,
+    // Left, right, left, right, then right of centre for listening: with
+    // five stones the path zig-zags all the way down instead of bunching.
+    xFraction: 0.64,
     radiusFraction: 0.09,
   },
   {
     href: '/listening',
     label: 'listening',
     note: "what's on repeat",
-    xFraction: 0.64,
+    xFraction: 0.36,
     radiusFraction: 0.09,
     rings: true,
   },

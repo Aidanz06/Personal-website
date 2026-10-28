@@ -45,8 +45,9 @@ it, and the site is built so that everything is also real, accessible HTML.
 ## Operating Context
 
 - Routes: `/` (the pond: greeting, navigation stones, photo gallery rocks,
-  contact links at the bottom), `/tailor-studio` (a case study with its
-  12-slide deck), `/about` (prose plus the photograph grid), `/listening`
+  contact links at the bottom), `/secretariat` (product consulting for a
+  startup, with its deck), `/thousand` (a daily game, with its deck),
+  `/tailor-studio` (a case study with its 12-slide deck), `/about` (prose plus the photograph grid), `/listening`
   (the month's top five tracks from last.fm, opening as ASCII album covers).
 - Three themes, selectable from a control beside the name: koi (default),
   phosphor, paper.
@@ -95,6 +96,10 @@ it, and the site is built so that everything is also real, accessible HTML.
   are clipped on the right in the source PDF; their alt text is drafted and
   awaiting Aidan's check.
 - **Listening:** live last.fm data for the user `azyaya123`.
+- **Secretariat deck:** 5 slides in `public/secretariat/slides`, from
+  Aidan's `Secretariat slides.pdf`, with alt text he checked.
+  Secretariat is someone else's startup: the page links to it and names
+  nobody, and never claims Aidan built it.
 - **Absent, and not to be fabricated:** /about prose (four placeholders),
   testimonials, metrics, press. Contact is email only
   (`zheng.ai@northeastern.edu`); Aidan chose not to list GitHub or LinkedIn. Nothing about Tailor

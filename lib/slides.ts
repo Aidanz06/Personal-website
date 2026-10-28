@@ -13,7 +13,7 @@ import { imageSize } from './imageSize'
  */
 
 /** The projects with a deck; each is a folder in /public and a page route. */
-export type SlideProject = 'tailor-studio' | 'thousand'
+export type SlideProject = 'tailor-studio' | 'thousand' | 'secretariat'
 const SLIDE_EXTENSIONS = /\.(png|jpe?g|webp|avif)$/i
 
 export type Slide = {

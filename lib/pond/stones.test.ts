@@ -14,13 +14,26 @@ describe('HOME_STONES', () => {
     expect(HOME_STONES.map((s) => s.href).sort()).toEqual([
       '/about',
       '/listening',
+      '/secretariat',
       '/tailor-studio',
       '/thousand',
     ])
   })
 
-  it('leads with tailor studio, the page the site exists to get read', () => {
-    expect(HOME_STONES[0]!.href).toBe('/tailor-studio')
+  it('runs newest first: secretariat, then $1,000, then tailor studio', () => {
+    expect(HOME_STONES.slice(0, 3).map((s) => s.href)).toEqual(['/secretariat', '/thousand', '/tailor-studio'])
+  })
+
+  it('labels the secretariat stone with the role, not a pitch', () => {
+    const secretariat = HOME_STONES.find((s) => s.href === '/secretariat')!
+    expect(secretariat.label).toBe('secretariat')
+    expect(secretariat.note).toBe('product consulting')
+  })
+
+  it('zig-zags, so each stone is a step to the side of the one above', () => {
+    for (let i = 1; i < HOME_STONES.length; i++) {
+      expect(Math.abs(HOME_STONES[i]!.xFraction - HOME_STONES[i - 1]!.xFraction)).toBeGreaterThanOrEqual(0.15)
+    }
   })
 
   it('is ordered by depth, so the descent never doubles back', () => {
@@ -114,14 +127,14 @@ describe('the listening stone', () => {
   const listening = HOME_STONES.find((s) => s.href === '/listening')!
 
   it('is the last stone, below about', () => {
-    expect(HOME_STONES.map((s) => s.href)).toEqual(['/tailor-studio', '/thousand', '/about', '/listening'])
+    expect(HOME_STONES.map((s) => s.href)).toEqual(['/secretariat', '/thousand', '/tailor-studio', '/about', '/listening'])
     expect(listening.label).toBe('listening')
     expect(listening.note).toBe("what's on repeat")
   })
 
   it('got its depth from the list, not from a number typed in', () => {
     // The whole point of step 1's derivation: adding this stone was one entry.
-    expect(listening.depthVh).toBeCloseTo(FIRST_STONE_VH + 3 * STONE_STEP_VH, 10)
+    expect(listening.depthVh).toBeCloseTo(FIRST_STONE_VH + 4 * STONE_STEP_VH, 10)
     expect(DEEPEST_STONE_VH).toBe(listening.depthVh)
     expect(POND_DEPTH_VH).toBeCloseTo(listening.depthVh + STONE_TAIL_VH, 10)
   })

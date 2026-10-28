@@ -3,7 +3,8 @@ import { PondBackdrop } from '@/components/PondBackdrop'
 import { ThemeMenu } from '@/components/ThemeMenu'
 
 /**
- * Shared chrome for the inner pages: /tailor-studio, /thousand and /about.
+ * Shared chrome for the inner pages: /secretariat, /thousand,
+ * /tailor-studio and /about.
  *
  * `(page)` is a route group — the parentheses mean the folder organizes files
  * without appearing in the URL, so these stay at /about rather than

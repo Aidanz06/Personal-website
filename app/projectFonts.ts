@@ -1,4 +1,6 @@
-import { Instrument_Serif, Silkscreen } from 'next/font/google'
+import { Instrument_Serif, Literata, Silkscreen } from 'next/font/google'
+import type { ComponentType } from 'react'
+import { SecretariatMark } from '@/components/SecretariatMark'
 
 /**
  * Each project's own logo: the display face its deck and its app are set in,
@@ -25,6 +27,13 @@ const silkscreen = Silkscreen({
   weight: '400',
 })
 
+const literata = Literata({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--ff-project',
+  weight: '500',
+})
+
 export type ProjectLogoSpec = {
   font: { variable: string }
   /** What renders during the swap, and if the face never arrives. */
@@ -36,6 +45,9 @@ export type ProjectLogoSpec = {
   accent: { dark: string; paper: string }
   /** The logo's words, in order; `accent` marks the coloured part. */
   parts: readonly { text: string; accent?: boolean }[]
+  /** A drawn mark before the words, in the accent, for a logo that has one.
+   *  It can stand in for a letter; it then carries that letter, hidden. */
+  mark?: ComponentType
 }
 
 export const PROJECT_LOGOS = {
@@ -54,6 +66,16 @@ export const PROJECT_LOGOS = {
     fallback: "ui-monospace, 'SF Mono', Menlo, monospace",
     accent: { dark: '#c6ff3d', paper: '#4a7a00' },
     parts: [{ text: '$', accent: true }, { text: '1,000' }],
+  },
+  // Literata, the app's own serif, with the app's drawn S mark as the S, as
+  // on the deck's title slide. The mark is in the lamp's amber, 10.9:1 on
+  // koi; on paper a darker amber, 4.7:1. The rest is in ink.
+  secretariat: {
+    font: literata,
+    fallback: "Georgia, 'Times New Roman', serif",
+    accent: { dark: '#f2b878', paper: '#94560f' },
+    parts: [{ text: 'ecretariat' }],
+    mark: SecretariatMark,
   },
 } satisfies Record<string, ProjectLogoSpec>
 

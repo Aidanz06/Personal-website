@@ -1,0 +1,26 @@
+{
+  "_note": "One entry per file in slides/. `alt` is what a screen reader gets — the slides are pictures of text, so each needs a real one-sentence description. `draft: true` means Claude wrote it and Aidan has not checked it yet; set it to false once you have. A file with no entry here shows a visible bracketed placeholder on the page.",
+  "_source": "Aidan's 'Secretariat slides.pdf' (5 pages), rendered at 2000×1456.",
+  "slides": {
+    "01.png": {
+      "alt": "Title slide: Secretariat turns Canvas, syllabi and calendars into one list for the day.",
+      "draft": false
+    },
+    "02.png": {
+      "alt": "Six of the 58 old button styles, next to one button in three sizes and one dialog.",
+      "draft": false
+    },
+    "03.png": {
+      "alt": "Three directions: Window light, used by day; Margin notes, not used; Lamplight, used at night.",
+      "draft": false
+    },
+    "04.png": {
+      "alt": "The sun sets as to-dos get checked off, from “Four left.” to “The evening is yours.”",
+      "draft": false
+    },
+    "05.png": {
+      "alt": "Home and To do merged into one screen, Today, before and after on a phone.",
+      "draft": false
+    }
+  }
+}

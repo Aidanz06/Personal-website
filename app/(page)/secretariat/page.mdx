@@ -1,0 +1,37 @@
+import { SecretariatMark } from '@/components/SecretariatMark'
+import { Slideshow } from '@/components/Slideshow'
+import { pageOpenGraph } from '@/lib/siteMeta'
+
+export const metadata = {
+  title: 'Secretariat',
+  description:
+    'Secretariat — a to-do app for students, where i do product consulting.',
+  alternates: { canonical: '/secretariat' },
+  openGraph: pageOpenGraph(
+    'Secretariat',
+    'Secretariat — a to-do app for students, where i do product consulting.',
+    '/secretariat',
+  ),
+}
+
+# <SecretariatMark />ecretariat
+
+secretariat is a to-do app for students. it pulls canvas, syllabi and
+calendars into one list for the day. i came on in october as a product
+consultant to look at the interface, the code and the ai costs. it's at
+[getsecretariat.com](https://www.getsecretariat.com).
+
+<Slideshow project="secretariat" />
+
+## what i worked on
+
+the app did a lot already, but it didn’t feel like one product yet. the
+buttons and dialogs had drifted into dozens of slightly different versions, so
+i pulled them into one set. i also merged home and to do into a single screen,
+so opening the app shows you what’s due.
+
+## the look
+
+we mocked up three directions and ended up using two. by day, the top of the
+screen is a window and the sun sets as you check things off. at night, it’s a
+lamp instead. the title just tells you how many are left.

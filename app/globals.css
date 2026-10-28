@@ -428,6 +428,28 @@ span.project-logo em {
   color: var(--logo-accent-paper);
 }
 
+/* A drawn mark standing in for a logo's first letter (Secretariat's S):
+   about a capital's height, on the baseline, in the accent. */
+.project-logo .logo-mark {
+  display: inline-block;
+  height: 0.78em;
+  width: auto;
+  margin-right: 0.02em;
+  vertical-align: -0.03em;
+  color: var(--logo-accent);
+}
+
+/* The letter a mark stands in for, kept in the text but not drawn. Zero
+   size and inline, not sr-only: sr-only is absolutely positioned, which
+   makes it a block, and browsers then name the heading "S ecretariat". */
+.project-logo .logo-letter {
+  font-size: 0;
+}
+
+[data-theme='paper'] .project-logo .logo-mark {
+  color: var(--logo-accent-paper);
+}
+
 /* Carrying food from the bucket (FoodBucket.tsx): the hand is the cursor,
    so the pointer's own steps aside, links included. Mouse only; a finger
    has no cursor to hide. */

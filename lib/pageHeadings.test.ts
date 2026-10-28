@@ -42,15 +42,15 @@ describe('the 404 page', () => {
 describe('project pages', () => {
   // Each project's title, headings and stone label are its logo, in its own
   // deck's display face: Instrument Serif for tailor studio, Silkscreen
-  // (pixel) for $1,000.
+  // (pixel) for $1,000, Literata (the app's own serif) for secretariat.
   const fonts = readFileSync(join(process.cwd(), 'app/projectFonts.ts'), 'utf8')
 
   it('loads each project face once, into --ff-project', () => {
-    expect(fonts).toMatch(/import \{ Instrument_Serif, Silkscreen \} from 'next\/font\/google'/)
-    expect(fonts.match(/variable: '--ff-project'/g)).toHaveLength(2)
+    expect(fonts).toMatch(/import \{ Instrument_Serif, Literata, Silkscreen \} from 'next\/font\/google'/)
+    expect(fonts.match(/variable: '--ff-project'/g)).toHaveLength(3)
   })
 
-  for (const project of ['tailor-studio', 'thousand']) {
+  for (const project of ['secretariat', 'thousand', 'tailor-studio']) {
     it(`/${project} sets its headings in the project's face`, () => {
       const layout = readFileSync(join(process.cwd(), `app/(page)/${project}/layout.tsx`), 'utf8')
       expect(layout).toContain(`<ProjectHeadings project="${project}">`)
@@ -58,13 +58,23 @@ describe('project pages', () => {
   }
 
   it('gives every logo a paper-theme accent', () => {
-    expect(fonts.match(/accent: \{ dark: '#[0-9a-f]{6}', paper: '#[0-9a-f]{6}' \}/g)).toHaveLength(2)
+    expect(fonts.match(/accent: \{ dark: '#[0-9a-f]{6}', paper: '#[0-9a-f]{6}' \}/g)).toHaveLength(3)
   })
 
   it('redefines only --font-display, so body text stays in the site font', () => {
     const source = readFileSync(join(process.cwd(), 'components/ProjectHeadings.tsx'), 'utf8')
     expect(source).toMatch(/'--font-display': `var\(--ff-project\), \$\{logo\.fallback\}`/)
     expect(source).not.toMatch(/--font-body|--font-mono/)
+  })
+
+  it("draws secretariat's S mark as its S, on its page and its stone", () => {
+    expect(fonts).toMatch(/mark: SecretariatMark/)
+    const logo = readFileSync(join(process.cwd(), 'components/ProjectLogo.tsx'), 'utf8')
+    expect(logo).toMatch(/\{Mark && <Mark \/>\}/)
+    const page = readFileSync(join(process.cwd(), 'app/(page)/secretariat/page.mdx'), 'utf8')
+    expect(page).toMatch(/^# <SecretariatMark \/>ecretariat$/m)
+    const mark = readFileSync(join(process.cwd(), 'components/SecretariatMark.tsx'), 'utf8')
+    expect(mark).toContain('<span className="logo-letter">S</span>')
   })
 
   it("labels a project's stone in the pond with its logo", () => {
