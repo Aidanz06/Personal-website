@@ -59,13 +59,13 @@ export const PROJECT_LOGOS = {
     accent: { dark: '#e0bb7b', paper: '#8a5f14' },
     parts: [{ text: 'Tailor ' }, { text: 'Studio', accent: true }],
   },
-  // Silkscreen, the game's pixel face: a lime "$" and the rest in ink. The
+  // Silkscreen, the game's pixel face: "High" in ink and a lime "rise". The
   // lime is 16:1 on koi; on paper a deep green, 4.1:1.
   thousand: {
     font: silkscreen,
     fallback: "ui-monospace, 'SF Mono', Menlo, monospace",
     accent: { dark: '#c6ff3d', paper: '#4a7a00' },
-    parts: [{ text: '$', accent: true }, { text: '1,000' }],
+    parts: [{ text: 'High' }, { text: 'rise', accent: true }],
   },
   // Literata, the app's own serif, with the app's drawn S mark as the S, as
   // on the deck's title slide. The mark is in the lamp's amber, 10.9:1 on

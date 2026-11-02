@@ -46,7 +46,7 @@ it, and the site is built so that everything is also real, accessible HTML.
 
 - Routes: `/` (the pond: greeting, navigation stones, photo gallery rocks,
   contact links at the bottom), `/secretariat` (product consulting for a
-  startup, with its deck), `/thousand` (a daily game, with its deck),
+  startup, with its deck), `/thousand` (highrise, a daily game, with its deck),
   `/tailor-studio` (a case study with its 12-slide deck), `/about` (prose plus the photograph grid), `/listening`
   (the month's top five tracks from last.fm, opening as ASCII album covers).
 - Three themes, selectable from a control beside the name: koi (default),

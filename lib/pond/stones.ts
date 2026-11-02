@@ -72,7 +72,7 @@ export const HOME_STONE_DEFINITIONS: readonly StoneDefinition[] = [
   },
   {
     href: '/thousand',
-    label: '$1,000',
+    label: 'highrise',
     note: 'a daily game',
     xFraction: 0.62,
     radiusFraction: 0.09,

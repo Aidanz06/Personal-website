@@ -3,7 +3,7 @@ import { SlideshowViewer } from '@/components/SlideshowViewer'
 import { listSlides, type Slide, type SlideProject } from '@/lib/slides'
 
 /**
- * A project's slideshow (tailor studio, $1,000).
+ * A project's slideshow (tailor studio, highrise).
  *
  * A server component, so the deck is read from the folder at build time and
  * the page stays static. It renders two things: the interactive viewer, and a

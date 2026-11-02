@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest'
 const sources: Record<string, string> = {
   homepage: 'components/PondHome.tsx',
   listening: 'components/ListeningPond.tsx',
-  'about, tailor studio and $1,000': 'mdx-components.tsx',
+  'about, tailor studio and highrise': 'mdx-components.tsx',
   // Critique of 2026-09-24 (second run): a mistyped link landed on Next's
   // unstyled default, "404: This page could not be found", with no pond and
   // no way home.
@@ -42,7 +42,7 @@ describe('the 404 page', () => {
 describe('project pages', () => {
   // Each project's title, headings and stone label are its logo, in its own
   // deck's display face: Instrument Serif for tailor studio, Silkscreen
-  // (pixel) for $1,000, Literata (the app's own serif) for secretariat.
+  // (pixel) for highrise, Literata (the app's own serif) for secretariat.
   const fonts = readFileSync(join(process.cwd(), 'app/projectFonts.ts'), 'utf8')
 
   it('loads each project face once, into --ff-project', () => {

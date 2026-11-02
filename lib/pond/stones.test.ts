@@ -20,7 +20,7 @@ describe('HOME_STONES', () => {
     ])
   })
 
-  it('runs newest first: secretariat, then $1,000, then tailor studio', () => {
+  it('runs newest first: secretariat, then highrise, then tailor studio', () => {
     expect(HOME_STONES.slice(0, 3).map((s) => s.href)).toEqual(['/secretariat', '/thousand', '/tailor-studio'])
   })
 
