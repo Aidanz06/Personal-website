@@ -4,39 +4,52 @@ import { pageOpenGraph } from '@/lib/siteMeta'
 export const metadata = {
   title: '$1,000',
   description:
-    '$1,000 — a daily game: a date from the past, six things you could have bought then, and $1,000 to put on three of them.',
+    '$1,000 — a daily game: name stuff you use, and find out what $100 in the company behind it would have turned into.',
   alternates: { canonical: '/thousand' },
   openGraph: pageOpenGraph(
     '$1,000',
-    '$1,000 — a daily game: a date from the past, six things you could have bought then, and $1,000 to put on three of them.',
+    '$1,000 — a daily game: name stuff you use, and find out what $100 in the company behind it would have turned into.',
     '/thousand',
   ),
 }
 
 # <em>$</em>1,000
 
-a daily game i've been making. you get a date from the past and six things
-you could have bought then, like zoom stock, a pound of flour or a gold fund.
-you put $500, $300 and $200 on three of them, then see what they turned into.
+a daily game i've been working on. you name stuff you use, and find out what
+$100 in the company behind it would've turned into.
 
 <Slideshow project="thousand" />
 
 ## how it works
 
-pick a shelf, tap an item and give it one of the three amounts. move them
-around until you're happy, then lock in. the reveal shows what $100 in each
-became and how your three did. you can tap any row to see both prices, their
-dates and where they came from.
+it's dec 31, 2019. each round you get a simple question, like "name something
+in your kitchen," and 25 seconds. whatever you name, you buy $100 of the
+company behind it and sell it at the end of 2025. say cheerios and you've
+bought general mills.
 
-## where the prices come from
+after each answer you see what your $100 became next to every other answer
+that counted. the better your pick did compared to the rest, the more floors
+you get. the last round flips it: the game names a company and you guess what
+$100 of it turned into.
 
-only sec filings and us government data (bls, eia, usps, the federal
-reserve), since those are free to republish. no estimates. it keeps the
-shelves narrower than i'd like, so finding more things that fit is the main
-thing i'm working on.
+after seven rounds your building stands next to real ones, from the flatiron
+to the burj khalifa.
+
+## the numbers
+
+public companies put a small chart in their annual report showing what $100 in
+their stock turned into over five years. the game uses those, straight from
+sec filings. this prototype still has rough placeholder numbers; the real ones
+go in once i've checked each one. not affiliated with any company shown.
+
+## how i made it
+
+i built it with claude. claude writes the code. the idea, the rules, the
+questions and the look are mine.
 
 ## where it's at
 
-six shelves, in a beta with friends. next up are rooms so friends can see
-each other's picks, more shelves, and a real name. "$1,000" is a working
-title.
+friends are playtesting it. their main notes were that the old questions were
+too hard and people missed that you buy on one date and sell on another. v5
+fixes the questions. next is real numbers for every answer and a cleaner play
+screen on laptop, then phone, sound and sharing.
